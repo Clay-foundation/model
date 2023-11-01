@@ -9,3 +9,4 @@ dependencies:
   - planetary-computer~=1.0.0
   - python=3.11
   - stackstac~=0.5.0
+  - zarr~=2.16.1
