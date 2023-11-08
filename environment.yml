@@ -1,0 +1,12 @@
+name: claymodel
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - conda-lock~=2.4.2
+  - jupyterlab~=4.0.7
+  - lightning~=2.1.0
+  - planetary-computer~=1.0.0
+  - python=3.11
+  - stackstac~=0.5.0
+  - zarr~=2.16.1
