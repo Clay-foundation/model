@@ -91,4 +91,4 @@ To train the model for a hundred epochs:
     python trainer.py fit --trainer.max_epochs=100
 
 More options can be found using `python trainer.py fit --help`, or at the
-[LightningCLI docs](https://lightning.ai/docs/pytorch/2.0.2/cli/lightning_cli.html).
+[LightningCLI docs](https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html).
