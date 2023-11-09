@@ -1,0 +1,57 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Checkpoints and logs
+checkpoints/*.ckpt
+lightning_logs/
+wandb/
+logs/
+
+# Data files and folders
+data/**
+!data/**/
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+
+# Sphinx documentation
+docs/_build/
+
+# DotEnv configuration
+.env
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Mac OS-specific storage files
+.DS_Store

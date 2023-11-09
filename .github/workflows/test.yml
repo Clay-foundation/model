@@ -1,0 +1,43 @@
+# This workflow will install Python dependencies and run tests on a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Test
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }} - Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11"]
+        os: [ubuntu-22.04]
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      # Checkout current git repository
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      # Install Micromamba with conda-forge dependencies
+      - name: Setup Micromamba
+        uses: mamba-org/setup-micromamba@db1df3ba9e07ea86f759e98b575c002747e9e757 # v1.6.0
+        with:
+          environment-name: claymodel
+          environment-file: conda-lock.yml
+
+      # Run the unit tests
+      - name: Test with pytest
+        run: |
+            micromamba install python=${{ matrix.python-version }} pytest
+            python -m pytest --verbose src/tests/
