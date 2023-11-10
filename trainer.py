@@ -9,7 +9,6 @@ References:
 - https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html
 - https://pytorch-lightning.medium.com/introducing-lightningcli-v2-supercharge-your-training-c070d43c7dd6
 """
-import torch
 from lightning.pytorch.cli import ArgsType, LightningCLI
 
 from src.datamodule import BaseDataModule
@@ -34,6 +33,7 @@ def cli_main(
         trainer_defaults=trainer_defaults,
         args=args,
     )
+    return cli
 
 
 # %%
