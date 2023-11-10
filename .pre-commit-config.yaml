@@ -1,0 +1,18 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.5.0
+  hooks:
+    - id: check-added-large-files
+    - id: check-yaml
+    - id: end-of-file-fixer
+    - id: trailing-whitespace
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.1.5
+  hooks:
+    - id: ruff  # Run the linter
+      args: [ --fix ]
+      types_or: [ python, pyi, jupyter ]
+    - id: ruff-format  # Run the formatter
+      types_or: [ python, pyi, jupyter ]
