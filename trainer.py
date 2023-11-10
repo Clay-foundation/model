@@ -34,6 +34,7 @@ def cli_main(
         trainer_defaults=trainer_defaults,
         args=args,
     )
+    return cli
 
 
 # %%
