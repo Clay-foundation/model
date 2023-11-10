@@ -99,19 +99,20 @@ def get_conditions(year1, year2):
     return date, YEAR, MONTH, DAY, CLOUD
 
 
-def search_sentinel2(week, aoi_gdf):
+def search_sentinel2(week, aoi):
     """
     Search for Sentinel-2 items within a given week and area of interest (AOI).
 
     Parameters:
     - week (str): The week in the format 'start_date/end_date'.
-    - aoi_gdf (GeoDataFrame): GeoDataFrame representing the Area of Interest.
+    - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of Interest (AOI).
 
     Returns:
     - tuple: A tuple containing the STAC catalog, Sentinel-2 items, Sentinel-2 GeoDataFrame, and the bounding box (BBOX).
     """
-    CENTROID = aoi_gdf.geometry.centroid
-    BBOX = aoi_gdf.geometry.bounds
+
+    CENTROID = aoi.centroid
+    BBOX = aoi.bounds
 
     geom_CENTROID = Point(CENTROID.x, CENTROID.y)  # Create point geom object from centroid
 
@@ -344,23 +345,24 @@ def merge_datarrays(da_sen2, da_sen1, da_dem):
 
 def process(year1, year2, aoi, resolution, epsg):
     """
-    Process Sentinel-2, Sentinel-1, and DEM data for a specified time range, area of interest (AOI), resolution, and EPSG code.
+    Process Sentinel-2, Sentinel-1, and DEM data for a specified time range, area of interest (AOI),
+    resolution, and EPSG code.
 
     Parameters:
     - year1 (int): The starting year of the date range.
     - year2 (int): The ending year of the date range.
-    - aoi (str): File path to the Area of Interest (AOI) shapefile.
+    - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of Interest (AOI).
     - resolution (int): Spatial resolution.
     - epsg (int): EPSG code for the coordinate reference system.
 
     Returns:
     - xr.DataArray: Merged xarray DataArray containing processed data.
     """
-    aoi_gdf = gpd.read_file(aoi)
+
     date, YEAR, MONTH, DAY, CLOUD = get_conditions(year1, year2)
     week = get_week(YEAR, MONTH, DAY)
 
-    catalog, s2_items, s2_items_gdf, BBOX = search_sentinel2(week, aoi_gdf)
+    catalog, s2_items, s2_items_gdf, BBOX = search_sentinel2(week, aoi)
 
     s1_items, s1_gdf = search_sentinel1(BBOX, catalog, week)
     # s1_items, s1_gdf = search_sentinel1_calc_max_area(BBOX, catalog, week) # WIP
@@ -373,5 +375,8 @@ def process(year1, year2, aoi, resolution, epsg):
     da_merge = merge_datarrays(da_sen2, da_sen1, da_dem)
     return da_merge
 
-
-# process(2017, 2023,  "ca.geojson", 10, 26910) # EXAMPLE
+# EXAMPLE
+california_tile = gpd.read_file("ca.geojson") 
+sample = california_tile.sample(1)
+aoi = sample.iloc[0].geometry
+process(2017, 2023,  aoi, 10, 26910)
