@@ -20,6 +20,7 @@ import xarray as xr
 STAC_API = "https://planetarycomputer.microsoft.com/api/stac/v1"
 S2_BANDS = ["B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B11", "B12", "SCL"]
 
+
 def random_date(start_year, end_year):
     """
     Generate a random date within the specified range.
@@ -161,6 +162,49 @@ def search_sentinel1(BBOX, catalog, week):
 
     return s1_items, s1_gdf
 
+def search_sentinel1_calc_max_area(BBOX, catalog, week):
+    """
+    Search for Sentinel-1 items within a given bounding box (BBOX), STAC catalog, and week.
+
+    Parameters:
+    - BBOX (tuple): Bounding box coordinates in the format (minx, miny, maxx, maxy).
+    - catalog (pystac.Catalog): STAC catalog containing Sentinel-1 items.
+    - week (str): The week in the format 'start_date/end_date'.
+
+    Returns:
+    - tuple: A tuple containing the selected Sentinel-1 item and Sentinel-1 GeoDataFrame.
+    """
+
+    geom_BBOX = box(*BBOX)  # Create poly geom object from the bbox
+
+    search: pystac_client.item_search.ItemSearch = catalog.search(
+        filter_lang="cql2-json",
+        filter={
+            "op": "and",
+            "args": [
+                {
+                    "op": "s_intersects",
+                    "args": [{"property": "geometry"}, geom_BBOX.__geo_interface__],
+                },
+                {"op": "anyinteracts", "args": [{"property": "datetime"}, week]},
+                {"op": "=", "args": [{"property": "collection"}, "sentinel-1-rtc"]},
+            ],
+        },
+    )
+    s1_items = search.get_all_items()
+    print(f"Found {len(s1_items)} Sentinel-1 items")
+
+    s1_gdf = gpd.GeoDataFrame.from_features(s1_items.to_dict())
+    s1_gdf["overlap"] = s1_gdf.intersection(box(*BBOX)).area
+
+    # Choose the scene with the maximum overlap
+    selected_scene = s1_gdf.loc[s1_gdf["overlap"].idxmax()]
+    print(selected_scene)
+    selected_item_id = selected_scene["id"]
+    selected_item = catalog.get_item(selected_item_id)
+
+    return selected_item, s1_gdf
+
 def search_dem(BBOX, catalog, week, s2_items):
     """
     Search for Digital Elevation Model (DEM) items within a given bounding box (BBOX), STAC catalog, week, and Sentinel-2 items.
@@ -293,6 +337,8 @@ def process(year1, year2, aoi, resolution, epsg):
     catalog, s2_items, s2_items_gdf, BBOX = search_sentinel2(week, aoi_gdf)
 
     s1_items, s1_gdf = search_sentinel1(BBOX, catalog, week)
+    # s1_items, s1_gdf = search_sentinel1_calc_max_area(BBOX, catalog, week) # WIP
+
 
     dem_items, dem_gdf = search_dem(BBOX, catalog, week, s2_items)
 
@@ -301,5 +347,4 @@ def process(year1, year2, aoi, resolution, epsg):
     da_merge = merge_datarrays(da_sen2, da_sen1, da_dem)
 
 
-
-# process(2017, 2023,  gpd.read_file("ca.geojson"), 10, 26910)
+# process(2017, 2023,  "ca.geojson", 10, 26910)
