@@ -114,8 +114,6 @@ def search_sentinel2(week, aoi):
     CENTROID = aoi.centroid
     BBOX = aoi.bounds
 
-    geom_CENTROID = Point(CENTROID.x, CENTROID.y)  # Create point geom object from centroid
-
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
 
     search: pystac_client.item_search.ItemSearch = catalog.search(
@@ -125,7 +123,7 @@ def search_sentinel2(week, aoi):
             "args": [
                 {
                     "op": "s_intersects",
-                    "args": [{"property": "geometry"}, geom_CENTROID.__geo_interface__],
+                    "args": [{"property": "geometry"}, CENTROID.__geo_interface__],
                 },
                 {"op": "anyinteracts", "args": [{"property": "datetime"}, week]},
                 {"op": "=", "args": [{"property": "collection"}, "sentinel-2-l2a"]},
