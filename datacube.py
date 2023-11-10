@@ -300,9 +300,10 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
             da_sen1 = da_sen1.drop_vars(names=key)
 
     # Create xarray.Dataset datacube with VH and VV channels from SAR
-    da_vh: xr.DataArray = da_sen1.sel(band="vh", drop=True).rename("vh")
-    da_vv: xr.DataArray = da_sen1.sel(band="vv", drop=True).rename("vv")
-    ds_sen1: xr.Dataset = xr.merge(objects=[da_vh, da_vv], join="override")
+    # da_vh: xr.DataArray = da_sen1.sel(band="vh", drop=True).rename("vh")
+    # da_vv: xr.DataArray = da_sen1.sel(band="vv", drop=True).rename("vv")
+    # ds_sen1: xr.Dataset = xr.merge(objects=[da_vh, da_vv], join="override")
+    da_sen1 = stackstac.mosaic(da_sen1, dim="time")
 
     # print(ds_sen1)
 
@@ -318,8 +319,10 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
         fill_value=np.nan,
     )
 
-    _, index = np.unique(da_dem['time'], return_index=True)  # Remove redundant time
-    da_dem = da_dem.isel(time=index)
+    da_dem = stackstac.mosaic(da_dem, dim="time")
+
+    # _, index = np.unique(da_dem['time'], return_index=True)  # Remove redundant time
+    # da_dem = da_dem.isel(time=index)
 
     return da_sen2, da_sen1, da_dem
 
@@ -337,7 +340,8 @@ def merge_datarrays(da_sen2, da_sen1, da_dem):
     - xr.DataArray: Merged xarray DataArray.
     """
     da_merge = xr.merge([da_sen2, da_sen1, da_dem], compat='override')
-    print(da_merge)
+    print("Merged datarray: ", da_merge)
+    print("Time variables (S2, merged): ", da_sen2.time.values, da_merge.time.values) # da_sen1.time.values, da_dem.time.values
     return da_merge
 
 
