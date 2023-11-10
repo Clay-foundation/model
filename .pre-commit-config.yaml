@@ -16,3 +16,8 @@ repos:
       types_or: [ python, pyi, jupyter ]
     - id: ruff-format  # Run the formatter
       types_or: [ python, pyi, jupyter ]
+
+# https://pre-commit.ci/#configuration
+ci:
+  autofix_prs: true
+  autoupdate_schedule: quarterly
