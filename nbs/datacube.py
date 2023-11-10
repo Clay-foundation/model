@@ -1,21 +1,41 @@
-import random
-import json
-import os
-from datetime import datetime, timedelta
-from getpass import getpass
+"""
+STAC Data Processing Script
 
+This Python script processes Sentinel-2, Sentinel-1, and DEM (Digital Elevation Model) data. It utilizes the Planetary Computer API for data retrieval and manipulation.
+
+Constants:
+- STAC_API: Planetary Computer API endpoint
+- S2_BANDS: Bands used in Sentinel-2 data processing
+
+Functions:
+- random_date(start_year, end_year): Generate a random date within a specified range.
+- get_week(year, month, day): Get the week range for a given date.
+- get_conditions(year1, year2): Get random conditions (date, year, month, day, cloud cover) within a specified year range.
+- search_sentinel2(week, aoi_gdf): Search for Sentinel-2 items within a given week and area of interest.
+- search_sentinel1(BBOX, catalog, week): Search for Sentinel-1 items within a given bounding box, STAC catalog, and week.
+- search_sentinel1_calc_max_area(BBOX, catalog, week): Search for Sentinel-1 items within a given bounding box, STAC catalog, and week, selecting the scene with the maximum overlap.
+- search_dem(BBOX, catalog, week, s2_items): Search for DEM items within a given bounding box, STAC catalog, week, and Sentinel-2 items.
+- make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg): Create xarray DataArrays for Sentinel-2, Sentinel-1, and DEM data.
+- merge_datarrays(da_sen2, da_sen1, da_dem): Merge xarray DataArrays for Sentinel-2, Sentinel-1, and DEM.
+- process(year1, year2, aoi, resolution, epsg): Process Sentinel-2, Sentinel-1, and DEM data for a specified time range, area of interest, resolution, and EPSG code.
+"""
+
+import random
+from datetime import datetime, timedelta
 import geopandas as gpd
-import leafmap
-import numpy as np
 import pystac
 import pystac_client
 import planetary_computer as pc
-from rasterio.errors import RasterioIOError
-from rasterio.warp import transform_bounds
-import shapely
-from shapely.geometry import box, shape, Point
 import stackstac
 import xarray as xr
+import numpy as np
+from shapely.geometry import box, shape, Point
+import leafmap
+from rasterio.errors import RasterioIOError
+from rasterio.warp import transform_bounds
+from getpass import getpass
+import os
+import json
 
 STAC_API = "https://planetarycomputer.microsoft.com/api/stac/v1"
 S2_BANDS = ["B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B11", "B12", "SCL"]
@@ -39,6 +59,7 @@ def random_date(start_year, end_year):
     random_date = start_date + timedelta(days=random_days)
     return random_date
 
+
 def get_week(year, month, day):
     """
     Get the week range (start_date/end_date) for a given date.
@@ -58,6 +79,7 @@ def get_week(year, month, day):
     end_date_str = end_of_week.strftime('%Y-%m-%d')
     return f"{start_date_str}/{end_date_str}"
 
+
 def get_conditions(year1, year2):
     """
     Get random conditions (date, year, month, day, cloud cover) within the specified year range.
@@ -70,7 +92,7 @@ def get_conditions(year1, year2):
     - tuple: A tuple containing date, year, month, day, and a constant cloud cover value.
     """
     date = random_date(year1, year2)
-    YEAR = date.year 
+    YEAR = date.year
     MONTH = date.month
     DAY = date.day
     CLOUD = 50
@@ -91,7 +113,7 @@ def search_sentinel2(week, aoi_gdf):
     CENTROID = aoi_gdf.geometry.centroid
     BBOX = aoi_gdf.geometry.bounds
 
-    geom_CENTROID = Point(CENTROID.x, CENTROID.y) # Create point geom object from centroid
+    geom_CENTROID = Point(CENTROID.x, CENTROID.y)  # Create point geom object from centroid
 
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
 
@@ -135,7 +157,7 @@ def search_sentinel1(BBOX, catalog, week):
     - tuple: A tuple containing Sentinel-1 items and Sentinel-1 GeoDataFrame.
     """
 
-    geom_BBOX = box(*BBOX) # Create poly geom object from the bbox
+    geom_BBOX = box(*BBOX)  # Create poly geom object from the bbox
 
     search: pystac_client.item_search.ItemSearch = catalog.search(
         filter_lang="cql2-json",
@@ -161,6 +183,7 @@ def search_sentinel1(BBOX, catalog, week):
     s1_gdf.sort_values(by="overlap", inplace=True)
 
     return s1_items, s1_gdf
+
 
 def search_sentinel1_calc_max_area(BBOX, catalog, week):
     """
@@ -205,6 +228,7 @@ def search_sentinel1_calc_max_area(BBOX, catalog, week):
 
     return selected_item, s1_gdf
 
+
 def search_dem(BBOX, catalog, week, s2_items):
     """
     Search for Digital Elevation Model (DEM) items within a given bounding box (BBOX), STAC catalog, week, and Sentinel-2 items.
@@ -230,6 +254,7 @@ def search_dem(BBOX, catalog, week, s2_items):
     dem_gdf = dem_gdf.to_crs(epsg=s2_items[0].properties["proj:epsg"])
     return dem_items, dem_gdf
 
+
 def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     """
     Create xarray DataArrays for Sentinel-2, Sentinel-1, and DEM data.
@@ -248,7 +273,7 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     da_sen2: xr.DataArray = stackstac.stack(
         items=s2_items[0],
         epsg=26910,  # UTM Zone 10N
-        assets=S2_BANDS, 
+        assets=S2_BANDS,
         bounds_latlon=BBOX,  # W, S, E, N
         resolution=10,  # Spatial resolution of 10 metres
         xy_coords="center",  # pixel centroid coords instead of topleft corner
@@ -257,7 +282,7 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     )
 
     da_sen1: xr.DataArray = stackstac.stack(
-        items=s1_items[1:], # To only accept the same orbit state and date. Need better way to do this.
+        items=s1_items[1:],  # To only accept the same orbit state and date. Need better way to do this.
         assets=["vh", "vv"],  # SAR polarizations
         epsg=26910,  # UTM Zone 10N
         bounds_latlon=BBOX,  # W, S, E, N
@@ -280,7 +305,7 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     da_vv: xr.DataArray = da_sen1.sel(band="vv", drop=True).rename("vv")
     ds_sen1: xr.Dataset = xr.merge(objects=[da_vh, da_vv], join="override")
 
-    #print(ds_sen1)
+    # print(ds_sen1)
 
     # da_sen1 = da_sen1.drop([da_sen1.time[0].values], dim='time') # Remove first scene which has ascending orbit
 
@@ -294,10 +319,11 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
         fill_value=np.nan,
     )
 
-    _, index = np.unique(da_dem['time'], return_index=True) # Remove redundant time
+    _, index = np.unique(da_dem['time'], return_index=True)  # Remove redundant time
     da_dem = da_dem.isel(time=index)
 
     return da_sen2, da_sen1, da_dem
+
 
 def merge_datarrays(da_sen2, da_sen1, da_dem):
     """
@@ -345,6 +371,7 @@ def process(year1, year2, aoi, resolution, epsg):
     da_sen2, da_sen1, da_dem = make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg)
 
     da_merge = merge_datarrays(da_sen2, da_sen1, da_dem)
+    return da_merge
 
 
-# process(2017, 2023,  "ca.geojson", 10, 26910)
+# process(2017, 2023,  "ca.geojson", 10, 26910) # EXAMPLE
