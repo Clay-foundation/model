@@ -273,10 +273,10 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     """
     da_sen2: xr.DataArray = stackstac.stack(
         items=s2_items[0],
-        epsg=26910,  # UTM Zone 10N
+        epsg=epsg,
         assets=S2_BANDS,
         bounds_latlon=BBOX,  # W, S, E, N
-        resolution=10,  # Spatial resolution of 10 metres
+        resolution=resolution,
         xy_coords="center",  # pixel centroid coords instead of topleft corner
         dtype=np.float32,
         fill_value=np.nan,
@@ -285,7 +285,7 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     da_sen1: xr.DataArray = stackstac.stack(
         items=s1_items[1:],  # To only accept the same orbit state and date. Need better way to do this.
         assets=["vh", "vv"],  # SAR polarizations
-        epsg=26910,  # UTM Zone 10N
+        epsg=epsg,
         bounds_latlon=BBOX,  # W, S, E, N
         xy_coords="center",  # pixel centroid coords instead of topleft corner
         dtype=np.float32,
@@ -312,9 +312,9 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
 
     da_dem: xr.DataArray = stackstac.stack(
         items=dem_items,
-        epsg=26910,  # UTM Zone 10N
+        epsg=epsg,
         bounds_latlon=BBOX,  # W, S, E, N
-        resolution=10,  # Spatial resolution of 10 metres
+        resolution=resolution,
         xy_coords="center",  # pixel centroid coords instead of topleft corner
         dtype=np.float32,
         fill_value=np.nan,
@@ -379,4 +379,4 @@ def process(year1, year2, aoi, resolution, epsg):
 california_tile = gpd.read_file("ca.geojson") 
 sample = california_tile.sample(1)
 aoi = sample.iloc[0].geometry
-process(2017, 2023,  aoi, 10, 26910)
+process(2017, 2023,  aoi, 10, 26910) # UTM Zone 10N and spatial resolution of 10 metres
