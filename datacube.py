@@ -202,7 +202,6 @@ def search_sentinel1(BBOX, catalog, week):
                     "args": [{"property": "geometry"}, geom_BBOX.__geo_interface__],
                 },
                 {"op": "anyinteracts", "args": [{"property": "datetime"}, week]},
-                {"op": "<=", "args": [{"property": "sat:orbit_state"}, "descending"]},
                 {"op": "=", "args": [{"property": "collection"}, "sentinel-1-rtc"]},
             ],
         },
