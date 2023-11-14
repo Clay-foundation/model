@@ -202,7 +202,6 @@ def search_sentinel1(BBOX, catalog, week):
                     "args": [{"property": "geometry"}, geom_BBOX.__geo_interface__],
                 },
                 {"op": "anyinteracts", "args": [{"property": "datetime"}, week]},
-                {"op": "<=", "args": [{"property": "sat:orbit_state"}, "descending"]},
                 {"op": "=", "args": [{"property": "collection"}, "sentinel-1-rtc"]},
             ],
         },
@@ -376,4 +375,4 @@ sample = california_tile.sample(1)
 aoi = sample.iloc[0].geometry
 cloud_cover_percentage = 50
 nodata_pixel_percentage = 20
-process(2017, 2023,  aoi, 10, cloud_cover_percentage, nodata_pixel_percentage) # Spatial resolution of 10 metres
+merged = process(2017, 2023,  aoi, 10, cloud_cover_percentage, nodata_pixel_percentage) # Spatial resolution of 10 metres
