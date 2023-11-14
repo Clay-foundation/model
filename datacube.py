@@ -29,7 +29,6 @@ import stackstac
 import xarray as xr
 import numpy as np
 from shapely.geometry import box, shape, Point
-import leafmap
 from rasterio.errors import RasterioIOError
 from rasterio.warp import transform_bounds
 from getpass import getpass
@@ -158,10 +157,11 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
     s2_items_gdf = s2_items_gdf[s2_items_gdf["eo:cloud_cover"] == best_clouds]
 
     # Get the item ID for the filtered Sentinel 2 dataframe containing the best cloud free scene
-    s2_items_gdf_datatake_id = s2_items_gdf['s2:datatake_id']
+    s2_items_gdf_datetime_id = s2_items_gdf['datetime']
     for item in s2_items:
-        if item.properties['s2:datatake_id'] == s2_items_gdf_datatake_id[0]:
+        if item.properties['datetime'] == s2_items_gdf_datetime_id[0]:
             s2_item = item
+            # print(s2_item.properties["datetime"])
         else:
             continue
 
@@ -202,6 +202,7 @@ def search_sentinel1(BBOX, catalog, week):
                     "args": [{"property": "geometry"}, geom_BBOX.__geo_interface__],
                 },
                 {"op": "anyinteracts", "args": [{"property": "datetime"}, week]},
+                {"op": "<=", "args": [{"property": "sat:orbit_state"}, "descending"]},
                 {"op": "=", "args": [{"property": "collection"}, "sentinel-1-rtc"]},
             ],
         },
@@ -285,6 +286,24 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
         dtype=np.float32,
         fill_value=np.nan,
     )
+    
+    # Create xarray.Dataset datacube with VH and VV channels from SAR
+    # 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B11', 'B12', 'B8A', 'SCL'
+    da_s2_0: xr.DataArray = da_sen2.sel(band="B02", drop=True).rename("B02")
+    da_s2_1: xr.DataArray = da_sen2.sel(band="B03", drop=True).rename("B03")
+    da_s2_2: xr.DataArray = da_sen2.sel(band="B04", drop=True).rename("B04")
+    da_s2_3: xr.DataArray = da_sen2.sel(band="B05", drop=True).rename("B05")
+    da_s2_4: xr.DataArray = da_sen2.sel(band="B06", drop=True).rename("B06")
+    da_s2_5: xr.DataArray = da_sen2.sel(band="B07", drop=True).rename("B07")
+    da_s2_6: xr.DataArray = da_sen2.sel(band="B08", drop=True).rename("B08")
+    da_s2_7: xr.DataArray = da_sen2.sel(band="B8A", drop=True).rename("B8A")
+    da_s2_8: xr.DataArray = da_sen2.sel(band="B11", drop=True).rename("B11")
+    da_s2_9: xr.DataArray = da_sen2.sel(band="B11", drop=True).rename("B11")
+    da_s2_10: xr.DataArray = da_sen2.sel(band="SCL", drop=True).rename("SCL")
+
+    da_sen2_all: xr.Dataset = xr.merge(objects=[da_s2_0, da_s2_1, da_s2_2, da_s2_3, da_s2_4, \
+                                             da_s2_5, da_s2_6, da_s2_7, da_s2_8, \
+                                             da_s2_9, da_s2_10], join="override")
 
     # To fix TypeError: Invalid value for attr 'spec'
     da_sen1.attrs["spec"] = str(da_sen1.spec)
@@ -296,10 +315,10 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
             da_sen1 = da_sen1.drop_vars(names=key)
 
     # Create xarray.Dataset datacube with VH and VV channels from SAR
-    # da_vh: xr.DataArray = da_sen1.sel(band="vh", drop=True).rename("vh")
-    # da_vv: xr.DataArray = da_sen1.sel(band="vv", drop=True).rename("vv")
-    # ds_sen1: xr.Dataset = xr.merge(objects=[da_vh, da_vv], join="override")
     da_sen1 = stackstac.mosaic(da_sen1, dim="time")
+    da_vh: xr.DataArray = da_sen1.sel(band="vh", drop=True).squeeze().rename("vh")
+    da_vv: xr.DataArray = da_sen1.sel(band="vv", drop=True).squeeze().rename("vv")
+    ds_sen1: xr.Dataset = xr.merge(objects=[da_vh, da_vv], join="override")
 
     da_dem: xr.DataArray = stackstac.stack(
         items=dem_items,
@@ -311,12 +330,12 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
         fill_value=np.nan,
     )
 
-    da_dem = stackstac.mosaic(da_dem, dim="time")
+    da_dem = stackstac.mosaic(da_dem, dim="time").squeeze().rename("DEM")
 
     # _, index = np.unique(da_dem['time'], return_index=True)  # Remove redundant time
     # da_dem = da_dem.isel(time=index)
 
-    return da_sen2, da_sen1, da_dem
+    return da_sen2_all, ds_sen1, da_dem
 
 
 def merge_datarrays(da_sen2, da_sen1, da_dem):
@@ -331,6 +350,11 @@ def merge_datarrays(da_sen2, da_sen1, da_dem):
     Returns:
     - xr.DataArray: Merged xarray DataArray.
     """
+    # print("Platform variables (S2, S1, DEM): ", da_sen2.platform.values, da_sen1.platform.values, da_dem.platform.values)
+    # da_sen2 = da_sen2.drop(["platform", "constellation"])
+    # da_sen1 = da_sen1.drop(["platform", "constellation"])
+    # da_dem = da_dem.drop(["platform"])
+        
     da_merge = xr.merge([da_sen2, da_sen1, da_dem], compat='override')
     print("Merged datarray: ", da_merge)
     print("Time variables (S2, merged): ", da_sen2.time.values, da_merge.time.values) # da_sen1.time.values, da_dem.time.values
