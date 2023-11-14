@@ -394,10 +394,11 @@ def process(year1, year2, aoi, resolution, cloud_cover_percentage, nodata_pixel_
     da_merge = merge_datarrays(da_sen2, da_sen1, da_dem)
     return da_merge
 
-# EXAMPLE
-california_tile = gpd.read_file("ca.geojson") 
-sample = california_tile.sample(1)
-aoi = sample.iloc[0].geometry
-cloud_cover_percentage = 50
-nodata_pixel_percentage = 20
-merged = process(2017, 2023,  aoi, 10, cloud_cover_percentage, nodata_pixel_percentage) # Spatial resolution of 10 metres
+if __name__ == "__main__":
+    # EXAMPLE
+    california_tile = gpd.read_file("ca.geojson") 
+    sample = california_tile.sample(1)
+    aoi = sample.iloc[0].geometry
+    cloud_cover_percentage = 50
+    nodata_pixel_percentage = 20
+    merged = process(2017, 2023,  aoi, 10, cloud_cover_percentage, nodata_pixel_percentage) # Spatial resolution of 10 metres
