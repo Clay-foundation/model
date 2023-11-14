@@ -289,21 +289,23 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     
     # Create xarray.Dataset datacube with VH and VV channels from SAR
     # 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B11', 'B12', 'B8A', 'SCL'
-    da_s2_0: xr.DataArray = da_sen2.sel(band="B02", drop=True).rename("B02")
-    da_s2_1: xr.DataArray = da_sen2.sel(band="B03", drop=True).rename("B03")
-    da_s2_2: xr.DataArray = da_sen2.sel(band="B04", drop=True).rename("B04")
-    da_s2_3: xr.DataArray = da_sen2.sel(band="B05", drop=True).rename("B05")
-    da_s2_4: xr.DataArray = da_sen2.sel(band="B06", drop=True).rename("B06")
-    da_s2_5: xr.DataArray = da_sen2.sel(band="B07", drop=True).rename("B07")
-    da_s2_6: xr.DataArray = da_sen2.sel(band="B08", drop=True).rename("B08")
-    da_s2_7: xr.DataArray = da_sen2.sel(band="B8A", drop=True).rename("B8A")
-    da_s2_8: xr.DataArray = da_sen2.sel(band="B11", drop=True).rename("B11")
-    da_s2_9: xr.DataArray = da_sen2.sel(band="B11", drop=True).rename("B11")
-    da_s2_10: xr.DataArray = da_sen2.sel(band="SCL", drop=True).rename("SCL")
+    da_s2_0: xr.DataArray = da_sen2.sel(band="B02", drop=True).rename("B02").squeeze()
+    da_s2_1: xr.DataArray = da_sen2.sel(band="B03", drop=True).rename("B03").squeeze()
+    da_s2_2: xr.DataArray = da_sen2.sel(band="B04", drop=True).rename("B04").squeeze()
+    da_s2_3: xr.DataArray = da_sen2.sel(band="B05", drop=True).rename("B05").squeeze()
+    da_s2_4: xr.DataArray = da_sen2.sel(band="B06", drop=True).rename("B06").squeeze()
+    da_s2_5: xr.DataArray = da_sen2.sel(band="B07", drop=True).rename("B07").squeeze()
+    da_s2_6: xr.DataArray = da_sen2.sel(band="B08", drop=True).rename("B08").squeeze()
+    da_s2_7: xr.DataArray = da_sen2.sel(band="B8A", drop=True).rename("B8A").squeeze()
+    da_s2_8: xr.DataArray = da_sen2.sel(band="B11", drop=True).rename("B11").squeeze()
+    da_s2_9: xr.DataArray = da_sen2.sel(band="B11", drop=True).rename("B11").squeeze()
+    da_s2_10: xr.DataArray = da_sen2.sel(band="SCL", drop=True).rename("SCL").squeeze()
 
     da_sen2_all: xr.Dataset = xr.merge(objects=[da_s2_0, da_s2_1, da_s2_2, da_s2_3, da_s2_4, \
                                              da_s2_5, da_s2_6, da_s2_7, da_s2_8, \
                                              da_s2_9, da_s2_10], join="override")
+    
+    da_sen2_all.assign(time=da_sen2.time)
 
     # To fix TypeError: Invalid value for attr 'spec'
     da_sen1.attrs["spec"] = str(da_sen1.spec)
