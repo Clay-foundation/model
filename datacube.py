@@ -99,16 +99,22 @@ def get_conditions(year1, year2):
     return date, YEAR, MONTH, DAY, CLOUD
 
 
-def search_sentinel2(week, aoi):
+def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage):
     """
-    Search for Sentinel-2 items within a given week and area of interest (AOI).
+    Search for Sentinel-2 items within a given week and area of interest (AOI) with specified conditions.
 
     Parameters:
     - week (str): The week in the format 'start_date/end_date'.
     - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of Interest (AOI).
+    - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage for Sentinel-2 images.
+    - nodata_pixel_percentage (int): Maximum acceptable percentage of nodata pixels in Sentinel-2 images.
 
     Returns:
     - tuple: A tuple containing the STAC catalog, Sentinel-2 items, Sentinel-2 GeoDataFrame, and the bounding box (BBOX).
+
+    Note:
+    The function filters Sentinel-2 items based on the specified conditions such as geometry, date, cloud cover, and nodata pixel percentage.
+    The result is returned as a tuple containing the STAC catalog, Sentinel-2 items, Sentinel-2 GeoDataFrame, and the bounding box of the first item.
     """
 
     CENTROID = aoi.centroid
@@ -127,8 +133,8 @@ def search_sentinel2(week, aoi):
                 },
                 {"op": "anyinteracts", "args": [{"property": "datetime"}, week]},
                 {"op": "=", "args": [{"property": "collection"}, "sentinel-2-l2a"]},
-                {"op": "<=", "args": [{"property": "eo:cloud_cover"}, 50]},
-                {"op": "<=", "args": [{"property": "s2:nodata_pixel_percentage"}, 20]},
+                {"op": "<=", "args": [{"property": "eo:cloud_cover"}, cloud_cover_percentage]},
+                {"op": "<=", "args": [{"property": "s2:nodata_pixel_percentage"}, nodata_pixel_percentage]},
             ],
         },
     )
@@ -345,10 +351,10 @@ def merge_datarrays(da_sen2, da_sen1, da_dem):
     return da_merge
 
 
-def process(year1, year2, aoi, resolution, epsg):
+def process(year1, year2, aoi, resolution, epsg, cloud_cover_percentage, nodata_pixel_percentage):
     """
     Process Sentinel-2, Sentinel-1, and DEM data for a specified time range, area of interest (AOI),
-    resolution, and EPSG code.
+    resolution, EPSG code, cloud cover percentage, and nodata pixel percentage.
 
     Parameters:
     - year1 (int): The starting year of the date range.
@@ -356,6 +362,8 @@ def process(year1, year2, aoi, resolution, epsg):
     - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of Interest (AOI).
     - resolution (int): Spatial resolution.
     - epsg (int): EPSG code for the coordinate reference system.
+    - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage for Sentinel-2 images.
+    - nodata_pixel_percentage (int): Maximum acceptable percentage of nodata pixels in Sentinel-2 images.
 
     Returns:
     - xr.DataArray: Merged xarray DataArray containing processed data.
@@ -364,7 +372,7 @@ def process(year1, year2, aoi, resolution, epsg):
     date, YEAR, MONTH, DAY, CLOUD = get_conditions(year1, year2)
     week = get_week(YEAR, MONTH, DAY)
 
-    catalog, s2_items, s2_items_gdf, BBOX = search_sentinel2(week, aoi)
+    catalog, s2_items, s2_items_gdf, BBOX = search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
 
     s1_items, s1_gdf = search_sentinel1(BBOX, catalog, week)
     # s1_items, s1_gdf = search_sentinel1_calc_max_area(BBOX, catalog, week) # WIP
@@ -381,4 +389,6 @@ def process(year1, year2, aoi, resolution, epsg):
 california_tile = gpd.read_file("ca.geojson") 
 sample = california_tile.sample(1)
 aoi = sample.iloc[0].geometry
-process(2017, 2023,  aoi, 10, 26910) # UTM Zone 10N and spatial resolution of 10 metres
+cloud_cover_percentage = 50
+nodata_pixel_percentage = 20
+process(2017, 2023,  aoi, 10, 26910, cloud_cover_percentage, nodata_pixel_percentage) # UTM Zone 10N and spatial resolution of 10 metres
