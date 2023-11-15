@@ -169,7 +169,7 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
         },
     )
 
-    s2_items = search.get_all_items()
+    s2_items = search.item_collection()
     print(f"Found {len(s2_items)} Sentinel-2 items")
 
     s2_items_gdf = gpd.GeoDataFrame.from_features(s2_items.to_dict())
