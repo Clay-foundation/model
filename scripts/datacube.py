@@ -78,7 +78,7 @@ def get_week(year, month, day):
     return f"{start_date_str}/{end_date_str}"
 
 
-def get_conditions(year1, year2):
+def get_conditions(year1, year2, cloud_cover_percentage):
     """
     Get random conditions (date, year, month, day, cloud cover) within the specified year range.
 
@@ -93,7 +93,7 @@ def get_conditions(year1, year2):
     YEAR = date.year
     MONTH = date.month
     DAY = date.day
-    CLOUD = 50
+    CLOUD = cloud_cover_percentage
     return date, YEAR, MONTH, DAY, CLOUD
 
 
@@ -380,7 +380,7 @@ def process(year1, year2, aoi, resolution, cloud_cover_percentage, nodata_pixel_
     - xr.DataArray: Merged xarray DataArray containing processed data.
     """
 
-    date, YEAR, MONTH, DAY, CLOUD = get_conditions(year1, year2)
+    date, YEAR, MONTH, DAY, CLOUD = get_conditions(year1, year2, cloud_cover_percentage)
     week = get_week(YEAR, MONTH, DAY)
 
     catalog, s2_items, BBOX, epsg = search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
