@@ -183,9 +183,9 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
 
     # Get the datetime for the filtered Sentinel 2 dataframe
     # containing the least nodata and least cloudy scene
-    s2_items_gdf_datetime_id = s2_items_gdf["datetime"]
+    s2_items_gdf_datetime = s2_items_gdf["datetime"]
     for item in s2_items:
-        if item.properties["datetime"] == s2_items_gdf_datetime_id[0]:
+        if item.properties["datetime"] == s2_items_gdf_datetime:
             s2_item = item
             # print(s2_item.properties["datetime"])
         else:
