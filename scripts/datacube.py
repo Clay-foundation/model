@@ -10,7 +10,7 @@ Constants:
 Functions:
 - random_date(start_year, end_year): Generate a random date within a specified range.
 - get_week(year, month, day): Get the week range for a given date.
-- get_conditions(year1, year2): Get random conditions (date, year, month, day, cloud cover) within a specified year range.
+- get_conditions(year1, year2, cloud_cover_percentage): Get random conditions (date, year, month, day, cloud cover) within a specified year range.
 - search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage): Search for Sentinel-2 items within a given week and area of interest.
 - search_sentinel1(BBOX, catalog, week): Search for Sentinel-1 items within a given bounding box, STAC catalog, and week.
 - search_dem(BBOX, catalog, epsg): Search for DEM items within a given bounding box.
@@ -85,6 +85,7 @@ def get_conditions(year1, year2, cloud_cover_percentage):
     Parameters:
     - year1 (int): The starting year of the date range.
     - year2 (int): The ending year of the date range.
+    - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage for Sentinel-2 images.
 
     Returns:
     - tuple: A tuple containing date, year, month, day, and a constant cloud cover value.
