@@ -26,7 +26,7 @@ Functions:
       Search for DEM items within a given bounding box.
 - make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
       Create xarray DataArrays for Sentinel-2, Sentinel-1, and DEM data.
-- merge_datarrays(da_sen2, da_sen1, da_dem):
+- merge_datarrays(ds_sen2, ds_sen1, da_dem):
       Merge xarray DataArrays for Sentinel-2, Sentinel-1, and DEM.
 - process(year1, year2, aoi, resolution):
       Process Sentinel-2, Sentinel-1, and DEM data for a specified time range,
@@ -286,7 +286,7 @@ def search_dem(BBOX, catalog, epsg):
 
 def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     """
-    Create xarray DataArrays for Sentinel-2, Sentinel-1, and Copernicus DEM
+    Create xarray Datasets for Sentinel-2, Sentinel-1, and Copernicus DEM
     data.
 
     Parameters:
@@ -299,7 +299,7 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     - epsg (int): EPSG code for the coordinate reference system.
 
     Returns:
-    - tuple: A tuple containing xarray DataArrays for Sentinel-2, Sentinel-1,
+    - tuple: A tuple containing xarray Datasets for Sentinel-2, Sentinel-1,
         and Copernicus DEM.
     """
     da_sen2: xr.DataArray = stackstac.stack(
@@ -313,18 +313,8 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
         fill_value=np.nan,
     )
 
-    da_sen1: xr.DataArray = stackstac.stack(
-        items=s1_items,
-        assets=["vh", "vv"],  # SAR polarizations
-        epsg=epsg,
-        bounds_latlon=BBOX,  # W, S, E, N
-        xy_coords="center",  # pixel centroid coords instead of topleft corner
-        dtype=np.float32,
-        fill_value=np.nan,
-    )
-
-    # Create xarray.Dataset datacube with VH and VV channels from SAR
-    # 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B11', 'B12', 'B8A', 'SCL'
+    # Create xarray.Dataset datacube with all 10m and 20m bands from Sentinel-2
+    # 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B11', 'B12', 'SCL'
     da_s2_0: xr.DataArray = da_sen2.sel(band="B02", drop=True).rename("B02").squeeze()
     da_s2_1: xr.DataArray = da_sen2.sel(band="B03", drop=True).rename("B03").squeeze()
     da_s2_2: xr.DataArray = da_sen2.sel(band="B04", drop=True).rename("B04").squeeze()
@@ -337,7 +327,7 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     da_s2_9: xr.DataArray = da_sen2.sel(band="B11", drop=True).rename("B11").squeeze()
     da_s2_10: xr.DataArray = da_sen2.sel(band="SCL", drop=True).rename("SCL").squeeze()
 
-    da_sen2_all: xr.Dataset = xr.merge(
+    ds_sen2: xr.Dataset = xr.merge(
         objects=[
             da_s2_0,
             da_s2_1,
@@ -353,8 +343,17 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
         ],
         join="override",
     )
+    ds_sen2.assign(time=da_sen2.time)
 
-    da_sen2_all.assign(time=da_sen2.time)
+    da_sen1: xr.DataArray = stackstac.stack(
+        items=s1_items,
+        assets=["vh", "vv"],  # SAR polarizations
+        epsg=epsg,
+        bounds_latlon=BBOX,  # W, S, E, N
+        xy_coords="center",  # pixel centroid coords instead of topleft corner
+        dtype=np.float32,
+        fill_value=np.nan,
+    )
 
     # To fix TypeError: Invalid value for attr 'spec'
     da_sen1.attrs["spec"] = str(da_sen1.spec)
@@ -380,42 +379,41 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
         dtype=np.float32,
         fill_value=np.nan,
     )
-
-    da_dem = stackstac.mosaic(da_dem, dim="time").squeeze().rename("DEM")
+    da_dem: xr.DataArray = stackstac.mosaic(da_dem, dim="time").squeeze().rename("DEM")
 
     # _, index = np.unique(da_dem['time'], return_index=True)  # Remove redundant time
     # da_dem = da_dem.isel(time=index)
 
-    return da_sen2_all, ds_sen1, da_dem
+    return ds_sen2, ds_sen1, da_dem
 
 
-def merge_datarrays(da_sen2, da_sen1, da_dem):
+def merge_datarrays(ds_sen2, ds_sen1, da_dem):
     """
-    Merge xarray DataArrays for Sentinel-2, Sentinel-1, and Copernicus DEM.
+    Merge xarray Dataset for Sentinel-2, Sentinel-1, and Copernicus DEM.
 
     Parameters:
-    - da_sen2 (xr.DataArray): xarray DataArray for Sentinel-2 data.
-    - da_sen1 (xr.DataArray): xarray DataArray for Sentinel-1 data.
+    - ds_sen2 (xr.Dataset): xarray Dataset for Sentinel-2 data.
+    - ds_sen1 (xr.Dataset): xarray Dataset for Sentinel-1 data.
     - da_dem (xr.DataArray): xarray DataArray for Copernicus DEM data.
 
     Returns:
-    - xr.DataArray: Merged xarray DataArray.
+    - xr.Dataset: Merged xarray Dataset.
     """
     # print(
     #     "Platform variables (S2, S1, DEM): ",
-    #     da_sen2.platform.values,
-    #     da_sen1.platform.values,
+    #     ds_sen2.platform.values,
+    #     ds_sen1.platform.values,
     #     da_dem.platform.values,
     # )
-    # da_sen2 = da_sen2.drop(["platform", "constellation"])
-    # da_sen1 = da_sen1.drop(["platform", "constellation"])
+    # ds_sen2 = ds_sen2.drop(["platform", "constellation"])
+    # ds_sen1 = ds_sen1.drop(["platform", "constellation"])
     # da_dem = da_dem.drop(["platform"])
 
-    da_merge = xr.merge([da_sen2, da_sen1, da_dem], compat="override")
+    da_merge = xr.merge([ds_sen2, ds_sen1, da_dem], compat="override")
     print("Merged datarray: ", da_merge)
     print(
-        "Time variables (S2, merged): ", da_sen2.time.values, da_merge.time.values
-    )  # da_sen1.time.values, da_dem.time.values
+        "Time variables (S2, merged): ", ds_sen2.time.values, da_merge.time.values
+    )  # ds_sen1.time.values, da_dem.time.values
     return da_merge
 
 
@@ -433,7 +431,6 @@ def process(
     - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of
         Interest (AOI).
     - resolution (int): Spatial resolution.
-    - epsg (int): EPSG code for the coordinate reference system.
     - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage
         for Sentinel-2 images.
     - nodata_pixel_percentage (int): Maximum acceptable percentage of nodata
@@ -454,11 +451,11 @@ def process(
 
     dem_items = search_dem(BBOX, catalog, epsg)
 
-    da_sen2, da_sen1, da_dem = make_dataarrays(
+    ds_sen2, ds_sen1, da_dem = make_dataarrays(
         s2_items, s1_items, dem_items, BBOX, resolution, epsg
     )
 
-    da_merge = merge_datarrays(da_sen2, da_sen1, da_dem)
+    da_merge = merge_datarrays(ds_sen2, ds_sen1, da_dem)
     return da_merge
 
 
