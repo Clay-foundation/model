@@ -21,19 +21,14 @@ Functions:
 
 import random
 from datetime import datetime, timedelta
+
 import geopandas as gpd
-import pystac
-import pystac_client
+import numpy as np
 import planetary_computer as pc
+import pystac_client
 import stackstac
 import xarray as xr
-import numpy as np
-from shapely.geometry import box, shape, Point
-from rasterio.errors import RasterioIOError
-from rasterio.warp import transform_bounds
-from getpass import getpass
-import os
-import json
+from shapely.geometry import box
 
 STAC_API = "https://planetarycomputer.microsoft.com/api/stac/v1"
 S2_BANDS = ["B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B11", "B12", "SCL"]
@@ -73,8 +68,8 @@ def get_week(year, month, day):
     date = datetime(year, month, day)
     start_of_week = date - timedelta(days=date.weekday())
     end_of_week = start_of_week + timedelta(days=6)
-    start_date_str = start_of_week.strftime('%Y-%m-%d')
-    end_date_str = end_of_week.strftime('%Y-%m-%d')
+    start_date_str = start_of_week.strftime("%Y-%m-%d")
+    end_date_str = end_of_week.strftime("%Y-%m-%d")
     return f"{start_date_str}/{end_date_str}"
 
 
@@ -132,8 +127,17 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
                 },
                 {"op": "anyinteracts", "args": [{"property": "datetime"}, week]},
                 {"op": "=", "args": [{"property": "collection"}, "sentinel-2-l2a"]},
-                {"op": "<=", "args": [{"property": "eo:cloud_cover"}, cloud_cover_percentage]},
-                {"op": "<=", "args": [{"property": "s2:nodata_pixel_percentage"}, nodata_pixel_percentage]},
+                {
+                    "op": "<=",
+                    "args": [{"property": "eo:cloud_cover"}, cloud_cover_percentage],
+                },
+                {
+                    "op": "<=",
+                    "args": [
+                        {"property": "s2:nodata_pixel_percentage"},
+                        nodata_pixel_percentage,
+                    ],
+                },
             ],
         },
     )
@@ -143,24 +147,28 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
 
     s2_items_gdf = gpd.GeoDataFrame.from_features(s2_items.to_dict())
 
-    best_nodata = (s2_items_gdf[["s2:nodata_pixel_percentage"]]
-             .groupby(["s2:nodata_pixel_percentage"])
-             .sum()
-             .sort_values(by="s2:nodata_pixel_percentage", ascending=True)
-             .index[0])
-    
-    best_clouds = (s2_items_gdf[["eo:cloud_cover"]]
-             .groupby(["eo:cloud_cover"])
-             .sum()
-             .sort_values(by="eo:cloud_cover", ascending=True)
-             .index[0])
-    
+    best_nodata = (
+        s2_items_gdf[["s2:nodata_pixel_percentage"]]
+        .groupby(["s2:nodata_pixel_percentage"])
+        .sum()
+        .sort_values(by="s2:nodata_pixel_percentage", ascending=True)
+        .index[0]
+    )
+
+    best_clouds = (
+        s2_items_gdf[["eo:cloud_cover"]]
+        .groupby(["eo:cloud_cover"])
+        .sum()
+        .sort_values(by="eo:cloud_cover", ascending=True)
+        .index[0]
+    )
+
     s2_items_gdf = s2_items_gdf[s2_items_gdf["eo:cloud_cover"] == best_clouds]
 
     # Get the item ID for the filtered Sentinel 2 dataframe containing the best cloud free scene
-    s2_items_gdf_datetime_id = s2_items_gdf['datetime']
+    s2_items_gdf_datetime_id = s2_items_gdf["datetime"]
     for item in s2_items:
-        if item.properties['datetime'] == s2_items_gdf_datetime_id[0]:
+        if item.properties["datetime"] == s2_items_gdf_datetime_id[0]:
             s2_item = item
             # print(s2_item.properties["datetime"])
         else:
@@ -212,11 +220,13 @@ def search_sentinel1(BBOX, catalog, week):
 
     s1_gdf = gpd.GeoDataFrame.from_features(s1_items.to_dict())
     s1_gdf["overlap"] = s1_gdf.intersection(box(*BBOX)).area
-    state = (s1_gdf[["sat:orbit_state", "overlap"]]
-             .groupby(["sat:orbit_state"])
-             .sum()
-             .sort_values(by="overlap", ascending=False)
-             .index[0])
+    state = (
+        s1_gdf[["sat:orbit_state", "overlap"]]
+        .groupby(["sat:orbit_state"])
+        .sum()
+        .sort_values(by="overlap", ascending=False)
+        .index[0]
+    )
     s1_gdf = s1_gdf[s1_gdf["sat:orbit_state"] == state]
     print("Filtered Sentinel-1 orbit state: ", s1_gdf["sat:orbit_state"].unique())
     print("Number of scenes filtered by orbit state: ", len(s1_gdf))
@@ -238,9 +248,7 @@ def search_dem(BBOX, catalog, epsg):
     Returns:
     - pystac.Collection: A collection of Digital Elevation Model (DEM) items filtered by specified conditions.
     """
-    search = catalog.search(
-        collections=["cop-dem-glo-30"], bbox=BBOX
-    )
+    search = catalog.search(collections=["cop-dem-glo-30"], bbox=BBOX)
     dem_items = search.item_collection()
     print(f"Found {len(dem_items)} items")
 
@@ -286,7 +294,7 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
         dtype=np.float32,
         fill_value=np.nan,
     )
-    
+
     # Create xarray.Dataset datacube with VH and VV channels from SAR
     # 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B11', 'B12', 'B8A', 'SCL'
     da_s2_0: xr.DataArray = da_sen2.sel(band="B02", drop=True).rename("B02").squeeze()
@@ -301,10 +309,23 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     da_s2_9: xr.DataArray = da_sen2.sel(band="B11", drop=True).rename("B11").squeeze()
     da_s2_10: xr.DataArray = da_sen2.sel(band="SCL", drop=True).rename("SCL").squeeze()
 
-    da_sen2_all: xr.Dataset = xr.merge(objects=[da_s2_0, da_s2_1, da_s2_2, da_s2_3, da_s2_4, \
-                                             da_s2_5, da_s2_6, da_s2_7, da_s2_8, \
-                                             da_s2_9, da_s2_10], join="override")
-    
+    da_sen2_all: xr.Dataset = xr.merge(
+        objects=[
+            da_s2_0,
+            da_s2_1,
+            da_s2_2,
+            da_s2_3,
+            da_s2_4,
+            da_s2_5,
+            da_s2_6,
+            da_s2_7,
+            da_s2_8,
+            da_s2_9,
+            da_s2_10,
+        ],
+        join="override",
+    )
+
     da_sen2_all.assign(time=da_sen2.time)
 
     # To fix TypeError: Invalid value for attr 'spec'
@@ -356,14 +377,18 @@ def merge_datarrays(da_sen2, da_sen1, da_dem):
     # da_sen2 = da_sen2.drop(["platform", "constellation"])
     # da_sen1 = da_sen1.drop(["platform", "constellation"])
     # da_dem = da_dem.drop(["platform"])
-        
-    da_merge = xr.merge([da_sen2, da_sen1, da_dem], compat='override')
+
+    da_merge = xr.merge([da_sen2, da_sen1, da_dem], compat="override")
     print("Merged datarray: ", da_merge)
-    print("Time variables (S2, merged): ", da_sen2.time.values, da_merge.time.values) # da_sen1.time.values, da_dem.time.values
+    print(
+        "Time variables (S2, merged): ", da_sen2.time.values, da_merge.time.values
+    )  # da_sen1.time.values, da_dem.time.values
     return da_merge
 
 
-def process(year1, year2, aoi, resolution, cloud_cover_percentage, nodata_pixel_percentage):
+def process(
+    year1, year2, aoi, resolution, cloud_cover_percentage, nodata_pixel_percentage
+):
     """
     Process Sentinel-2, Sentinel-1, and DEM data for a specified time range, area of interest (AOI),
     resolution, EPSG code, cloud cover percentage, and nodata pixel percentage.
@@ -384,22 +409,29 @@ def process(year1, year2, aoi, resolution, cloud_cover_percentage, nodata_pixel_
     date, YEAR, MONTH, DAY, CLOUD = get_conditions(year1, year2, cloud_cover_percentage)
     week = get_week(YEAR, MONTH, DAY)
 
-    catalog, s2_items, BBOX, epsg = search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
+    catalog, s2_items, BBOX, epsg = search_sentinel2(
+        week, aoi, cloud_cover_percentage, nodata_pixel_percentage
+    )
 
     s1_items = search_sentinel1(BBOX, catalog, week)
 
     dem_items = search_dem(BBOX, catalog, epsg)
 
-    da_sen2, da_sen1, da_dem = make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg)
+    da_sen2, da_sen1, da_dem = make_dataarrays(
+        s2_items, s1_items, dem_items, BBOX, resolution, epsg
+    )
 
     da_merge = merge_datarrays(da_sen2, da_sen1, da_dem)
     return da_merge
 
+
 if __name__ == "__main__":
     # EXAMPLE
-    california_tile = gpd.read_file("ca.geojson") 
+    california_tile = gpd.read_file("ca.geojson")
     sample = california_tile.sample(1)
     aoi = sample.iloc[0].geometry
     cloud_cover_percentage = 50
     nodata_pixel_percentage = 20
-    merged = process(2017, 2023,  aoi, 10, cloud_cover_percentage, nodata_pixel_percentage) # Spatial resolution of 10 metres
+    merged = process(
+        2017, 2023, aoi, 10, cloud_cover_percentage, nodata_pixel_percentage
+    )  # Spatial resolution of 10 metres
