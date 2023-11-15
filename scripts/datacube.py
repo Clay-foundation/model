@@ -174,26 +174,15 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
 
     s2_items_gdf = gpd.GeoDataFrame.from_features(s2_items.to_dict())
 
-    best_nodata = (
-        s2_items_gdf[["s2:nodata_pixel_percentage"]]
-        .groupby(["s2:nodata_pixel_percentage"])
-        .sum()
-        .sort_values(by="s2:nodata_pixel_percentage", ascending=True)
-        .index[0]
-    )
+    least_nodata_and_clouds = s2_items_gdf.sort_values(
+        by=["s2:nodata_pixel_percentage", "eo:cloud_cover"], ascending=True
+    ).index[0]
 
-    best_clouds = (
-        s2_items_gdf[["eo:cloud_cover"]]
-        .groupby(["eo:cloud_cover"])
-        .sum()
-        .sort_values(by="eo:cloud_cover", ascending=True)
-        .index[0]
-    )
-
-    s2_items_gdf = s2_items_gdf[s2_items_gdf["eo:cloud_cover"] == best_clouds]
+    s2_items_gdf = s2_items_gdf.iloc[least_nodata_and_clouds]
+    s2_items_gdf
 
     # Get the datetime for the filtered Sentinel 2 dataframe
-    # containing the best cloud free scene
+    # containing the least nodata and least cloudy scene
     s2_items_gdf_datetime_id = s2_items_gdf["datetime"]
     for item in s2_items:
         if item.properties["datetime"] == s2_items_gdf_datetime_id[0]:
@@ -202,7 +191,7 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
         else:
             continue
 
-    BBOX = s2_items_gdf.iloc[0].geometry.bounds
+    BBOX = s2_items_gdf.iloc[0].bounds
 
     epsg = s2_item.properties["proj:epsg"]
     print("EPSG code based on Sentinel-2 item: ", epsg)
