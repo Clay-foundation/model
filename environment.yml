@@ -4,6 +4,7 @@ channels:
   - nodefaults
 dependencies:
   - conda-lock~=2.4.2
+  - geopandas-base~=0.14.1
   - jupyterlab~=4.0.7
   - jsonargparse~=4.27.0
   - lightning~=2.1.0
