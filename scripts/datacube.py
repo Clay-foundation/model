@@ -17,11 +17,11 @@ Functions:
 - get_conditions(year1, year2, cloud_cover_percentage):
       Get random conditions (date, year, month, day, cloud cover) within a
       specified year range.
-- search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage):
-      Search for Sentinel-2 items within a given week and area of interest.
-- search_sentinel1(BBOX, catalog, week):
+- search_sentinel2(date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage):
+      Search for Sentinel-2 items within a given date range and area of interest.
+- search_sentinel1(BBOX, catalog, date_range):
       Search for Sentinel-1 items within a given bounding box, STAC catalog,
-      and week.
+      and date range.
 - search_dem(BBOX, catalog, epsg):
       Search for DEM items within a given bounding box.
 - make_datasets(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
@@ -36,6 +36,7 @@ Functions:
 import random
 from datetime import datetime, timedelta
 
+import click
 import geopandas as gpd
 import numpy as np
 import planetary_computer as pc
@@ -111,13 +112,13 @@ def get_conditions(year1, year2, cloud_cover_percentage):
     return date, YEAR, MONTH, DAY, CLOUD
 
 
-def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage):
+def search_sentinel2(date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage):
     """
-    Search for Sentinel-2 items within a given week and area of interest (AOI)
+    Search for Sentinel-2 items within a given date range and area of interest (AOI)
     with specified conditions.
 
     Parameters:
-    - week (str): The week in the format 'start_date/end_date'.
+    - date range (str): The date range in the format 'start_date/end_date'.
     - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of
         Interest (AOI).
     - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage
@@ -152,7 +153,7 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
                     "op": "s_intersects",
                     "args": [{"property": "geometry"}, CENTROID.__geo_interface__],
                 },
-                {"op": "anyinteracts", "args": [{"property": "datetime"}, week]},
+                {"op": "anyinteracts", "args": [{"property": "datetime"}, date_range]},
                 {"op": "=", "args": [{"property": "collection"}, "sentinel-2-l2a"]},
                 {
                     "op": "<=",
@@ -199,16 +200,16 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
     return catalog, s2_item, BBOX, epsg
 
 
-def search_sentinel1(BBOX, catalog, week):
+def search_sentinel1(BBOX, catalog, date_range):
     """
     Search for Sentinel-1 items within a given bounding box (BBOX), STAC
-    catalog, and week.
+    catalog, and date range.
 
     Parameters:
     - BBOX (tuple): Bounding box coordinates in the format
         (minx, miny, maxx, maxy).
     - catalog (pystac.Catalog): STAC catalog containing Sentinel-1 items.
-    - week (str): The week in the format 'start_date/end_date'.
+    - date_range (str): The date range in the format 'start_date/end_date'.
 
     Returns:
     - pystac.Collection: A collection of Sentinel-1 items filtered by specified
@@ -232,7 +233,7 @@ def search_sentinel1(BBOX, catalog, week):
                     "op": "s_intersects",
                     "args": [{"property": "geometry"}, geom_BBOX.__geo_interface__],
                 },
-                {"op": "anyinteracts", "args": [{"property": "datetime"}, week]},
+                {"op": "anyinteracts", "args": [{"property": "datetime"}, date_range]},
                 {"op": "=", "args": [{"property": "collection"}, "sentinel-1-rtc"]},
             ],
         },
@@ -409,7 +410,7 @@ def merge_datasets(ds_sen2, ds_sen1, da_dem):
     # ds_sen1 = ds_sen1.drop(["platform", "constellation"])
     # da_dem = da_dem.drop(["platform"])
 
-    ds_merge = xr.merge([ds_sen2, ds_sen1, da_dem], compat="override")
+    ds_merge = xr.merge([ds_sen2, ds_sen1, da_dem], compat="override", join="inner")
     print("Merged dataset: ", ds_merge)
     print(
         "Time variables (S2, merged): ", ds_sen2.time.values, ds_merge.time.values
@@ -418,7 +419,12 @@ def merge_datasets(ds_sen2, ds_sen1, da_dem):
 
 
 def process(
-    year1, year2, aoi, resolution, cloud_cover_percentage, nodata_pixel_percentage
+    year1,
+    year2,
+    aoi,
+    resolution,
+    cloud_cover_percentage,
+    nodata_pixel_percentage,
 ):
     """
     Process Sentinel-2, Sentinel-1, and Copernicus DEM data for a specified
@@ -439,15 +445,15 @@ def process(
     Returns:
     - xr.Dataset: Merged xarray Dataset containing processed data.
     """
-
-    date, YEAR, MONTH, DAY, CLOUD = get_conditions(year1, year2, cloud_cover_percentage)
-    week = get_week(YEAR, MONTH, DAY)
+    # Look for data within a year.
+    year = random.randint(2016, 2023)
+    date_range = f"{year}-01-01/{year}-12-31"
 
     catalog, s2_items, BBOX, epsg = search_sentinel2(
-        week, aoi, cloud_cover_percentage, nodata_pixel_percentage
+        date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage
     )
 
-    s1_items = search_sentinel1(BBOX, catalog, week)
+    s1_items = search_sentinel1(BBOX, catalog, date_range)
 
     dem_items = search_dem(BBOX, catalog, epsg)
 
@@ -459,13 +465,50 @@ def process(
     return ds_merge
 
 
-if __name__ == "__main__":
-    # EXAMPLE
-    california_tile = gpd.read_file("ca.geojson")
-    sample = california_tile.sample(1)
+def plot(merged):
+    """
+    Plot a tile in RGB and vv.
+    """
+    import numpy
+    from matplotlib import pyplot as plt
+
+    fig, axs = plt.subplots(3)
+
+    rgb = (
+        numpy.array(
+            [
+                merged.get("B04"),
+                merged.get("B03"),
+                merged.get("B02"),
+            ]
+        ).clip(0, 3000)
+        / 3000
+    )
+    axs[0].imshow(rgb.transpose(1, 2, 0))
+    axs[1].imshow(numpy.log(merged.get("vh")))
+    axs[2].imshow(merged.get("DEM"))
+
+    plt.show()
+
+
+@click.command()
+@click.option(
+    "--row",
+    required=True,
+    type=int,
+    help="The row number of the mgrs tile to process",
+)
+def run(row):
+    tiles = gpd.read_file("scripts/data/mgrs_sample.geojson")
+    sample = tiles.sample(1, random_state=42)
     aoi = sample.iloc[0].geometry
     cloud_cover_percentage = 50
     nodata_pixel_percentage = 20
     merged = process(
         2017, 2023, aoi, 10, cloud_cover_percentage, nodata_pixel_percentage
-    )  # Spatial resolution of 10 metres
+    )
+    merged = merged.compute()
+
+
+if __name__ == "__main__":
+    run()
