@@ -9,7 +9,7 @@ import xarray as xr
 def tiler(stack):
 
     # Load your xarray dataset (replace this with your actual dataset loading code)
-    # Assuming your dataset is loaded into the variable 'ds'
+    # Assuming your dataset is loaded into the variable 'stack'
 
     # Define tile size
     tile_size = 256
@@ -44,5 +44,5 @@ def tiler(stack):
             else:
                 pass
     
-    # 'tiles' now contains tiles with 256x256 pixels for x and y (with adjusted sizes for remaining parts)
+    # 'tiles' now contains tiles with 256x256 pixels for x and y
     return tiles
