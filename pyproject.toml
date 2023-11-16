@@ -13,3 +13,6 @@ select = [
     "UP",   # pyupgrade
     "W",    # pycodestyle warnings
 ]
+
+[tool.ruff.lint.pylint]
+max-args = 6
