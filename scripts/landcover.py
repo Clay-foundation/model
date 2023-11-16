@@ -69,7 +69,7 @@ def process(wd, worldcover, mgrs):
     """
     Run statistics and sampling.
     """
-    # compute_stats(wd, worldcover, mgrs)
+    compute_stats(wd, worldcover, mgrs)
     sample(wd)
 
 
@@ -88,9 +88,11 @@ def compute_stats(wd, worldcover, mgrs):
                 parts = shape(tile["geometry"]).geoms
                 pixels = []
                 for polygon in parts:
+                    bounds = from_bounds(*polygon.bounds, cover.transform)
                     pixels.append(
                         cover.read(
-                            1, window=from_bounds(*polygon.bounds, cover.transform)
+                            1,
+                            window=bounds,
                         ).ravel()
                     )
                 pixels = numpy.hstack(pixels)
@@ -127,7 +129,7 @@ def compute_stats(wd, worldcover, mgrs):
 
 def split_highest(data, column, size, pool=1000, seed=RANDOM_SEED):
     """
-    Split hightest values of a cloumn from a dataframe.
+    Split highest values of a column from a dataframe.
     """
     data.sort_values(column, ascending=False, inplace=True)
     return data[:pool].sample(size, random_state=seed)
@@ -194,6 +196,8 @@ def sample(wd):
             water,
         ]
     )
+
+    result = result.drop_duplicates(subset=["name"])
 
     result.to_file(Path(wd, "mgrs_sample.geojson", driver="GeoJSON"))
 
