@@ -24,10 +24,10 @@ Functions:
       and week.
 - search_dem(BBOX, catalog, epsg):
       Search for DEM items within a given bounding box.
-- make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
-      Create xarray DataArrays for Sentinel-2, Sentinel-1, and DEM data.
-- merge_datarrays(ds_sen2, ds_sen1, da_dem):
-      Merge xarray DataArrays for Sentinel-2, Sentinel-1, and DEM.
+- make_datasets(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
+      Create xarray Datasets for Sentinel-2, Sentinel-1, and DEM data.
+- merge_datasets(ds_sen2, ds_sen1, da_dem):
+      Merge xarray Datasets for Sentinel-2, Sentinel-1, and DEM.
 - process(year1, year2, aoi, resolution):
       Process Sentinel-2, Sentinel-1, and DEM data for a specified time range,
       area of interest, and resolution.
@@ -284,7 +284,7 @@ def search_dem(BBOX, catalog, epsg):
     return dem_items
 
 
-def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
+def make_datasets(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     """
     Create xarray Datasets for Sentinel-2, Sentinel-1, and Copernicus DEM
     data.
@@ -387,7 +387,7 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     return ds_sen2, ds_sen1, da_dem
 
 
-def merge_datarrays(ds_sen2, ds_sen1, da_dem):
+def merge_datasets(ds_sen2, ds_sen1, da_dem):
     """
     Merge xarray Dataset for Sentinel-2, Sentinel-1, and Copernicus DEM.
 
@@ -409,12 +409,12 @@ def merge_datarrays(ds_sen2, ds_sen1, da_dem):
     # ds_sen1 = ds_sen1.drop(["platform", "constellation"])
     # da_dem = da_dem.drop(["platform"])
 
-    da_merge = xr.merge([ds_sen2, ds_sen1, da_dem], compat="override")
-    print("Merged datarray: ", da_merge)
+    ds_merge = xr.merge([ds_sen2, ds_sen1, da_dem], compat="override")
+    print("Merged dataset: ", ds_merge)
     print(
-        "Time variables (S2, merged): ", ds_sen2.time.values, da_merge.time.values
+        "Time variables (S2, merged): ", ds_sen2.time.values, ds_merge.time.values
     )  # ds_sen1.time.values, da_dem.time.values
-    return da_merge
+    return ds_merge
 
 
 def process(
@@ -437,7 +437,7 @@ def process(
         pixels in Sentinel-2 images.
 
     Returns:
-    - xr.DataArray: Merged xarray DataArray containing processed data.
+    - xr.Dataset: Merged xarray Dataset containing processed data.
     """
 
     date, YEAR, MONTH, DAY, CLOUD = get_conditions(year1, year2, cloud_cover_percentage)
@@ -451,12 +451,12 @@ def process(
 
     dem_items = search_dem(BBOX, catalog, epsg)
 
-    ds_sen2, ds_sen1, da_dem = make_dataarrays(
+    ds_sen2, ds_sen1, da_dem = make_datasets(
         s2_items, s1_items, dem_items, BBOX, resolution, epsg
     )
 
-    da_merge = merge_datarrays(ds_sen2, ds_sen1, da_dem)
-    return da_merge
+    ds_merge = merge_datasets(ds_sen2, ds_sen1, da_dem)
+    return ds_merge
 
 
 if __name__ == "__main__":
