@@ -7,6 +7,7 @@ dependencies:
   - geopandas-base~=0.14.1
   - jupyterlab~=4.0.7
   - jsonargparse~=4.27.0
+  - lightly~=1.4.21
   - lightning~=2.1.0
   - planetary-computer~=1.0.0
   - pytorch~=2.0.0=*cuda112*
