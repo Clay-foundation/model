@@ -132,10 +132,10 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
 
     Note:
     The function filters Sentinel-2 items based on the specified conditions
-    such as geometry, date, cloud cover, and nodata pixel percentage. The
-    result is returned as a tuple containing the STAC catalog, Sentinel-2
-    items, the bounding box of the first item, and an EPSG code for the
-    coordinate reference system.
+    such as geometry, date, cloud cover, and nodata pixel percentage. Only one
+    result with the least cloud cover will be returned. The result is returned
+    as a tuple containing the STAC catalog, Sentinel-2 items, the bounding box
+    of the first item, and an EPSG code for the coordinate reference system.
     """
 
     CENTROID = aoi.centroid
@@ -174,11 +174,11 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
 
     s2_items_gdf = gpd.GeoDataFrame.from_features(s2_items.to_dict())
 
-    least_nodata_and_clouds = s2_items_gdf.sort_values(
-        by=["s2:nodata_pixel_percentage", "eo:cloud_cover"], ascending=True
+    least_clouds = s2_items_gdf.sort_values(
+        by=["eo:cloud_cover"], ascending=True
     ).index[0]
 
-    s2_items_gdf = s2_items_gdf.iloc[least_nodata_and_clouds]
+    s2_items_gdf = s2_items_gdf.iloc[least_clouds]
     s2_items_gdf
 
     # Get the datetime for the filtered Sentinel 2 dataframe
