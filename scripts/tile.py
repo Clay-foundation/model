@@ -7,10 +7,6 @@ import xarray as xr
 
 
 def tiler(stack):
-
-    # Load your xarray dataset (replace this with your actual dataset loading code)
-    # Assuming your dataset is loaded into the variable 'stack'
-
     # Define tile size
     tile_size = 256
 
