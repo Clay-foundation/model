@@ -13,7 +13,7 @@ ogr2ogr \
     -sql "select Name, ExtractMultiPolygon(geometry) as geometry from Features"\
     -dialect sqlite
 
-# Reduce reolution to 40m and merge
+# Reduce resolution and merge
 counter=0
 for file in $wd/esa-worldcover-v200-2021-map/*.tif; do
     counter=$((counter+1))
