@@ -8,14 +8,13 @@ It includes functions to filter tiles based on cloud coverage and no-data pixels
 and a tiling function that generates smaller tiles from the input stack.
 """
 
-import numpy as np
-import xarray as xr
 
 NODATA = 0
 TILE_SIZE = 256
 PIXELS_PER_TILE = TILE_SIZE * TILE_SIZE
 BAD_PIXEL_MAX_PERCENTAGE = 1.0
 SCL_FILTER = [0, 1, 3, 8, 9, 10]
+
 
 def filter_clouds_nodata(tile):
     """
@@ -35,7 +34,7 @@ def filter_clouds_nodata(tile):
 
     # Check for cloud coverage
     cloudy_pixel_count = int(tile.SCL.isin(SCL_FILTER).sum())
-    if cloudy_pixel_count / PIXELS_PER_TILE >=  BAD_PIXEL_MAX_PERCENTAGE:
+    if cloudy_pixel_count / PIXELS_PER_TILE >= BAD_PIXEL_MAX_PERCENTAGE:
         print("Too much cloud coverage")
         return False
 
@@ -78,20 +77,28 @@ def tiler(stack):
             x_end = min((x_idx + 1) * TILE_SIZE, stack.x.size)
             y_end = min((y_idx + 1) * TILE_SIZE, stack.y.size)
             print("x_start, y_start, x_end, y_end: ", x_start, y_start, x_end, y_end)
-            
+
             # Select the subset of data for the current tile
-            tile = stack.sel(x=slice(stack.x.values[x_start], stack.x.values[x_end - 1]), y=slice(stack.y.values[y_start], stack.y.values[y_end - 1]))
-            tile_spatial_dims = tuple(tile.dims[d] for d in ['x', 'y'])
+            tile = stack.sel(
+                x=slice(stack.x.values[x_start], stack.x.values[x_end - 1]),
+                y=slice(stack.y.values[y_start], stack.y.values[y_end - 1]),
+            )
+            tile_spatial_dims = tuple(tile.dims[d] for d in ["x", "y"])
             if tile_spatial_dims[0] == TILE_SIZE and tile_spatial_dims[1] == TILE_SIZE:
-                tile_count=tile_count+1
-                print("Tile size: ", tuple(tile.dims[d] for d in ['x', 'y']), "; tile count: ", tile_count)
+                tile_count = tile_count + 1
+                print(
+                    "Tile size: ",
+                    tuple(tile.dims[d] for d in ["x", "y"]),
+                    "; tile count: ",
+                    tile_count,
+                )
                 # Check for clouds and nodata
                 approval = filter_clouds_nodata(tile)
                 if approval == True:
-                    # Append the tile to the list 
+                    # Append the tile to the list
                     tiles.append(tile)
                 else:
-                    pass # bad_tile_count = bad_tile_count + 1
+                    pass  # bad_tile_count = bad_tile_count + 1
             else:
                 pass
     # print(f"{bad_tile_count} tiles removed due to clouds or nodata")

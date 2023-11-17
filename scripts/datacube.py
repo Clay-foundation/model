@@ -35,7 +35,7 @@ Functions:
 
 import random
 from datetime import datetime, timedelta
-import os
+
 import geopandas as gpd
 import numpy as np
 import planetary_computer as pc
@@ -403,7 +403,7 @@ def merge_datasets_valid(ds_sen2, ds_sen1, da_dem):
     ds_merge = xr.merge([ds_sen2, ds_sen1, da_dem], compat="override")
 
     # Define a mask where all variables have valid data (not NaN)
-    valid_mask = ds_merge.notnull().all(dim=['x', 'y'])
+    valid_mask = ds_merge.notnull().all(dim=["x", "y"])
 
     # Use the mask to select the valid data region
     valid_ds_merge = ds_merge.where(valid_mask, drop=True)
@@ -450,17 +450,19 @@ def process(
     )
 
     ds_merge = merge_datasets_valid(ds_sen2, ds_sen1, da_dem)
-    
+
     return ds_merge
 
 
-#if __name__ == "__main__":
+# if __name__ == "__main__":
 def main():
     # EXAMPLE
-    california_tile = gpd.read_file("ca.geojson") 
+    california_tile = gpd.read_file("ca.geojson")
     sample = california_tile.sample(1)
     aoi = sample.iloc[0].geometry
     cloud_cover_percentage = 50
     nodata_pixel_percentage = 20
-    merged = process(2017, 2023,  aoi, 10, cloud_cover_percentage, nodata_pixel_percentage) # Spatial resolution of 10 metres
+    merged = process(
+        2017, 2023, aoi, 10, cloud_cover_percentage, nodata_pixel_percentage
+    )  # Spatial resolution of 10 metres
     return merged
