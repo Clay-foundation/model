@@ -35,7 +35,7 @@ Functions:
 
 import random
 from datetime import datetime, timedelta
-
+import os
 import geopandas as gpd
 import numpy as np
 import planetary_computer as pc
@@ -387,7 +387,7 @@ def make_datasets(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     return ds_sen2, ds_sen1, da_dem
 
 
-def merge_datasets(ds_sen2, ds_sen1, da_dem):
+def merge_datasets_valid(ds_sen2, ds_sen1, da_dem):
     """
     Merge xarray Dataset for Sentinel-2, Sentinel-1, and Copernicus DEM.
 
@@ -397,24 +397,18 @@ def merge_datasets(ds_sen2, ds_sen1, da_dem):
     - da_dem (xr.DataArray): xarray DataArray for Copernicus DEM data.
 
     Returns:
-    - xr.Dataset: Merged xarray Dataset.
+    - xr.Dataset: Merged xarray Dataset containing valid data region.
     """
-    # print(
-    #     "Platform variables (S2, S1, DEM): ",
-    #     ds_sen2.platform.values,
-    #     ds_sen1.platform.values,
-    #     da_dem.platform.values,
-    # )
-    # ds_sen2 = ds_sen2.drop(["platform", "constellation"])
-    # ds_sen1 = ds_sen1.drop(["platform", "constellation"])
-    # da_dem = da_dem.drop(["platform"])
-
+    # Merging the datasets as before
     ds_merge = xr.merge([ds_sen2, ds_sen1, da_dem], compat="override")
-    print("Merged dataset: ", ds_merge)
-    print(
-        "Time variables (S2, merged): ", ds_sen2.time.values, ds_merge.time.values
-    )  # ds_sen1.time.values, da_dem.time.values
-    return ds_merge
+
+    # Define a mask where all variables have valid data (not NaN)
+    valid_mask = ds_merge.notnull().all(dim=['x', 'y'])
+
+    # Use the mask to select the valid data region
+    valid_ds_merge = ds_merge.where(valid_mask, drop=True)
+
+    return valid_ds_merge
 
 
 def process(
@@ -455,17 +449,18 @@ def process(
         s2_items, s1_items, dem_items, BBOX, resolution, epsg
     )
 
-    ds_merge = merge_datasets(ds_sen2, ds_sen1, da_dem)
+    ds_merge = merge_datasets_valid(ds_sen2, ds_sen1, da_dem)
+    
     return ds_merge
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
+def main():
     # EXAMPLE
-    california_tile = gpd.read_file("ca.geojson")
+    california_tile = gpd.read_file("ca.geojson") 
     sample = california_tile.sample(1)
     aoi = sample.iloc[0].geometry
     cloud_cover_percentage = 50
     nodata_pixel_percentage = 20
-    merged = process(
-        2017, 2023, aoi, 10, cloud_cover_percentage, nodata_pixel_percentage
-    )  # Spatial resolution of 10 metres
+    merged = process(2017, 2023,  aoi, 10, cloud_cover_percentage, nodata_pixel_percentage) # Spatial resolution of 10 metres
+    return merged
