@@ -186,7 +186,7 @@ def search_sentinel1(bbox, catalog, date_range):
 
     if s1_items is None:
         return False
-    
+
     else:
         # Add id as property to persist in gdf
         for item in s1_items:
@@ -209,7 +209,9 @@ def search_sentinel1(bbox, catalog, date_range):
                 intersection = row.geometry
                 selected_item_ids.append(row.id)
                 intersection = intersection.intersection(row.geometry)
-            elif orbit == most_overlap_orbit and intersection.covers(geom_bbox) == False:
+            elif (
+                orbit == most_overlap_orbit and intersection.covers(geom_bbox) == False
+            ):
                 intersection = row.geometry
                 selected_item_ids.append(row.id)
                 intersection = intersection.intersection(row.geometry)
@@ -331,7 +333,14 @@ def make_datasets(s2_items, s1_items, dem_items, resolution):
     return ds_sen2, ds_sen1, da_dem
 
 
-def process(aoi, start_year, end_year, resolution, cloud_cover_percentage, nodata_pixel_percentage):
+def process(
+    aoi,
+    start_year,
+    end_year,
+    resolution,
+    cloud_cover_percentage,
+    nodata_pixel_percentage,
+):
     """
     Process Sentinel-2, Sentinel-1, and Copernicus DEM data for a specified
     time range, area of interest (AOI), resolution, EPSG code, cloud cover
@@ -364,13 +373,12 @@ def process(aoi, start_year, end_year, resolution, cloud_cover_percentage, nodat
 
     if s1_items == False:
         catalog, s2_items, bbox = search_sentinel2(
-                date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage
-                )
-        
+            date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage
+        )
+
         surrounding_days = get_surrounding_days(s2_items.datetime, interval_days=3)
         print("Searching S1 in date range", surrounding_days)
         s1_items = search_sentinel1(bbox, catalog, surrounding_days)
-    
 
     dem_items = search_dem(bbox, catalog)
 
@@ -394,8 +402,14 @@ def main():
     end_year = 2023
 
     merged = process(
-        aoi, start_year, end_year, SPATIAL_RESOLUTION, CLOUD_COVER_PERCENTAGE, NODATA_PIXEL_PERCENTAGE
+        aoi,
+        start_year,
+        end_year,
+        SPATIAL_RESOLUTION,
+        CLOUD_COVER_PERCENTAGE,
+        NODATA_PIXEL_PERCENTAGE,
     )
     return merged
+
 
 # main()
