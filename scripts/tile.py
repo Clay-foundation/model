@@ -76,7 +76,7 @@ def tiler(stack):
             y_start = y_idx * TILE_SIZE
             x_end = min((x_idx + 1) * TILE_SIZE, stack.x.size)
             y_end = min((y_idx + 1) * TILE_SIZE, stack.y.size)
-            print("x_start, y_start, x_end, y_end: ", x_start, y_start, x_end, y_end)
+            # print("x_start, y_start, x_end, y_end: ", x_start, y_start, x_end, y_end)
 
             # Select the subset of data for the current tile
             tile = stack.sel(
@@ -86,21 +86,18 @@ def tiler(stack):
             tile_spatial_dims = tuple(tile.dims[d] for d in ["x", "y"])
             if tile_spatial_dims[0] == TILE_SIZE and tile_spatial_dims[1] == TILE_SIZE:
                 tile_count = tile_count + 1
+                """
                 print(
                     "Tile size: ",
                     tuple(tile.dims[d] for d in ["x", "y"]),
                     "; tile count: ",
                     tile_count,
                 )
+                """
                 # Check for clouds and nodata
-                approval = filter_clouds_nodata(tile)
-                if approval == True:
+                if filter_clouds_nodata(tile) == True:
                     # Append the tile to the list
                     tiles.append(tile)
-                else:
-                    pass  # bad_tile_count = bad_tile_count + 1
-            else:
-                pass
     # print(f"{bad_tile_count} tiles removed due to clouds or nodata")
     # 'tiles' now contains tiles with 256x256 pixels for x and y
     return tiles
