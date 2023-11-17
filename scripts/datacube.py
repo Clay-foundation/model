@@ -184,42 +184,46 @@ def search_sentinel1(bbox, catalog, date_range):
     s1_items = search.item_collection()
     print(f"Found {len(s1_items)} Sentinel-1 items")
 
-    # Add id as property to persist in gdf
-    for item in s1_items:
-        item.properties["id"] = item.id
+    if s1_items is None:
+        return False
+    
+    else:
+        # Add id as property to persist in gdf
+        for item in s1_items:
+            item.properties["id"] = item.id
 
-    # Try to find enough scenes with same orbit that fully overlap
-    # the S2 bbox.
-    s1_gdf = gpd.GeoDataFrame.from_features(s1_items)
-    s1_gdf["overlap"] = s1_gdf.intersection(box(*bbox)).area
-    s1_gdf = s1_gdf.sort_values(by="overlap", ascending=False)
+        # Try to find enough scenes with same orbit that fully overlap
+        # the S2 bbox.
+        s1_gdf = gpd.GeoDataFrame.from_features(s1_items)
+        s1_gdf["overlap"] = s1_gdf.intersection(box(*bbox)).area
+        s1_gdf = s1_gdf.sort_values(by="overlap", ascending=False)
 
-    most_overlap_orbit = s1_gdf.iloc[0]["sat:orbit_state"]
-    print("Most overlapped orbit: ", most_overlap_orbit)
-    selected_item_ids = []
-    intersection = None
-    orbit = None
-    for index, row in s1_gdf.iterrows():
-        orbit = row["sat:orbit_state"]
-        if intersection is None and orbit == most_overlap_orbit:
-            intersection = row.geometry
-            selected_item_ids.append(row.id)
-            intersection = intersection.intersection(row.geometry)
-        elif orbit == most_overlap_orbit and intersection.covers(geom_bbox) == False:
-            intersection = row.geometry
-            selected_item_ids.append(row.id)
-            intersection = intersection.intersection(row.geometry)
-        elif orbit == most_overlap_orbit and intersection.covers(geom_bbox) == True:
-            # Stop adding scenes when the bbox is fully covered.
-            break
-        else:
-            pass
+        most_overlap_orbit = s1_gdf.iloc[0]["sat:orbit_state"]
+        print("Most overlapped orbit: ", most_overlap_orbit)
+        selected_item_ids = []
+        intersection = None
+        orbit = None
+        for index, row in s1_gdf.iterrows():
+            orbit = row["sat:orbit_state"]
+            if intersection is None and orbit == most_overlap_orbit:
+                intersection = row.geometry
+                selected_item_ids.append(row.id)
+                intersection = intersection.intersection(row.geometry)
+            elif orbit == most_overlap_orbit and intersection.covers(geom_bbox) == False:
+                intersection = row.geometry
+                selected_item_ids.append(row.id)
+                intersection = intersection.intersection(row.geometry)
+            elif orbit == most_overlap_orbit and intersection.covers(geom_bbox) == True:
+                # Stop adding scenes when the bbox is fully covered.
+                break
+            else:
+                pass
 
-    s1_items = ItemCollection(
-        [item for item in s1_items if item.id in selected_item_ids]
-    )
+        s1_items = ItemCollection(
+            [item for item in s1_items if item.id in selected_item_ids]
+        )
 
-    return s1_items
+        return s1_items
 
 
 def search_dem(bbox, catalog):
@@ -357,6 +361,16 @@ def process(aoi, start_year, end_year, resolution, cloud_cover_percentage, nodat
     print("Searching S1 in date range", surrounding_days)
 
     s1_items = search_sentinel1(bbox, catalog, surrounding_days)
+
+    if s1_items == False:
+        catalog, s2_items, bbox = search_sentinel2(
+                date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage
+                )
+        
+        surrounding_days = get_surrounding_days(s2_items.datetime, interval_days=3)
+        print("Searching S1 in date range", surrounding_days)
+        s1_items = search_sentinel1(bbox, catalog, surrounding_days)
+    
 
     dem_items = search_dem(bbox, catalog)
 
