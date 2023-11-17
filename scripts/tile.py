@@ -27,22 +27,20 @@ def filter_clouds_nodata(tile):
     Returns:
     - bool: True if the tile is approved, False if rejected.
     """
-    approve = False
-    # Skip if the tile has nodata pixels
+    # Check for nodata pixels
     nodata_pixel_count = int(tile.B02.isin([NODATA]).sum())
     if nodata_pixel_count:
         print("Too much no-data")
-    else:
-        approve = True
+        return False
 
-    # Cloud and bad pixel percentage based on the SCL band
+    # Check for cloud coverage
     cloudy_pixel_count = int(tile.SCL.isin(SCL_FILTER).sum())
     if cloudy_pixel_count / PIXELS_PER_TILE > BAD_PIXEL_MAX_PERCENTAGE:
         print("Too much cloud coverage")
-    else:
-        approve = True
+        return False
 
-    return approve
+    return True  # If both conditions pass
+
 
 def tiler(stack):
     """
@@ -65,8 +63,11 @@ def tiler(stack):
     # Create a list to hold the tiles
     tiles = []
 
-    # Counter for tiles removed due to clouds and/or nodata
-    i = 0
+    # Counter for tiles
+    tile_count = 0
+
+    # Counter for bad tiles
+    # bad_tile_count = 0
 
     # Iterate through each chunk of x and y dimensions and create tiles
     for y_idx in range(num_y_tiles + 1 if remainder_y > 0 else num_y_tiles):
@@ -81,17 +82,17 @@ def tiler(stack):
             tile = stack.sel(x=slice(stack.x.values[x_start], stack.x.values[x_end - 1]), y=slice(stack.y.values[y_start], stack.y.values[y_end - 1]))
             tile_spatial_dims = tuple(tile.dims[d] for d in ['x', 'y'])
             if tile_spatial_dims[0] == TILE_SIZE and tile_spatial_dims[1] == TILE_SIZE:
-                print("Tile size: ", tuple(tile.dims[d] for d in ['x', 'y']))
+                tile_count=tile_count+1
+                print("Tile size: ", tuple(tile.dims[d] for d in ['x', 'y']), "; tile count: ", tile_count)
                 # Check for clouds and nodata
-                # TODO: this is super slow right now. Need to find better method.
                 approval = filter_clouds_nodata(tile)
                 if approval == True:
                     # Append the tile to the list 
                     tiles.append(tile)
                 else:
-                    i=i+1
+                    pass # bad_tile_count = bad_tile_count + 1
             else:
                 pass
-    print(f"{i} tiles removed due to clouds or nodata")
+    # print(f"{bad_tile_count} tiles removed due to clouds or nodata")
     # 'tiles' now contains tiles with 256x256 pixels for x and y
     return tiles
