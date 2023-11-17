@@ -35,7 +35,7 @@ def filter_clouds_nodata(tile):
 
     # Check for cloud coverage
     cloudy_pixel_count = int(tile.SCL.isin(SCL_FILTER).sum())
-    if cloudy_pixel_count / PIXELS_PER_TILE > BAD_PIXEL_MAX_PERCENTAGE:
+    if cloudy_pixel_count / PIXELS_PER_TILE >=  BAD_PIXEL_MAX_PERCENTAGE:
         print("Too much cloud coverage")
         return False
 
@@ -77,6 +77,7 @@ def tiler(stack):
             y_start = y_idx * TILE_SIZE
             x_end = min((x_idx + 1) * TILE_SIZE, stack.x.size)
             y_end = min((y_idx + 1) * TILE_SIZE, stack.y.size)
+            print("x_start, y_start, x_end, y_end: ", x_start, y_start, x_end, y_end)
             
             # Select the subset of data for the current tile
             tile = stack.sel(x=slice(stack.x.values[x_start], stack.x.values[x_end - 1]), y=slice(stack.y.values[y_start], stack.y.values[y_end - 1]))
