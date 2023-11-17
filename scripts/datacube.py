@@ -21,7 +21,7 @@ Functions:
       Search for DEM items within a given bounding box.
 - make_datasets(s2_items, s1_items, dem_items, resolution):
       Create xarray Datasets for Sentinel-2, Sentinel-1, and DEM data.
-- process(aoi, resolution, cloud_cover_percentage, nodata_pixel_percentage):
+- process(aoi, start_year, end_year, resolution, cloud_cover_percentage, nodata_pixel_percentage):
       Process Sentinel-2, Sentinel-1, and DEM data for a specified time range,
       area of interest, and resolution.
 """
@@ -195,25 +195,25 @@ def search_sentinel1(bbox, catalog, date_range):
     s1_gdf = s1_gdf.sort_values(by="overlap", ascending=False)
 
     most_overlap_orbit = s1_gdf.iloc[0]["sat:orbit_state"]
-
+    print("Most overlapped orbit: ", most_overlap_orbit)
     selected_item_ids = []
     intersection = None
     orbit = None
     for index, row in s1_gdf.iterrows():
-        if intersection is None:
+        orbit = row["sat:orbit_state"]
+        if intersection is None and orbit == most_overlap_orbit:
             intersection = row.geometry
-            selected_item_ids = [row.id]
-            orbit = row["sat:orbit_state"]
-        elif intersection.covers(geom_bbox):
-            # Stop adding scenes when the bbox is fully covered.
-            break
-        elif orbit != most_overlap_orbit:
-            # Ignore orbits that are not the same as the
-            # most overlapping one.
-            continue
-        else:
             selected_item_ids.append(row.id)
             intersection = intersection.intersection(row.geometry)
+        elif orbit == most_overlap_orbit and intersection.covers(geom_bbox) == False:
+            intersection = row.geometry
+            selected_item_ids.append(row.id)
+            intersection = intersection.intersection(row.geometry)
+        elif orbit == most_overlap_orbit and intersection.covers(geom_bbox) == True:
+            # Stop adding scenes when the bbox is fully covered.
+            break
+        else:
+            pass
 
     s1_items = ItemCollection(
         [item for item in s1_items if item.id in selected_item_ids]
@@ -327,7 +327,7 @@ def make_datasets(s2_items, s1_items, dem_items, resolution):
     return ds_sen2, ds_sen1, da_dem
 
 
-def process(aoi, resolution, cloud_cover_percentage, nodata_pixel_percentage):
+def process(aoi, start_year, end_year, resolution, cloud_cover_percentage, nodata_pixel_percentage):
     """
     Process Sentinel-2, Sentinel-1, and Copernicus DEM data for a specified
     time range, area of interest (AOI), resolution, EPSG code, cloud cover
@@ -336,6 +336,8 @@ def process(aoi, resolution, cloud_cover_percentage, nodata_pixel_percentage):
     Parameters:
     - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of
         Interest (AOI).
+    - start_year (int): The starting year of the date range.
+    - end_year (int): The ending year of the date range.
     - resolution (int): Spatial resolution.
     - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage
         for Sentinel-2 images.
@@ -345,7 +347,7 @@ def process(aoi, resolution, cloud_cover_percentage, nodata_pixel_percentage):
     Returns:
     - xr.Dataset: Merged xarray Dataset containing processed data.
     """
-    year = random.randint(2017, 2023)
+    year = random.randint(start_year, end_year)
     date_range = f"{year}-01-01/{year}-12-31"
     catalog, s2_items, bbox = search_sentinel2(
         date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage
@@ -374,8 +376,12 @@ def main():
     tiles = gpd.read_file("scripts/data/mgrs_sample.geojson")
     sample = tiles.sample(1, random_state=45)
     aoi = sample.iloc[0].geometry
+    start_year = 2017
+    end_year = 2023
 
     merged = process(
-        aoi, SPATIAL_RESOLUTION, CLOUD_COVER_PERCENTAGE, NODATA_PIXEL_PERCENTAGE
+        aoi, start_year, end_year, SPATIAL_RESOLUTION, CLOUD_COVER_PERCENTAGE, NODATA_PIXEL_PERCENTAGE
     )
     return merged
+
+# main()
