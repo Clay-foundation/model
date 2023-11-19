@@ -12,5 +12,6 @@ dependencies:
   - pytorch~=2.0.0=*cuda112*
   - python=3.11
   - stackstac~=0.5.0
+  - transformers~=4.35.2
   - typeshed-client~=2.4.0
   - zarr~=2.16.1
