@@ -1,26 +1,33 @@
 """
 STAC Data Processing Script
 
-This Python script processes Sentinel-2, Sentinel-1, and DEM (Digital Elevation Model) data. It utilizes the Planetary Computer API for data retrieval and manipulation.
+This Python script processes Sentinel-2, Sentinel-1, and Copernicus DEM
+(Digital Elevation Model) data. It utilizes Microsoft's Planetary Computer API
+for data retrieval and manipulation.
 
 Constants:
 - STAC_API: Planetary Computer API endpoint
 - S2_BANDS: Bands used in Sentinel-2 data processing
 
 Functions:
-- random_date(start_year, end_year): Generate a random date within a specified range.
-- get_week(year, month, day): Get the week range for a given date.
-- get_conditions(year1, year2, cloud_cover_percentage): Get random conditions (date, year, month, day, cloud cover) within a specified year range.
-- search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage): Search for Sentinel-2 items within a given week and area of interest.
-- search_sentinel1(BBOX, catalog, week): Search for Sentinel-1 items within a given bounding box, STAC catalog, and week.
-- search_dem(BBOX, catalog, epsg): Search for DEM items within a given bounding box.
-- make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg): Create xarray DataArrays for Sentinel-2, Sentinel-1, and DEM data.
-- merge_datarrays(da_sen2, da_sen1, da_dem): Merge xarray DataArrays for Sentinel-2, Sentinel-1, and DEM.
-- process(year1, year2, aoi, resolution): Process Sentinel-2, Sentinel-1, and DEM data for a specified time range, area of interest, and resolution.
+- get_surrounding_days(reference, interval_days):
+      Get the week range for a given date.
+- search_sentinel2(date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage):
+      Search for Sentinel-2 items within a given date range and area of interest.
+- search_sentinel1(bbox, catalog, date_range):
+      Search for Sentinel-1 items within a given bounding box, STAC catalog,
+      and date range.
+- search_dem(bbox, catalog):
+      Search for DEM items within a given bounding box.
+- make_datasets(s2_items, s1_items, dem_items, resolution):
+      Create xarray Datasets for Sentinel-2, Sentinel-1, and DEM data.
+- process(aoi, start_year, end_year, resolution, cloud_cover_percentage, nodata_pixel_percentage):
+      Process Sentinel-2, Sentinel-1, and DEM data for a specified time range,
+      area of interest, and resolution.
 """
 
 import random
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import geopandas as gpd
 import numpy as np
@@ -28,92 +35,58 @@ import planetary_computer as pc
 import pystac_client
 import stackstac
 import xarray as xr
+from pystac import ItemCollection
 from shapely.geometry import box
 
 STAC_API = "https://planetarycomputer.microsoft.com/api/stac/v1"
 S2_BANDS = ["B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B11", "B12", "SCL"]
+SPATIAL_RESOLUTION = 10
+CLOUD_COVER_PERCENTAGE = 50
+NODATA_PIXEL_PERCENTAGE = 20
 
 
-def random_date(start_year, end_year):
+def get_surrounding_days(reference, interval_days):
     """
-    Generate a random date within the specified range.
+    Get the days surrounding the input date.
 
     Parameters:
-    - start_year (int): The starting year of the date range.
-    - end_year (int): The ending year of the date range.
+    - reference (datetime): The reference datetime.
+    - interval_days (int): The number of days to search ahead and back
 
     Returns:
-    - datetime: A randomly generated date within the specified range.
+    - str: A string representing the start and end dates of the date interval in the
+        format 'start_date/end_date'.
     """
-    start_date = datetime(start_year, 1, 1)
-    end_date = datetime(end_year, 12, 31)
-    days_between = (end_date - start_date).days
-    random_days = random.randint(0, days_between)
-    random_date = start_date + timedelta(days=random_days)
-    return random_date
+    start = reference - timedelta(days=interval_days)
+    end = reference + timedelta(days=interval_days)
+    return f"{start.date()}/{end.date()}"
 
 
-def get_week(year, month, day):
+def search_sentinel2(date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage):
     """
-    Get the week range (start_date/end_date) for a given date.
+    Search for Sentinel-2 items within a given date range and area of interest (AOI)
+    with specified conditions.
 
     Parameters:
-    - year (int): The year of the date.
-    - month (int): The month of the date.
-    - day (int): The day of the date.
+    - date_range (str): The date range in the format 'start_date/end_date'.
+    - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of
+        Interest (AOI).
+    - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage
+        for Sentinel-2 images.
+    - nodata_pixel_percentage (int): Maximum acceptable percentage of nodata
+        pixels in Sentinel-2 images.
 
     Returns:
-    - str: A string representing the start and end dates of the week in the format 'start_date/end_date'.
-    """
-    date = datetime(year, month, day)
-    start_of_week = date - timedelta(days=date.weekday())
-    end_of_week = start_of_week + timedelta(days=6)
-    start_date_str = start_of_week.strftime("%Y-%m-%d")
-    end_date_str = end_of_week.strftime("%Y-%m-%d")
-    return f"{start_date_str}/{end_date_str}"
-
-
-def get_conditions(year1, year2, cloud_cover_percentage):
-    """
-    Get random conditions (date, year, month, day, cloud cover) within the specified year range.
-
-    Parameters:
-    - year1 (int): The starting year of the date range.
-    - year2 (int): The ending year of the date range.
-    - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage for Sentinel-2 images.
-
-    Returns:
-    - tuple: A tuple containing date, year, month, day, and a constant cloud cover value.
-    """
-    date = random_date(year1, year2)
-    YEAR = date.year
-    MONTH = date.month
-    DAY = date.day
-    CLOUD = cloud_cover_percentage
-    return date, YEAR, MONTH, DAY, CLOUD
-
-
-def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage):
-    """
-    Search for Sentinel-2 items within a given week and area of interest (AOI) with specified conditions.
-
-    Parameters:
-    - week (str): The week in the format 'start_date/end_date'.
-    - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of Interest (AOI).
-    - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage for Sentinel-2 images.
-    - nodata_pixel_percentage (int): Maximum acceptable percentage of nodata pixels in Sentinel-2 images.
-
-    Returns:
-    - tuple: A tuple containing the STAC catalog, Sentinel-2 items, the bounding box (BBOX), and an EPSG code for the coordinate reference system.
+    - tuple: A tuple containing the STAC catalog, Sentinel-2 items, and the
+        bounding box (bbox)
 
     Note:
-    The function filters Sentinel-2 items based on the specified conditions such as geometry, date, cloud cover, and nodata pixel percentage.
-    The result is returned as a tuple containing the STAC catalog, Sentinel-2 items, the bounding box of the first item, and an EPSG code for the coordinate reference system.
+    The function filters Sentinel-2 items based on the specified conditions
+    such as geometry, date, cloud cover, and nodata pixel percentage. Only one
+    result with the least cloud cover will be returned. The result is returned
+    as a tuple containing the STAC catalog, Sentinel-2 items, the bounding box
+    of the first item, and an EPSG code for the coordinate reference system.
     """
-
-    CENTROID = aoi.centroid
-    BBOX = aoi.bounds
-
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
 
     search: pystac_client.item_search.ItemSearch = catalog.search(
@@ -123,9 +96,9 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
             "args": [
                 {
                     "op": "s_intersects",
-                    "args": [{"property": "geometry"}, CENTROID.__geo_interface__],
+                    "args": [{"property": "geometry"}, aoi.centroid.__geo_interface__],
                 },
-                {"op": "anyinteracts", "args": [{"property": "datetime"}, week]},
+                {"op": "anyinteracts", "args": [{"property": "datetime"}, date_range]},
                 {"op": "=", "args": [{"property": "collection"}, "sentinel-2-l2a"]},
                 {
                     "op": "<=",
@@ -142,64 +115,57 @@ def search_sentinel2(week, aoi, cloud_cover_percentage, nodata_pixel_percentage)
         },
     )
 
-    s2_items = search.get_all_items()
+    s2_items = search.item_collection()
     print(f"Found {len(s2_items)} Sentinel-2 items")
 
     s2_items_gdf = gpd.GeoDataFrame.from_features(s2_items.to_dict())
 
-    best_nodata = (
-        s2_items_gdf[["s2:nodata_pixel_percentage"]]
-        .groupby(["s2:nodata_pixel_percentage"])
-        .sum()
-        .sort_values(by="s2:nodata_pixel_percentage", ascending=True)
-        .index[0]
-    )
+    least_clouds = s2_items_gdf.sort_values(
+        by=["eo:cloud_cover"], ascending=True
+    ).index[0]
 
-    best_clouds = (
-        s2_items_gdf[["eo:cloud_cover"]]
-        .groupby(["eo:cloud_cover"])
-        .sum()
-        .sort_values(by="eo:cloud_cover", ascending=True)
-        .index[0]
-    )
+    s2_items_gdf = s2_items_gdf.iloc[least_clouds]
 
-    s2_items_gdf = s2_items_gdf[s2_items_gdf["eo:cloud_cover"] == best_clouds]
-
-    # Get the item ID for the filtered Sentinel 2 dataframe containing the best cloud free scene
-    s2_items_gdf_datetime_id = s2_items_gdf["datetime"]
+    # Get the datetime for the filtered Sentinel 2 dataframe
+    # containing the least nodata and least cloudy scene
+    s2_items_gdf_datetime = s2_items_gdf["datetime"]
     for item in s2_items:
-        if item.properties["datetime"] == s2_items_gdf_datetime_id[0]:
+        if item.properties["datetime"] == s2_items_gdf_datetime:
             s2_item = item
-            # print(s2_item.properties["datetime"])
         else:
             continue
 
-    BBOX = s2_items_gdf.iloc[0].geometry.bounds
+    bbox = s2_items_gdf.iloc[0].bounds
 
     epsg = s2_item.properties["proj:epsg"]
     print("EPSG code based on Sentinel-2 item: ", epsg)
 
-    return catalog, s2_item, BBOX, epsg
+    return catalog, s2_item, bbox
 
 
-def search_sentinel1(BBOX, catalog, week):
+def search_sentinel1(bbox, catalog, date_range):
     """
-    Search for Sentinel-1 items within a given bounding box (BBOX), STAC catalog, and week.
+    Search for Sentinel-1 items within a given bounding box (bbox), STAC
+    catalog, and date range.
 
     Parameters:
-    - BBOX (tuple): Bounding box coordinates in the format (minx, miny, maxx, maxy).
+    - bbox (tuple): Bounding box coordinates in the format
+        (minx, miny, maxx, maxy).
     - catalog (pystac.Catalog): STAC catalog containing Sentinel-1 items.
-    - week (str): The week in the format 'start_date/end_date'.
+    - date_range (str): The date range in the format 'start_date/end_date'.
 
     Returns:
-    - pystac.Collection: A collection of Sentinel-1 items filtered by specified conditions.
+    - pystac.Collection: A collection of Sentinel-1 items filtered by specified
+        conditions.
 
     Note:
-    This function retrieves Sentinel-1 items from the catalog that intersect with the given bounding box and fall within the provided time window.
-    The function filters items based on orbit state and returns the collection of Sentinel-1 items that meet the defined criteria.
+    This function retrieves Sentinel-1 items from the catalog that intersect
+    with the given bounding box and fall within the provided time window. The
+    function filters items based on orbit state and returns the collection of
+    Sentinel-1 items that meet the defined criteria.
     """
-
-    geom_BBOX = box(*BBOX)  # Create poly geom object from the bbox
+    # Create poly geom object from the bbox
+    geom_bbox = box(*bbox)
 
     search: pystac_client.item_search.ItemSearch = catalog.search(
         filter_lang="cql2-json",
@@ -208,9 +174,9 @@ def search_sentinel1(BBOX, catalog, week):
             "args": [
                 {
                     "op": "s_intersects",
-                    "args": [{"property": "geometry"}, geom_BBOX.__geo_interface__],
+                    "args": [{"property": "geometry"}, geom_bbox.__geo_interface__],
                 },
-                {"op": "anyinteracts", "args": [{"property": "datetime"}, week]},
+                {"op": "anyinteracts", "args": [{"property": "datetime"}, date_range]},
                 {"op": "=", "args": [{"property": "collection"}, "sentinel-1-rtc"]},
             ],
         },
@@ -218,85 +184,95 @@ def search_sentinel1(BBOX, catalog, week):
     s1_items = search.item_collection()
     print(f"Found {len(s1_items)} Sentinel-1 items")
 
-    s1_gdf = gpd.GeoDataFrame.from_features(s1_items.to_dict())
-    s1_gdf["overlap"] = s1_gdf.intersection(box(*BBOX)).area
-    state = (
-        s1_gdf[["sat:orbit_state", "overlap"]]
-        .groupby(["sat:orbit_state"])
-        .sum()
-        .sort_values(by="overlap", ascending=False)
-        .index[0]
-    )
-    s1_gdf = s1_gdf[s1_gdf["sat:orbit_state"] == state]
-    print("Filtered Sentinel-1 orbit state: ", s1_gdf["sat:orbit_state"].unique())
-    print("Number of scenes filtered by orbit state: ", len(s1_gdf))
+    if s1_items is None:
+        return False
 
-    # s1_gdf.sort_values(by="overlap", inplace=True)
+    else:
+        # Add id as property to persist in gdf
+        for item in s1_items:
+            item.properties["id"] = item.id
 
-    return s1_items
+        # Try to find enough scenes with same orbit that fully overlap
+        # the S2 bbox.
+        s1_gdf = gpd.GeoDataFrame.from_features(s1_items)
+        s1_gdf["overlap"] = s1_gdf.intersection(box(*bbox)).area
+        s1_gdf = s1_gdf.sort_values(by="overlap", ascending=False)
+
+        most_overlap_orbit = s1_gdf.iloc[0]["sat:orbit_state"]
+        print("Most overlapped orbit: ", most_overlap_orbit)
+        selected_item_ids = []
+        intersection = None
+        orbit = None
+        for index, row in s1_gdf.iterrows():
+            orbit = row["sat:orbit_state"]
+            if intersection is None and orbit == most_overlap_orbit:
+                intersection = row.geometry
+                selected_item_ids.append(row.id)
+                intersection = intersection.intersection(row.geometry)
+            elif (
+                orbit == most_overlap_orbit and intersection.covers(geom_bbox) == False
+            ):
+                intersection = row.geometry
+                selected_item_ids.append(row.id)
+                intersection = intersection.intersection(row.geometry)
+            elif orbit == most_overlap_orbit and intersection.covers(geom_bbox) == True:
+                # Stop adding scenes when the bbox is fully covered.
+                break
+            else:
+                pass
+
+        s1_items = ItemCollection(
+            [item for item in s1_items if item.id in selected_item_ids]
+        )
+
+        return s1_items
 
 
-def search_dem(BBOX, catalog, epsg):
+def search_dem(bbox, catalog):
     """
-    Search for Digital Elevation Model (DEM) items within a given bounding box (BBOX), STAC catalog, week, and Sentinel-2 items.
+    Search for Copernicus Digital Elevation Model (DEM) items within a given
+    bounding box (bbox), STAC catalog, and Sentinel-2 items.
 
     Parameters:
-    - BBOX (tuple): Bounding box coordinates in the format (minx, miny, maxx, maxy).
+    - bbox (tuple): Bounding box coordinates in the format
+        (minx, miny, maxx, maxy).
     - catalog (pystac.Catalog): STAC catalog containing DEM items.
-    - epsg (int): EPSG code for the coordinate reference system.
 
     Returns:
-    - pystac.Collection: A collection of Digital Elevation Model (DEM) items filtered by specified conditions.
+    - pystac.Collection: A collection of Digital Elevation Model (DEM) items
+        filtered by specified conditions.
     """
-    search = catalog.search(collections=["cop-dem-glo-30"], bbox=BBOX)
+    search = catalog.search(collections=["cop-dem-glo-30"], bbox=bbox)
     dem_items = search.item_collection()
-    print(f"Found {len(dem_items)} items")
+    print(f"Found {len(dem_items)} DEM items")
 
-    dem_gdf = gpd.GeoDataFrame.from_features(dem_items.to_dict())
-
-    dem_gdf.set_crs(epsg=4326, inplace=True)
-    dem_gdf = dem_gdf.to_crs(epsg=epsg)
     return dem_items
 
 
-def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
+def make_datasets(s2_items, s1_items, dem_items, resolution):
     """
-    Create xarray DataArrays for Sentinel-2, Sentinel-1, and DEM data.
+    Create xarray Datasets for Sentinel-2, Sentinel-1, and Copernicus DEM
+    data.
 
     Parameters:
     - s2_items (list): List of Sentinel-2 items.
     - s1_items (list): List of Sentinel-1 items.
     - dem_items (list): List of DEM items.
-    - BBOX (tuple): Bounding box coordinates in the format (minx, miny, maxx, maxy).
     - resolution (int): Spatial resolution.
-    - epsg (int): EPSG code for the coordinate reference system.
 
     Returns:
-    - tuple: A tuple containing xarray DataArrays for Sentinel-2, Sentinel-1, and DEM.
+    - tuple: A tuple containing xarray Datasets for Sentinel-2, Sentinel-1,
+        and Copernicus DEM.
     """
     da_sen2: xr.DataArray = stackstac.stack(
         items=s2_items,
-        epsg=epsg,
         assets=S2_BANDS,
-        bounds_latlon=BBOX,  # W, S, E, N
         resolution=resolution,
-        xy_coords="center",  # pixel centroid coords instead of topleft corner
         dtype=np.float32,
         fill_value=np.nan,
     )
 
-    da_sen1: xr.DataArray = stackstac.stack(
-        items=s1_items,  # To only accept the same orbit state and date. Need better way to do this.
-        assets=["vh", "vv"],  # SAR polarizations
-        epsg=epsg,
-        bounds_latlon=BBOX,  # W, S, E, N
-        xy_coords="center",  # pixel centroid coords instead of topleft corner
-        dtype=np.float32,
-        fill_value=np.nan,
-    )
-
-    # Create xarray.Dataset datacube with VH and VV channels from SAR
-    # 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B11', 'B12', 'B8A', 'SCL'
+    # Create xarray.Dataset datacube with all 10m and 20m bands from Sentinel-2
     da_s2_0: xr.DataArray = da_sen2.sel(band="B02", drop=True).rename("B02").squeeze()
     da_s2_1: xr.DataArray = da_sen2.sel(band="B03", drop=True).rename("B03").squeeze()
     da_s2_2: xr.DataArray = da_sen2.sel(band="B04", drop=True).rename("B04").squeeze()
@@ -309,7 +285,7 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
     da_s2_9: xr.DataArray = da_sen2.sel(band="B11", drop=True).rename("B11").squeeze()
     da_s2_10: xr.DataArray = da_sen2.sel(band="SCL", drop=True).rename("SCL").squeeze()
 
-    da_sen2_all: xr.Dataset = xr.merge(
+    ds_sen2: xr.Dataset = xr.merge(
         objects=[
             da_s2_0,
             da_s2_1,
@@ -325,17 +301,17 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
         ],
         join="override",
     )
+    ds_sen2.assign(time=da_sen2.time)
 
-    da_sen2_all.assign(time=da_sen2.time)
-
-    # To fix TypeError: Invalid value for attr 'spec'
-    da_sen1.attrs["spec"] = str(da_sen1.spec)
-
-    # To fix ValueError: unable to infer dtype on variable None
-    for key, val in da_sen1.coords.items():
-        if val.dtype == "object":
-            print("Deleting", key)
-            da_sen1 = da_sen1.drop_vars(names=key)
+    da_sen1: xr.DataArray = stackstac.stack(
+        items=s1_items,
+        assets=["vh", "vv"],
+        epsg=int(da_sen2.epsg),
+        bounds=da_sen2.spec.bounds,
+        resolution=resolution,
+        dtype=np.float32,
+        fill_value=np.nan,
+    )
 
     # Create xarray.Dataset datacube with VH and VV channels from SAR
     da_sen1 = stackstac.mosaic(da_sen1, dim="time")
@@ -345,93 +321,95 @@ def make_dataarrays(s2_items, s1_items, dem_items, BBOX, resolution, epsg):
 
     da_dem: xr.DataArray = stackstac.stack(
         items=dem_items,
-        epsg=epsg,
-        bounds_latlon=BBOX,  # W, S, E, N
+        epsg=int(da_sen2.epsg),
+        bounds=da_sen2.spec.bounds,
         resolution=resolution,
-        xy_coords="center",  # pixel centroid coords instead of topleft corner
         dtype=np.float32,
         fill_value=np.nan,
     )
 
-    da_dem = stackstac.mosaic(da_dem, dim="time").squeeze().rename("DEM")
+    da_dem: xr.DataArray = stackstac.mosaic(da_dem, dim="time").squeeze().rename("DEM")
 
-    # _, index = np.unique(da_dem['time'], return_index=True)  # Remove redundant time
-    # da_dem = da_dem.isel(time=index)
-
-    return da_sen2_all, ds_sen1, da_dem
-
-
-def merge_datarrays(da_sen2, da_sen1, da_dem):
-    """
-    Merge xarray DataArrays for Sentinel-2, Sentinel-1, and DEM.
-
-    Parameters:
-    - da_sen2 (xr.DataArray): xarray DataArray for Sentinel-2 data.
-    - da_sen1 (xr.DataArray): xarray DataArray for Sentinel-1 data.
-    - da_dem (xr.DataArray): xarray DataArray for DEM data.
-
-    Returns:
-    - xr.DataArray: Merged xarray DataArray.
-    """
-    # print("Platform variables (S2, S1, DEM): ", da_sen2.platform.values, da_sen1.platform.values, da_dem.platform.values)
-    # da_sen2 = da_sen2.drop(["platform", "constellation"])
-    # da_sen1 = da_sen1.drop(["platform", "constellation"])
-    # da_dem = da_dem.drop(["platform"])
-
-    da_merge = xr.merge([da_sen2, da_sen1, da_dem], compat="override")
-    print("Merged datarray: ", da_merge)
-    print(
-        "Time variables (S2, merged): ", da_sen2.time.values, da_merge.time.values
-    )  # da_sen1.time.values, da_dem.time.values
-    return da_merge
+    return ds_sen2, ds_sen1, da_dem
 
 
 def process(
-    year1, year2, aoi, resolution, cloud_cover_percentage, nodata_pixel_percentage
+    aoi,
+    start_year,
+    end_year,
+    resolution,
+    cloud_cover_percentage,
+    nodata_pixel_percentage,
 ):
     """
-    Process Sentinel-2, Sentinel-1, and DEM data for a specified time range, area of interest (AOI),
-    resolution, EPSG code, cloud cover percentage, and nodata pixel percentage.
+    Process Sentinel-2, Sentinel-1, and Copernicus DEM data for a specified
+    time range, area of interest (AOI), resolution, EPSG code, cloud cover
+    percentage, and nodata pixel percentage.
 
     Parameters:
-    - year1 (int): The starting year of the date range.
-    - year2 (int): The ending year of the date range.
-    - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of Interest (AOI).
+    - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of
+        Interest (AOI).
+    - start_year (int): The starting year of the date range.
+    - end_year (int): The ending year of the date range.
     - resolution (int): Spatial resolution.
-    - epsg (int): EPSG code for the coordinate reference system.
-    - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage for Sentinel-2 images.
-    - nodata_pixel_percentage (int): Maximum acceptable percentage of nodata pixels in Sentinel-2 images.
+    - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage
+        for Sentinel-2 images.
+    - nodata_pixel_percentage (int): Maximum acceptable percentage of nodata
+        pixels in Sentinel-2 images.
 
     Returns:
-    - xr.DataArray: Merged xarray DataArray containing processed data.
+    - xr.Dataset: Merged xarray Dataset containing processed data.
     """
-
-    date, YEAR, MONTH, DAY, CLOUD = get_conditions(year1, year2, cloud_cover_percentage)
-    week = get_week(YEAR, MONTH, DAY)
-
-    catalog, s2_items, BBOX, epsg = search_sentinel2(
-        week, aoi, cloud_cover_percentage, nodata_pixel_percentage
+    year = random.randint(start_year, end_year)
+    date_range = f"{year}-01-01/{year}-12-31"
+    catalog, s2_items, bbox = search_sentinel2(
+        date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage
     )
 
-    s1_items = search_sentinel1(BBOX, catalog, week)
+    surrounding_days = get_surrounding_days(s2_items.datetime, interval_days=3)
+    print("Searching S1 in date range", surrounding_days)
 
-    dem_items = search_dem(BBOX, catalog, epsg)
+    s1_items = search_sentinel1(bbox, catalog, surrounding_days)
 
-    da_sen2, da_sen1, da_dem = make_dataarrays(
-        s2_items, s1_items, dem_items, BBOX, resolution, epsg
+    if s1_items == False:
+        catalog, s2_items, bbox = search_sentinel2(
+            date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage
+        )
+
+        surrounding_days = get_surrounding_days(s2_items.datetime, interval_days=3)
+        print("Searching S1 in date range", surrounding_days)
+        s1_items = search_sentinel1(bbox, catalog, surrounding_days)
+
+    dem_items = search_dem(bbox, catalog)
+
+    ds_sen2, ds_sen1, da_dem = make_datasets(
+        s2_items,
+        s1_items,
+        dem_items,
+        resolution,
     )
 
-    da_merge = merge_datarrays(da_sen2, da_sen1, da_dem)
-    return da_merge
+    ds_merge = xr.merge([ds_sen2, ds_sen1, da_dem], compat="override")
+
+    return ds_merge
 
 
-if __name__ == "__main__":
-    # EXAMPLE
-    california_tile = gpd.read_file("ca.geojson")
-    sample = california_tile.sample(1)
+def main():
+    tiles = gpd.read_file("scripts/data/mgrs_sample.geojson")
+    sample = tiles.sample(1, random_state=45)
     aoi = sample.iloc[0].geometry
-    cloud_cover_percentage = 50
-    nodata_pixel_percentage = 20
+    start_year = 2017
+    end_year = 2023
+
     merged = process(
-        2017, 2023, aoi, 10, cloud_cover_percentage, nodata_pixel_percentage
-    )  # Spatial resolution of 10 metres
+        aoi,
+        start_year,
+        end_year,
+        SPATIAL_RESOLUTION,
+        CLOUD_COVER_PERCENTAGE,
+        NODATA_PIXEL_PERCENTAGE,
+    )
+    return merged
+
+
+# main()
