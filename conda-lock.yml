@@ -13,7 +13,7 @@
 version: 1
 metadata:
   content_hash:
-    linux-64: 25564fc764baf34f80245f31411fc2a1c66f7be588653d18d8fd6009a60c0530
+    linux-64: 22bc2e9a2422d6fd4a6e61ebc59185f377c94140b356cc25a594c015196184d4
   channels:
   - url: conda-forge
     used_env_vars: []
@@ -5612,7 +5612,7 @@ package:
     __cuda: ''
     __glibc: '>=2.17,<3.0.a0'
     _openmp_mutex: '>=4.5'
-    cudatoolkit: '>=11.2,<12'
+    cudatoolkit: '>=11.8,<12'
     cudnn: '>=8.8.0.121,<9.0a0'
     filelock: ''
     jinja2: ''
@@ -5633,10 +5633,10 @@ package:
     sleef: '>=3.5.1,<4.0a0'
     sympy: ''
     typing_extensions: ''
-  url: https://conda.anaconda.org/conda-forge/linux-64/pytorch-2.0.0-cuda112py311ha0492fd_304.conda
+  url: https://conda.anaconda.org/conda-forge/linux-64/pytorch-2.0.0-cuda118py311h3b8d1c1_304.conda
   hash:
-    md5: 8686f2379327ada3a7b0943184a7803e
-    sha256: ab9e35b66f20e974d18b92626c158504c7f08fd290945df26a923920b571d52e
+    md5: 923f2e4a02f8f7c91383b2be3349ada9
+    sha256: ada9af4710f51a199870b39e922cbde38a5cfa2639a69e7566e5ca9ce348a662
   category: main
   optional: false
 - name: stackstac
