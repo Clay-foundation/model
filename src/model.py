@@ -6,8 +6,7 @@ https://github.com/Lightning-AI/deep-learning-project-template
 """
 import lightning as L
 import torch
-import torchvision
-from lightly.models.modules.masked_autoencoder import MAEBackbone, MAEDecoder
+import transformers
 
 
 # %%
@@ -15,10 +14,10 @@ class MAELitModule(L.LightningModule):
     """
     Neural network for performing <task> on <dataset>.
 
-    Implemented using Lightly with Lightning 2.1.
+    Implemented using transformers with Lightning 2.1.
     """
 
-    def __init__(self, lr: float = 0.001, decoder_dim: int = 256):
+    def __init__(self, lr: float = 0.001, mask_ratio: float = 0.75):
         """
         Define layers of the <model_name> model.
 
@@ -27,7 +26,7 @@ class MAELitModule(L.LightningModule):
         |  Vision Transformer B/32  |  Masked Autoencoder decoder  |
 
         References:
-        - https://docs.lightly.ai/self-supervised-learning/examples/mae.html
+        - https://huggingface.co/docs/transformers/v4.35.2/en/model_doc/vit_mae
         - He, K., Chen, X., Xie, S., Li, Y., Dollar, P., & Girshick, R. (2022).
           Masked Autoencoders Are Scalable Vision Learners. 2022 IEEE/CVF
           Conference on Computer Vision and Pattern Recognition (CVPR),
@@ -37,8 +36,9 @@ class MAELitModule(L.LightningModule):
         ----------
         lr : float
             The learning rate for the Adam optimizer. Default is 0.001.
-        decoder_dim : int
-            Size of the decoder tokens. Default is 256.
+        mask_ratio : float
+            The ratio of the number of masked tokens in the input sequence.
+            Default is 0.75.
         """
         super().__init__()
 
@@ -46,25 +46,30 @@ class MAELitModule(L.LightningModule):
         # https://lightning.ai/docs/pytorch/2.1.0/common/lightning_module.html#save-hyperparameters
         self.save_hyperparameters(logger=True)
 
-        # Input Module (Encoder/Backbone). Vision Tranformer (ViT) B_32
-        self.vit = torchvision.models.vit_b_32(weights=None)
-        self.backbone: torch.nn.Module = MAEBackbone.from_vit(vit=self.vit)
-
-        # Output Module (Decoder/Head). Masked Autoencoder (MAE) Decoder
-        self.decoder: torch.nn.Module = MAEDecoder(
-            seq_length=self.vit.seq_length,  # 50
-            num_layers=1,
-            num_heads=16,
-            embed_input_dim=self.vit.hidden_dim,  # 768
-            hidden_dim=self.hparams.decoder_dim,  # 256
-            mlp_dim=self.hparams.decoder_dim * 4,  # 1024
-            out_dim=self.vit.patch_size**2 * 3,  # 3072
-            dropout=0,
-            attention_dropout=0,
+        # Vision Transformer Masked Autoencoder configuration
+        config_vit = transformers.ViTMAEConfig(
+            hidden_size=768,
+            num_hidden_layers=12,
+            ntermediate_size=3072,
+            hidden_act="gelu",
+            hidden_dropout_prob=0.0,
+            attention_probs_dropout_prob=0.0,
+            initializer_range=0.02,
+            layer_norm_eps=1e-12,
+            image_size=256,  # default was 224
+            patch_size=32,  # default was 16
+            num_channels=12,  # default was 3
+            qkv_bias=True,
+            decoder_num_attention_heads=16,
+            decoder_hidden_size=512,
+            decoder_num_hidden_layers=8,
+            decoder_intermediate_size=2048,
+            mask_ratio=0.75,
+            norm_pix_loss=False,
         )
 
-        # Loss functions
-        self.loss_mse = torch.nn.MSELoss(reduction="mean")
+        # Vision Tranformer (ViT) B_32 (Encoder + Decoder)
+        self.vit: torch.nn.Module = transformers.ViTMAEForPreTraining(config=config_vit)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
