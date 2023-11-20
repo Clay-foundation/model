@@ -64,30 +64,65 @@ class MAELitModule(L.LightningModule):
             decoder_hidden_size=512,
             decoder_num_hidden_layers=8,
             decoder_intermediate_size=2048,
-            mask_ratio=0.75,
+            mask_ratio=self.hparams.mask_ratio,
             norm_pix_loss=False,
         )
 
         # Vision Tranformer (ViT) B_32 (Encoder + Decoder)
         self.vit: torch.nn.Module = transformers.ViTMAEForPreTraining(config=config_vit)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> dict:
         """
         Forward pass (Inference/Prediction).
         """
-        raise NotImplementedError
+        outputs: dict = self.vit.base_model(x)
+        assert outputs.last_hidden_state.shape == torch.Size([32, 17, 768])
+        assert outputs.ids_restore.shape == torch.Size([32, 64])
+        assert outputs.mask.shape == torch.Size([32, 64])
+
+        return outputs
 
     def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
         """
         Logic for the neural network's training loop.
+
+        Reference:
+        - https://github.com/huggingface/transformers/blob/v4.35.2/src/transformers/models/vit_mae/modeling_vit_mae.py#L948-L1010
         """
-        raise NotImplementedError
+        x: torch.Tensor = batch
+        # x: torch.Tensor = torch.randn(32, 12, 256, 256)  # BCHW
+
+        # Forward encoder
+        outputs_encoder: dict = self(x)
+
+        # Forward decoder
+        outputs_decoder: dict = self.vit.decoder.forward(
+            hidden_states=outputs_encoder.last_hidden_state,
+            ids_restore=outputs_encoder.ids_restore,
+        )
+        # output shape (batch_size, num_patches, patch_size*patch_size*num_channels)
+        assert outputs_decoder.logits.shape == torch.Size([32, 64, 12288])
+
+        # Log training loss and metrics
+        loss: torch.Tensor = self.vit.forward_loss(
+            pixel_values=x, pred=outputs_decoder.logits, mask=outputs_encoder.mask
+        )
+        self.log(
+            name="train/loss",
+            value=loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
+
+        return loss
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
         """
         Logic for the neural network's validation loop.
         """
-        raise NotImplementedError
+        pass
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """
