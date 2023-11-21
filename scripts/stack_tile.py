@@ -1,6 +1,3 @@
-import sys
-
-sys.path.append("./")
 from datacube import main
 from tile import tiler
 
