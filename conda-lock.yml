@@ -13,7 +13,7 @@
 version: 1
 metadata:
   content_hash:
-    linux-64: 25f7cb7b4b17c1833ec8022e62f569258b4d75282164cf9a61a4881fe364cf7e
+    linux-64: 2fe48d7f3ac32da38be1e5b44bfdfbd533432bec8390b53ca997676e7bccbf4f
   channels:
   - url: conda-forge
     used_env_vars: []
@@ -2019,6 +2019,18 @@ package:
   hash:
     md5: e826b71bf3dc8c91ee097663e2bcface
     sha256: da765eabe27d8adec5bcce30ea1a0b9308d01640089d039f06bef2cc5ef63f46
+  category: main
+  optional: false
+- name: munch
+  version: 4.0.0
+  manager: conda
+  platform: linux-64
+  dependencies:
+    python: '>=3.8'
+  url: https://conda.anaconda.org/conda-forge/noarch/munch-4.0.0-pyhd8ed1ab_0.conda
+  hash:
+    md5: 376b32e8f9d3eacbd625f37d39bd507d
+    sha256: 093020ae2deb6c468120111a54909e1c576d70dfea6bc0eec5093e36d2fb8ff8
   category: main
   optional: false
 - name: nest-asyncio
@@ -4504,6 +4516,26 @@ package:
     sha256: e067f3da3466f310ff47fe8dc5310dc7c57fcc17094efde0374fd3e91138dc7f
   category: main
   optional: false
+- name: gdal
+  version: 3.7.3
+  manager: conda
+  platform: linux-64
+  dependencies:
+    hdf5: '>=1.14.2,<1.14.3.0a0'
+    libgcc-ng: '>=12'
+    libgdal: 3.7.3
+    libstdcxx-ng: '>=12'
+    libxml2: '>=2.11.6,<2.12.0a0'
+    numpy: '>=1.23.5,<2.0a0'
+    openssl: '>=3.1.4,<4.0a0'
+    python: '>=3.11,<3.12.0a0'
+    python_abi: 3.11.*
+  url: https://conda.anaconda.org/conda-forge/linux-64/gdal-3.7.3-py311h815a124_6.conda
+  hash:
+    md5: f92a59621633603d7617c3c5305dc28d
+    sha256: a248a8b4439bb5a0bd22842ad7dc1177b3acda538d5c011277c4c625909ab8bb
+  category: main
+  optional: false
 - name: geopandas-base
   version: 0.14.1
   manager: conda
@@ -4752,6 +4784,33 @@ package:
   hash:
     md5: 22209054c003c84cdabcc74d5733c501
     sha256: c6fc314161263f031eb23ac53868e0d9b0242efe669e176901effdac4bd87376
+  category: main
+  optional: false
+- name: fiona
+  version: 1.9.5
+  manager: conda
+  platform: linux-64
+  dependencies:
+    attrs: '>=17'
+    click: '>=4.0'
+    click-plugins: '>=1.0'
+    cligj: '>=0.5'
+    gdal: ''
+    importlib-metadata: ''
+    libgcc-ng: '>=12'
+    libgdal: '>=3.7.2,<3.8.0a0'
+    libstdcxx-ng: '>=12'
+    munch: ''
+    numpy: '>=1.23.5,<2.0a0'
+    python: '>=3.11,<3.12.0a0'
+    python_abi: 3.11.*
+    setuptools: ''
+    shapely: ''
+    six: '>=1.7'
+  url: https://conda.anaconda.org/conda-forge/linux-64/fiona-1.9.5-py311hbac4ec9_0.conda
+  hash:
+    md5: 786d3808394b1bdfd3f41f2e2c67279e
+    sha256: 529600df1964a94c7745b87e31f432ddc03c7b5fd652c193c594c995e1964c6b
   category: main
   optional: false
 - name: ipython

@@ -4,6 +4,7 @@ channels:
   - nodefaults
 dependencies:
   - conda-lock~=2.5.1
+  - fiona~=1.9.5
   - geopandas-base~=0.14.1
   - jupyterlab~=4.0.7
   - jsonargparse~=4.27.0
