@@ -13,7 +13,7 @@
 version: 1
 metadata:
   content_hash:
-    linux-64: 2fe48d7f3ac32da38be1e5b44bfdfbd533432bec8390b53ca997676e7bccbf4f
+    linux-64: 763f0214360481d085e400ba5da08507e1d7db283456c3347ec445508032299a
   channels:
   - url: conda-forge
     used_env_vars: []
@@ -4119,6 +4119,23 @@ package:
     sha256: b71784b6c24d2320b2f796d074e75e7dd1be7b7fc0f719c5cf3a582270b368d6
   category: main
   optional: false
+- name: h5py
+  version: 3.10.0
+  manager: conda
+  platform: linux-64
+  dependencies:
+    cached-property: ''
+    hdf5: '>=1.14.2,<1.14.3.0a0'
+    libgcc-ng: '>=12'
+    numpy: '>=1.23.5,<2.0a0'
+    python: '>=3.11,<3.12.0a0'
+    python_abi: 3.11.*
+  url: https://conda.anaconda.org/conda-forge/linux-64/h5py-3.10.0-nompi_py311h3839ddf_100.conda
+  hash:
+    md5: 0ff0b32bd4582a002b4a55c65c08bb00
+    sha256: 6277534dd3c0c2c9d951c79da1ceccdaca39af50d395734fb17e74d0ec5715b8
+  category: main
+  optional: false
 - name: isoduration
   version: 20.11.0
   manager: conda
@@ -4550,6 +4567,20 @@ package:
   hash:
     md5: d65c6f458bfdaa181f388d91e858ea67
     sha256: c813004bb84e50de19f599b188719e40106c858c7da22e504b29ce66e5043361
+  category: main
+  optional: false
+- name: h5netcdf
+  version: 1.3.0
+  manager: conda
+  platform: linux-64
+  dependencies:
+    h5py: ''
+    packaging: ''
+    python: '>=3.9'
+  url: https://conda.anaconda.org/conda-forge/noarch/h5netcdf-1.3.0-pyhd8ed1ab_0.conda
+  hash:
+    md5: 6890388078d9a3a20ef793c5ffb169ed
+    sha256: 0195b109e6b18d7efa06124d268fd5dd426f67e2feaee50a358211ba4a4b219b
   category: main
   optional: false
 - name: jsonargparse

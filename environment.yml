@@ -6,6 +6,7 @@ dependencies:
   - conda-lock~=2.5.1
   - fiona~=1.9.5
   - geopandas-base~=0.14.1
+  - h5netcdf~=1.3.0
   - jupyterlab~=4.0.7
   - jsonargparse~=4.27.0
   - lightning~=2.1.0
