@@ -9,7 +9,7 @@ import torch
 # %%
 class RandomDataset(torch.utils.data.Dataset):
     """
-    Torch Dataset that returns tensors of size (12, 256, 256) with random
+    Torch Dataset that returns tensors of size (13, 256, 256) with random
     values.
     """
 
@@ -20,7 +20,7 @@ class RandomDataset(torch.utils.data.Dataset):
         return 2048
 
     def __getitem__(self, idx: int):
-        return torch.randn(12, 256, 256)
+        return torch.randn(13, 256, 256)
 
 
 class BaseDataModule(L.LightningDataModule):

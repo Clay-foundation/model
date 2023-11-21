@@ -58,7 +58,7 @@ class MAELitModule(L.LightningModule):
             layer_norm_eps=1e-12,
             image_size=256,  # default was 224
             patch_size=32,  # default was 16
-            num_channels=12,  # default was 3
+            num_channels=13,  # default was 3
             qkv_bias=True,
             decoder_num_attention_heads=16,
             decoder_hidden_size=512,
@@ -90,7 +90,7 @@ class MAELitModule(L.LightningModule):
         - https://github.com/huggingface/transformers/blob/v4.35.2/src/transformers/models/vit_mae/modeling_vit_mae.py#L948-L1010
         """
         x: torch.Tensor = batch
-        # x: torch.Tensor = torch.randn(32, 12, 256, 256)  # BCHW
+        # x: torch.Tensor = torch.randn(32, 13, 256, 256)  # BCHW
 
         # Forward encoder
         outputs_encoder: dict = self(x)
@@ -101,7 +101,7 @@ class MAELitModule(L.LightningModule):
             ids_restore=outputs_encoder.ids_restore,
         )
         # output shape (batch_size, num_patches, patch_size*patch_size*num_channels)
-        assert outputs_decoder.logits.shape == torch.Size([32, 64, 12288])
+        assert outputs_decoder.logits.shape == torch.Size([32, 64, 13312])
 
         # Log training loss and metrics
         loss: torch.Tensor = self.vit.forward_loss(
@@ -113,7 +113,7 @@ class MAELitModule(L.LightningModule):
             on_step=True,
             on_epoch=True,
             prog_bar=True,
-            logger=True,
+            # logger=True,
         )
 
         return loss
