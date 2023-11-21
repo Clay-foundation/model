@@ -10,16 +10,16 @@ import transformers
 
 
 # %%
-class MAELitModule(L.LightningModule):
+class ViTLitModule(L.LightningModule):
     """
-    Neural network for performing <task> on <dataset>.
+    Vision Transformer neural network trained using a Masked Autoencoder setup.
 
     Implemented using transformers with Lightning 2.1.
     """
 
     def __init__(self, lr: float = 0.001, mask_ratio: float = 0.75):
         """
-        Define layers of the <model_name> model.
+        Define layers of the Vision Transformer model.
 
         |      Encoder/Backbone     |        Decoder/Head          |
         |---------------------------|------------------------------|

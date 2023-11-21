@@ -8,7 +8,7 @@ This folder contains several LightningDataModule and LightningModule classes.
 
 ## LightningModule (model architecture)
 
-- model.py - Base neural network model architecture
+- model_vit.py - Vision Transformer neural network model architecture
 
 ## References
 

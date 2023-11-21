@@ -12,7 +12,7 @@ References:
 from lightning.pytorch.cli import ArgsType, LightningCLI
 
 from src.datamodule import BaseDataModule
-from src.model import MAELitModule
+from src.model_vit import ViTLitModule
 
 
 # %%
@@ -23,10 +23,10 @@ def cli_main(
     args: ArgsType = None,
 ):
     """
-    Command-line inteface to run MAELitModule with BaseDataModule.
+    Command-line inteface to run ViTLitModule with BaseDataModule.
     """
     cli = LightningCLI(
-        model_class=MAELitModule,
+        model_class=ViTLitModule,
         datamodule_class=BaseDataModule,
         save_config_callback=save_config_callback,
         seed_everything_default=seed_everything_default,
