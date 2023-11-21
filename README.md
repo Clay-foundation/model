@@ -45,7 +45,7 @@ Finally, double-check that the libraries have been installed.
 This is for those who want full reproducibility of the virtual environment.
 Create a virtual environment with just Python and conda-lock installed first.
 
-    mamba create --name claymodel python=3.11 conda-lock=2.4.2
+    mamba create --name claymodel python=3.11 conda-lock=2.5.1
     mamba activate claymodel
 
 Generate a unified [`conda-lock.yml`](https://github.com/conda/conda-lock) file
