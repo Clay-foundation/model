@@ -4,6 +4,7 @@ channels:
   - nodefaults
 dependencies:
   - conda-lock~=2.4.2
+  - einops~=0.7.0
   - geopandas-base~=0.14.1
   - jupyterlab~=4.0.7
   - jsonargparse~=4.27.0
@@ -12,4 +13,5 @@ dependencies:
   - python=3.11
   - stackstac~=0.5.0
   - typeshed-client~=2.4.0
+  - vit-pytorch~=1.6.4
   - zarr~=2.16.1
