@@ -21,7 +21,8 @@ Functions:
       Search for DEM items within a given bounding box.
 - make_datasets(s2_items, s1_items, dem_items, resolution):
       Create xarray Datasets for Sentinel-2, Sentinel-1, and DEM data.
-- process(aoi, start_year, end_year, resolution, cloud_cover_percentage, nodata_pixel_percentage):
+- process(aoi, start_year, end_year, resolution, cloud_cover_percentage,
+          nodata_pixel_percentage):
       Process Sentinel-2, Sentinel-1, and DEM data for a specified time range,
       area of interest, and resolution.
 """
@@ -209,13 +210,11 @@ def search_sentinel1(bbox, catalog, date_range):
                 intersection = row.geometry
                 selected_item_ids.append(row.id)
                 intersection = intersection.intersection(row.geometry)
-            elif (
-                orbit == most_overlap_orbit and intersection.covers(geom_bbox) == False
-            ):
+            elif orbit == most_overlap_orbit and not intersection.covers(geom_bbox):
                 intersection = row.geometry
                 selected_item_ids.append(row.id)
                 intersection = intersection.intersection(row.geometry)
-            elif orbit == most_overlap_orbit and intersection.covers(geom_bbox) == True:
+            elif orbit == most_overlap_orbit and intersection.covers(geom_bbox):
                 # Stop adding scenes when the bbox is fully covered.
                 break
             else:
@@ -371,7 +370,7 @@ def process(
 
     s1_items = search_sentinel1(bbox, catalog, surrounding_days)
 
-    if s1_items == False:
+    if not s1_items:
         catalog, s2_items, bbox = search_sentinel2(
             date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage
         )

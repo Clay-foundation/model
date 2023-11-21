@@ -1,11 +1,13 @@
 """
 Tiling module for multi-dimensional datacubes.
 
-This script defines a tiling function for processing multi-dimensional imagery stacks into smaller tiles,
-while filtering out tiles with high cloud coverage or no-data pixels.
+This script defines a tiling function for processing multi-dimensional imagery
+stacks into smaller tiles, while filtering out tiles with high cloud coverage
+or no-data pixels.
 
-It includes functions to filter tiles based on cloud coverage and no-data pixels,
-and a tiling function that generates smaller tiles from the input stack.
+It includes functions to filter tiles based on cloud coverage and no-data
+pixels, and a tiling function that generates smaller tiles from the input
+stack.
 """
 
 
@@ -43,7 +45,8 @@ def filter_clouds_nodata(tile):
 
 def tiler(stack):
     """
-    Function to tile a multi-dimensional imagery stack while filtering out tiles with high cloud coverage or no-data pixels.
+    Function to tile a multi-dimensional imagery stack while filtering out
+    tiles with high cloud coverage or no-data pixels.
 
     Args:
     - stack (xarray.Dataset): The input multi-dimensional imagery stack.
@@ -71,7 +74,8 @@ def tiler(stack):
     # Iterate through each chunk of x and y dimensions and create tiles
     for y_idx in range(num_y_tiles + 1 if remainder_y > 0 else num_y_tiles):
         for x_idx in range(num_x_tiles + 1 if remainder_x > 0 else num_x_tiles):
-            # Calculate the start and end indices for x and y dimensions for the current tile
+            # Calculate the start and end indices
+            # for x and y dimensions of the current tile
             x_start = x_idx * TILE_SIZE
             y_start = y_idx * TILE_SIZE
             x_end = min((x_idx + 1) * TILE_SIZE, stack.x.size)
@@ -95,7 +99,7 @@ def tiler(stack):
                 )
                 """
                 # Check for clouds and nodata
-                if filter_clouds_nodata(tile) == True:
+                if filter_clouds_nodata(tile):
                     # Append the tile to the list
                     tiles.append(tile)
     # print(f"{bad_tile_count} tiles removed due to clouds or nodata")
