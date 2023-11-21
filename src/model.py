@@ -76,9 +76,11 @@ class MAELitModule(L.LightningModule):
         Forward pass (Inference/Prediction).
         """
         outputs: dict = self.vit.base_model(x)
-        assert outputs.last_hidden_state.shape == torch.Size([32, 17, 768])
-        assert outputs.ids_restore.shape == torch.Size([32, 64])
-        assert outputs.mask.shape == torch.Size([32, 64])
+
+        self.B = x.shape[0]
+        assert outputs.last_hidden_state.shape == torch.Size([self.B, 17, 768])
+        assert outputs.ids_restore.shape == torch.Size([self.B, 64])
+        assert outputs.mask.shape == torch.Size([self.B, 64])
 
         return outputs
 
@@ -101,7 +103,7 @@ class MAELitModule(L.LightningModule):
             ids_restore=outputs_encoder.ids_restore,
         )
         # output shape (batch_size, num_patches, patch_size*patch_size*num_channels)
-        assert outputs_decoder.logits.shape == torch.Size([32, 64, 13312])
+        assert outputs_decoder.logits.shape == torch.Size([self.B, 64, 13312])
 
         # Log training loss and metrics
         loss: torch.Tensor = self.vit.forward_loss(
