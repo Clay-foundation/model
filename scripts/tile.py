@@ -8,21 +8,19 @@ or no-data pixels.
 It includes functions to filter tiles based on cloud coverage and no-data pixels,
 and a tiling function that generates smaller tiles from the input stack.
 """
-import os
 import subprocess
 import tempfile
 
-import numpy as np
 import rasterio
 import rioxarray  # noqa: F401
+import xarray as xr
 from rasterio.enums import ColorInterp
 
 NODATA = 0
 TILE_SIZE = 256
 PIXELS_PER_TILE = TILE_SIZE * TILE_SIZE
-BAD_PIXEL_MAX_PERCENTAGE = 0.9
+BAD_PIXEL_MAX_PERCENTAGE = 0.3
 SCL_FILTER = [0, 1, 3, 8, 9, 10]
-EPSILON = 0.1
 VERSION = "01"
 
 
@@ -63,10 +61,8 @@ def tiler(stack, date, mgrs, bucket):
     - bucket(str): AWS S3 bucket to write tiles to
     """
     # Calculate the number of full tiles in x and y directions
-    num_x_tiles = stack.x.size // TILE_SIZE
-    num_y_tiles = stack.y.size // TILE_SIZE
-
-    bucket = os.environ.get("TARGET_BUCKET", "whis-imagery")
+    num_x_tiles = stack[0].x.size // TILE_SIZE
+    num_y_tiles = stack[0].y.size // TILE_SIZE
 
     counter = 0
     with tempfile.TemporaryDirectory() as dir:
@@ -74,9 +70,6 @@ def tiler(stack, date, mgrs, bucket):
         # Iterate through each chunk of x and y dimensions and create tiles
         for y_idx in range(num_y_tiles):
             for x_idx in range(num_x_tiles):
-                counter += 1
-                print(f"Counted {counter} tiles")
-
                 # Calculate the start and end indices for x and y dimensions
                 # for the current tile
                 x_start = x_idx * TILE_SIZE
@@ -85,21 +78,19 @@ def tiler(stack, date, mgrs, bucket):
                 y_end = y_start + TILE_SIZE
 
                 # Select the subset of data for the current tile
-                tile = stack.sel(
-                    x=slice(
-                        stack.x.values[x_start],
-                        stack.x.values[x_end]
-                        + np.sign(stack.rio.transform()[4]) * EPSILON,
-                    ),
-                    y=slice(
-                        stack.y.values[y_start],
-                        stack.y.values[y_end]
-                        + np.sign(stack.rio.transform()[0]) * EPSILON,
-                    ),
-                )
+                print("A")
+                parts = [part[:, y_start:y_end, x_start:x_end] for part in stack]
 
+                # Only concat here to save memory, it converts S2 data to float
+                print("B")
+                tile = xr.concat(parts, dim="band").rename("tile")
+
+                print("C")
                 if not filter_clouds_nodata(tile):
                     continue
+
+                counter += 1
+                print(f"Counted {counter} tiles")
 
                 tile = tile.drop_sel(band="SCL")
 
