@@ -408,11 +408,16 @@ def convert_attrs_and_coords_objects_to_str(data):
     help="Index of MGRS tile from sample file that should be processed",
 )
 @click.option(
+    "--bucket",
+    required=True,
+    help="Specify the bucket for where to write the data.",
+)
+@click.option(
     "--subset",
     required=False,
     help="For debugging, subset x and y to this pixel window.",
 )
-def main(index, subset):
+def main(index, subset, bucket):
     print("Starting algorithm", index)
     index = int(index)
     tiles = gpd.read_file("mgrs_sample.geojson")
@@ -437,7 +442,7 @@ def main(index, subset):
         )
     merged = merged.compute()
 
-    tiler(merged, date, mgrs)
+    tiler(merged, date, mgrs, bucket)
 
 
 if __name__ == "__main__":

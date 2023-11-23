@@ -51,7 +51,7 @@ def filter_clouds_nodata(tile):
     return True  # If both conditions pass
 
 
-def tiler(stack, date, mgrs):
+def tiler(stack, date, mgrs, bucket):
     """
     Function to tile a multi-dimensional imagery stack while filtering out
     tiles with high cloud coverage or no-data pixels.
@@ -59,7 +59,8 @@ def tiler(stack, date, mgrs):
     Args:
     - stack (xarray.Dataset): The input multi-dimensional imagery stack.
     - date (str): Date string yyyy-mm-dd
-    - mgrs (Str): MGRS Tile id
+    - mgrs (str): MGRS Tile id
+    - bucket(str): AWS S3 bucket to write tiles to
     """
     # Calculate the number of full tiles in x and y directions
     num_x_tiles = stack.x.size // TILE_SIZE
@@ -115,12 +116,8 @@ def tiler(stack, date, mgrs):
                 with rasterio.open(name, "r+") as rst:
                     rst.colorinterp = color
 
-        import shutil
-
-        shutil.copytree(dir, "/home/tam/Desktop/claytiles", dirs_exist_ok=True)
-
-        print(f"Syncing {dir} with s3://{bucket}/clay/{VERSION}/{mgrs}/{date}")
+        print(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
         subprocess.run(
-            ["aws", "s3", "sync", dir, f"s3://{bucket}/clay/{VERSION}/{mgrs}/{date}"],
+            ["aws", "s3", "sync", dir, f"s3://{bucket}/{VERSION}/{mgrs}/{date}"],
             check=True,
         )
