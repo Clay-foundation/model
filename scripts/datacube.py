@@ -420,7 +420,7 @@ def convert_attrs_and_coords_objects_to_str(data):
 def main(index, subset, bucket):
     print("Starting algorithm", index)
     index = int(index)
-    tiles = gpd.read_file("mgrs_sample.geojson")
+    tiles = gpd.read_file("mgrs_sample.gpkg")
     tile = tiles.iloc[index]
     start_year = 2017
     end_year = 2023
