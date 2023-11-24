@@ -95,7 +95,9 @@ More options can be found using `python trainer.py fit --help`, or at the
 
 ### Running the datacube pipeline
 
-How to run the data pipeline on AWS Batch Spot instances using a [fetch-and-run](https://aws.amazon.com/blogs/compute/creating-a-simple-fetch-and-run-aws-batch-job/) approach.
+How to run the data pipeline on AWS Batch Spot instances using
+a [fetch-and-run](https://aws.amazon.com/blogs/compute/creating-a-simple-fetch-and-run-aws-batch-job/)
+approach.
 
 #### Prepare docker image in ECR
 
@@ -124,8 +126,8 @@ for now the individual submissions are simpler and failures are easier to track.
 
 #### Create ZIP file with the package to execute
 
-Package the model and the inference script into a zip file. The `datacube.py` script is the one
-that will be executed on the instances.
+Package the model and the inference script into a zip file. The `datacube.py`
+script is the one that will be executed on the instances.
 
 Put the scripts in a zip file and upload the zip package into S3 so that
 the batch fetch and run can use it.
@@ -138,8 +140,5 @@ aws s3api put-object --bucket clay-fetch-and-run-zip --key "batch-fetch-and-run.
 
 #### Submit job
 
-We can now submit a batch job to run the pipeline.
-
-```
-aws batch submit-job --region us-east-1 --cli-input-json file://batch/job.json
-```
+We can now submit a batch job to run the pipeline. The `submit.py` file
+provides an example on how to sumbit jobs in python.
