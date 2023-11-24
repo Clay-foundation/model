@@ -78,19 +78,17 @@ def tiler(stack, date, mgrs, bucket):
                 y_end = y_start + TILE_SIZE
 
                 # Select the subset of data for the current tile
-                print("A")
                 parts = [part[:, y_start:y_end, x_start:x_end] for part in stack]
 
                 # Only concat here to save memory, it converts S2 data to float
-                print("B")
                 tile = xr.concat(parts, dim="band").rename("tile")
 
-                print("C")
                 if not filter_clouds_nodata(tile):
                     continue
 
                 counter += 1
-                print(f"Counted {counter} tiles")
+                if counter % 100 == 0:
+                    print(f"Counted {counter} tiles")
 
                 tile = tile.drop_sel(band="SCL")
 

@@ -414,7 +414,7 @@ def convert_attrs_and_coords_objects_to_str(data):
 @click.option(
     "--subset",
     required=False,
-    default=None,
+    default="1000,1000,2000,2000",
     help="For debugging, subset x and y to this pixel window.",
 )
 def main(index, subset, bucket):
