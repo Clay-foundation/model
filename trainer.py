@@ -11,7 +11,7 @@ References:
 """
 from lightning.pytorch.cli import ArgsType, LightningCLI
 
-from src.datamodule import BaseDataModule
+from src.datamodule import GeoTIFFDataPipeModule
 from src.model_vit import ViTLitModule
 
 
@@ -27,7 +27,7 @@ def cli_main(
     """
     cli = LightningCLI(
         model_class=ViTLitModule,
-        datamodule_class=BaseDataModule,
+        datamodule_class=GeoTIFFDataPipeModule,
         save_config_callback=save_config_callback,
         seed_everything_default=seed_everything_default,
         trainer_defaults=trainer_defaults,
