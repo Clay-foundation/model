@@ -13,7 +13,7 @@
 version: 1
 metadata:
   content_hash:
-    linux-64: 236c8d893324750c2fa101feb8777197e44eaebbdf3ca40815a0776206ae5163
+    linux-64: 6afb116b65c21b9aeb1ec44ad38f4aaa6738d45a20745cdb1ef9dfce20a6d67f
   channels:
   - url: conda-forge
     used_env_vars: []
@@ -4263,6 +4263,20 @@ package:
     sha256: a1ed1a094dd0d1b94a09ed85c283a0eb28943f2e6f22161fb45e128d35229738
   category: main
   optional: false
+- name: pip
+  version: 23.3.1
+  manager: conda
+  platform: linux-64
+  dependencies:
+    python: '>=3.7'
+    setuptools: ''
+    wheel: ''
+  url: https://conda.anaconda.org/conda-forge/noarch/pip-23.3.1-pyhd8ed1ab_0.conda
+  hash:
+    md5: 2400c0b86889f43aa52067161e1fb108
+    sha256: 435829a03e1c6009f013f29bb83de8b876c388820bf8cf69a7baeec25f6a3563
+  category: main
+  optional: false
 - name: pixman
   version: 0.42.2
   manager: conda
@@ -6023,6 +6037,18 @@ package:
     sha256: 9453cd9e0642986c5bb4e4ab2ddbf5ed8765faa94701fcfabed2964da76097cf
   category: main
   optional: false
+- name: wheel
+  version: 0.41.3
+  manager: conda
+  platform: linux-64
+  dependencies:
+    python: '>=3.7'
+  url: https://conda.anaconda.org/conda-forge/noarch/wheel-0.41.3-pyhd8ed1ab_0.conda
+  hash:
+    md5: 3fc026b9c87d091c4b34a6c997324ae8
+    sha256: 84c3b57fba778add2bd47b7cc70e86f746d2c55549ffd2ccb6f3d6bf7c94d21d
+  category: main
+  optional: false
 - name: xarray
   version: 2023.11.0
   manager: conda
@@ -6315,5 +6341,18 @@ package:
   hash:
     md5: 04b88013080254850d6c01ed54810589
     sha256: 607cbeb1a533be98ba96cf5cdf0ddbb101c78019f1fda063261871dad6248609
+  category: main
+  optional: false
+- name: torchdata
+  version: 0.7.1
+  manager: pip
+  platform: linux-64
+  dependencies:
+    urllib3: '>=1.25'
+    requests: '*'
+    torch: '>=2'
+  url: https://files.pythonhosted.org/packages/c1/8d/b17138a9ad7e47dd602587dbcc142bd98374e0c16c0806c2026d8db54242/torchdata-0.7.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  hash:
+    sha256: d256535648dfb94d1226f233768c6798d1841edfdbf0a09b2115e6cbbda614f9
   category: main
   optional: false
