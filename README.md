@@ -52,7 +52,7 @@ Generate a unified [`conda-lock.yml`](https://github.com/conda/conda-lock) file
 based on the dependency specification in `environment.yml`. Use only when
 creating a new `conda-lock.yml` file or refreshing an existing one.
 
-    conda-lock lock --mamba --file environment.yml --platform linux-64 --with-cuda=11.8
+    conda-lock lock --mamba --file environment.yml --platform linux-64 --with-cuda=12.0
 
 Installing/Updating a virtual environment from a lockile. Use this to sync your
 dependencies to the exact versions in the `conda-lock.yml` file.
