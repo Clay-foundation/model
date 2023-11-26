@@ -30,7 +30,11 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
     Uses torchdata.
     """
 
-    def __init__(self, batch_size: int = 32):
+    def __init__(
+        self,
+        batch_size: int = 32,
+        num_workers: int = 8,
+    ):
         """
         Go from datacubes to 256x256 chips!
 
@@ -38,6 +42,9 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
         ----------
         batch_size : int
             Size of each mini-batch. Default is 32.
+        num_workers : int
+            How many subprocesses to use for data loading. 0 means that the
+            data will be loaded in the main process. Default is 8.
 
         Returns
         -------
@@ -46,6 +53,7 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
         """
         super().__init__()
         self.batch_size: int = batch_size
+        self.num_workers: int = num_workers
 
     def setup(self, stage: str | None = None):
         """
@@ -78,6 +86,7 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
         return torch.utils.data.DataLoader(
             dataset=self.datapipe_train,
             batch_size=None,  # handled in datapipe already
+            num_workers=self.num_workers,
         )
 
     def val_dataloader(self) -> torch.utils.data.DataLoader:
@@ -87,4 +96,5 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
         return torch.utils.data.DataLoader(
             dataset=self.datapipe_val,
             batch_size=None,  # handled in datapipe already
+            num_workers=self.num_workers,
         )
