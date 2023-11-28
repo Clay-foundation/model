@@ -32,6 +32,7 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
 
     def __init__(
         self,
+        data_path: str = "data/",
         batch_size: int = 32,
         num_workers: int = 8,
     ):
@@ -40,6 +41,9 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
 
         Parameters
         ----------
+        data_path : str
+            Path to the data folder where the GeoTIFF files are stored. Default
+            is 'data/'.
         batch_size : int
             Size of each mini-batch. Default is 32.
         num_workers : int
@@ -52,6 +56,7 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
             A torch DataPipe that can be passed into a torch DataLoader.
         """
         super().__init__()
+        self.data_path: str = data_path
         self.batch_size: int = batch_size
         self.num_workers: int = num_workers
 
@@ -62,13 +67,13 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
         """
         # Step 1 - Get list of GeoTIFF filepaths from data/ folder
         dp_paths = torchdata.datapipes.iter.FileLister(
-            root="data/", masks="*.tif", length=1515
+            root=self.data_path, masks="*.tif", recursive=True, length=423
         )
 
-        # Step 2 - Split GeoTIFF chips into train/val sets
+        # Step 2 - Split GeoTIFF chips into train/val sets (80%/20%)
         # https://pytorch.org/data/0.7/generated/torchdata.datapipes.iter.RandomSplitter.html
         dp_train, dp_val = dp_paths.random_split(
-            weights={"train": 0.8, "validation": 0.2}, seed=42
+            weights={"train": 0.8, "validation": 0.2}, total_length=423, seed=42
         )
 
         # Step 3 - Read GeoTIFF into numpy.ndarray, batch and convert to torch.Tensor
