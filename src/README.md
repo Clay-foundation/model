@@ -4,7 +4,7 @@ This folder contains several LightningDataModule and LightningModule classes.
 
 ## DataModules (data pipeline)
 
-- datamodule.py - Base data pipeline to read in Earth Observation chips
+- datamodule.py - Data pipeline to read in Earth Observation chips from GeoTIFF files
 
 ## LightningModule (model architecture)
 
