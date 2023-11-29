@@ -103,3 +103,13 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
             batch_size=None,  # handled in datapipe already
             num_workers=self.num_workers,
         )
+
+    def predict_dataloader(self) -> torch.utils.data.DataLoader:
+        """
+        Loads the data used in the prediction loop.
+        """
+        return torch.utils.data.DataLoader(
+            dataset=self.datapipe_val,
+            batch_size=None,  # handled in datapipe already
+            num_workers=self.num_workers,
+        )

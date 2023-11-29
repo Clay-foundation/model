@@ -4,7 +4,10 @@ Model architecture code.
 Code structure adapted from Lightning project seed at
 https://github.com/Lightning-AI/deep-learning-project-template
 """
+import os
+
 import lightning as L
+import numpy as np
 import torch
 import transformers
 
@@ -125,6 +128,31 @@ class ViTLitModule(L.LightningModule):
         Logic for the neural network's validation loop.
         """
         pass
+
+    def predict_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+        """
+        Logic for the neural network's prediction loop.
+        """
+        x: torch.Tensor = batch
+        # x: torch.Tensor = torch.randn(32, 13, 256, 256)  # BCHW
+
+        # Forward encoder
+        outputs_encoder: dict = self(x)
+
+        # Get embeddings generated from encoder
+        embeddings: torch.Tensor = outputs_encoder.last_hidden_state
+        assert embeddings.shape == torch.Size(
+            [self.B, 17, 768]  # (batch_size, sequence_length, hidden_size)
+        )
+
+        # Save embeddings in npy format
+        outfolder: str = f"{self.trainer.default_root_dir}/data/embeddings"
+        os.makedirs(name=outfolder, exist_ok=True)
+        outfile = f"{outfolder}/embedding_{batch_idx}.npy"
+        np.save(file=outfile, arr=embeddings.cpu())
+        print(f"Saved embeddings of shape {tuple(embeddings.shape)} to {outfile}")
+
+        return embeddings
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """
