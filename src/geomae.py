@@ -524,13 +524,15 @@ class GeoMAE(nn.Module):
             p2=self.patch_size,
         )  # [B C L PP]
 
-        loss = (patches - pixels) ** 2  # loss per patch
-        loss = reduce(loss, "B C L PP -> B C L", reduction="mean")  # loss per group
+        loss = (patches - pixels) ** 2  # loss per pixel
+        loss = reduce(loss, "B C L PP -> B C L", reduction="mean")  # loss per patch
 
         # mask out the loss for unmasked patches
         actual_loss, masked_patches_in_group = 0.0, 0.0
         for i, (name, group) in enumerate(self.band_groups.items()):
-            group_loss = reduce(loss[:, group, :], "B G L -> B L", "mean")  # (B, L)
+            group_loss = reduce(
+                loss[:, group, :], "B G L -> B L", "mean"
+            )  # (B, L) - loss per group
             actual_loss += (
                 group_loss * masked_matrix[:, i]
             ).sum()  # (B, L) * (B, L) -> (B, L) -> (B) -> scalar
