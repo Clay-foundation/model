@@ -81,9 +81,6 @@ class ViTLitModule(L.LightningModule):
         outputs: dict = self.vit.base_model(x)
 
         self.B = x.shape[0]
-        assert outputs.last_hidden_state.shape == torch.Size([self.B, 17, 768])
-        assert outputs.ids_restore.shape == torch.Size([self.B, 64])
-        assert outputs.mask.shape == torch.Size([self.B, 64])
 
         return outputs
 
@@ -99,6 +96,9 @@ class ViTLitModule(L.LightningModule):
 
         # Forward encoder
         outputs_encoder: dict = self(x)
+        assert outputs_encoder.last_hidden_state.shape == torch.Size([self.B, 17, 768])
+        assert outputs_encoder.ids_restore.shape == torch.Size([self.B, 64])
+        assert outputs_encoder.mask.shape == torch.Size([self.B, 64])
 
         # Forward decoder
         outputs_decoder: dict = self.vit.decoder.forward(
@@ -137,12 +137,13 @@ class ViTLitModule(L.LightningModule):
         # x: torch.Tensor = torch.randn(32, 13, 256, 256)  # BCHW
 
         # Forward encoder
+        self.vit.config.mask_ratio = 0  # disable masking
         outputs_encoder: dict = self(x)
 
         # Get embeddings generated from encoder
         embeddings: torch.Tensor = outputs_encoder.last_hidden_state
         assert embeddings.shape == torch.Size(
-            [self.B, 17, 768]  # (batch_size, sequence_length, hidden_size)
+            [self.B, 65, 768]  # (batch_size, sequence_length, hidden_size)
         )
 
         # Save embeddings in npy format
