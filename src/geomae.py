@@ -30,23 +30,17 @@ class Patchify(nn.Module):
 class Encoder(nn.Module):
     def __init__(
         self,
-        mask_ratio=0.75,
-        image_size=256,
-        patch_size=32,
-        dim=128,
-        depth=8,
-        heads=8,
-        dim_head=64,
-        bands=12,
-        band_groups={
-            "rgb": (2, 3, 4),
-            "nir": (0, 1),
-            "swir": (5, 7, 8),
-            "sar": (6, 9),
-            "dem": (10, 11),
-        },
-        dropout=0.0,
-        emb_dropout=0.0,
+        mask_ratio,
+        image_size,
+        patch_size,
+        dim,
+        depth,
+        heads,
+        dim_head,
+        bands,
+        band_groups,
+        dropout,
+        emb_dropout,
     ):
         super().__init__()
         assert (
@@ -67,8 +61,9 @@ class Encoder(nn.Module):
         # Split the embedding dimensions between spatial & band patches equally
         pos_dim = band_dim = dim // 2
 
+        self.cube_norm = nn.BatchNorm2d(bands)
         self.latlon_embedding = nn.Linear(2, dim)
-        self.time_embedding = nn.Linear(2, dim)
+        self.time_embedding = nn.Linear(3, dim)
         self.patch_embedding = nn.ModuleDict(
             {
                 name: Patchify(len(bands), dim, patch_size)
@@ -126,12 +121,18 @@ class Encoder(nn.Module):
 
         # align position & band embeddings across patches
         pos_encoding = repeat(
-            rearrange(self.pos_encoding(torch.arange(L)), "L D -> 1 1 L D"),
+            rearrange(
+                self.pos_encoding(torch.arange(L, device=patches.device)),
+                "L D -> 1 1 L D",
+            ),
             "1 1 L D -> 1 repeat L D",
             repeat=G,
         )  # [1 G L D/2]
         band_encoding = repeat(
-            rearrange(self.band_encoding(torch.arange(G)), "G D -> 1 G 1 D"),
+            rearrange(
+                self.band_encoding(torch.arange(G, device=patches.device)),
+                "G D -> 1 G 1 D",
+            ),
             "1 G 1 D -> 1 G repeat D",
             repeat=L,
         )  # [1 G L D/2]
@@ -184,7 +185,7 @@ class Encoder(nn.Module):
             GL == self.num_patches
         ), f"Expected {self.num_patches} patches, got {GL} patches."
 
-        noise = torch.randn((B, GL))  # [B GL]
+        noise = torch.randn((B, GL), device=patches.device)  # [B GL]
         random_indices = torch.argsort(noise, dim=-1)  # [B GL]
         reverse_indices = torch.argsort(random_indices, dim=-1)  # [B GL]
 
@@ -194,7 +195,7 @@ class Encoder(nn.Module):
         )
 
         # create a mask of shape B G L, where 1 indicates a masked patch & 0 indicates an unmasked patch
-        masked_matrix = torch.zeros((B, GL))  # [B GL] = 0
+        masked_matrix = torch.zeros((B, GL), device=patches.device)  # [B GL] = 0
         masked_matrix[:, : self.num_masked_patches] = 1  # [B mask_ratio * GL] = 1
         masked_matrix = torch.gather(
             masked_matrix, dim=1, index=reverse_indices
@@ -206,7 +207,9 @@ class Encoder(nn.Module):
         )
 
         # mask out the patches
-        batch_indices = rearrange(torch.arange(B), "B -> B 1")  # [B 1]
+        batch_indices = rearrange(
+            torch.arange(B, device=patches.device), "B -> B 1"
+        )  # [B 1]
         unmasked_patches = patches[
             batch_indices, unmasked_indices, :
         ]  # [B GL:(1 - mask_ratio) D]
@@ -224,7 +227,7 @@ class Encoder(nn.Module):
     def forward(self, datacube):
         """"""
         cube, time, latlon = (
-            datacube["pixels"],
+            self.cube_norm(datacube["pixels"]),
             datacube["timestep"],
             datacube["latlon"],
         )  # [B C H W], [B 2], [B 2]
@@ -272,22 +275,16 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(
         self,
-        mask_ratio=0.75,
-        image_size=256,
-        patch_size=32,
-        dim=128,
-        depth=1,
-        heads=8,
-        dim_head=64,
-        bands=12,
-        band_groups={
-            "rgb": (2, 3, 4),
-            "nir": (0, 1),
-            "swir": (5, 7, 8),
-            "sar": (6, 9),
-            "dem": (10, 11),
-        },
-        dropout=0.0,
+        mask_ratio,
+        image_size,
+        patch_size,
+        dim,
+        depth,
+        heads,
+        dim_head,
+        bands,
+        band_groups,
+        dropout,
     ):
         super().__init__()
         self.mask_ratio = mask_ratio
@@ -337,7 +334,11 @@ class Decoder(nn.Module):
         # align position & band embeddings across patches
         pos_encoding = repeat(
             rearrange(
-                self.pos_encoding(torch.arange(self.num_spatial_patches)),
+                self.pos_encoding(
+                    torch.arange(
+                        self.num_spatial_patches, device=unmasked_patches.device
+                    )
+                ),
                 "L D -> 1 1 L D",
             ),
             "1 1 L D -> 1 repeat L D",
@@ -345,7 +346,9 @@ class Decoder(nn.Module):
         )  # [1 G L D/2]
         band_encoding = repeat(
             rearrange(
-                self.band_encoding(torch.arange(self.num_group_patches)),
+                self.band_encoding(
+                    torch.arange(self.num_group_patches, device=unmasked_patches.device)
+                ),
                 "G D -> 1 G 1 D",
             ),
             "1 G 1 D -> 1 G repeat D",
@@ -362,7 +365,9 @@ class Decoder(nn.Module):
             pos_band_encoding, "1 (GL) D -> B (GL) D", B=B
         )  # [B (GL) D]
 
-        batch_indices = rearrange(torch.arange(B), "B -> B 1")  # [B 1]
+        batch_indices = rearrange(
+            torch.arange(B, device=unmasked_patches.device), "B -> B 1"
+        )  # [B 1]
         unmasked_pos_band_encoding = pos_band_encoding[
             batch_indices, unmasked_indices, :
         ]  # [B (GL:(1 - mask_ratio)) D]
@@ -383,7 +388,9 @@ class Decoder(nn.Module):
             unmasked_patches + unmasked_pos_band_encoding
         )  # [B GL:(1 - masked_ratio) D] + [B GL:(1 - mask_ratio) D]
 
-        decoder_patches = torch.zeros((B, self.num_patches, self.dim))  # [B GL D]
+        decoder_patches = torch.zeros(
+            (B, self.num_patches, self.dim), device=unmasked_patches.device
+        )  # [B GL D]
         decoder_patches[
             batch_indices, unmasked_indices, :
         ] = unmasked_patches  # [B GL:(1 - mask_ratio) D]
@@ -452,26 +459,27 @@ class GeoMAE(nn.Module):
         mask_ratio=0.75,
         image_size=256,
         patch_size=32,
-        bands=12,
+        bands=13,
         band_groups={
-            "rgb": (2, 3, 4),
-            "nir": (0, 1),
-            "swir": (5, 7, 8),
-            "sar": (6, 9),
-            "dem": (10, 11),
+            "rgb": (2, 1, 0),
+            "rededge": (3, 4, 5, 7),
+            "nir": (6,),
+            "swir": (8, 9),
+            "sar": (10, 11),
+            "dem": (12,),
         },
         # ENCODER
         dim=128,
-        depth=8,
-        heads=8,
-        dim_head=64,
+        depth=2,
+        heads=4,
+        dim_head=32,
         dropout=0.0,
         emb_dropout=0.0,
         # DECODER
         decoder_dim=128,
         decoder_depth=1,
-        decoder_heads=8,
-        decoder_dim_head=64,
+        decoder_heads=4,
+        decoder_dim_head=32,
         decoder_dropout=0.0,
     ):
         super().__init__()
@@ -496,6 +504,7 @@ class GeoMAE(nn.Module):
         )
 
         self.decoder = Decoder(
+            mask_ratio=mask_ratio,
             image_size=image_size,
             patch_size=patch_size,
             dim=decoder_dim,
@@ -569,8 +578,10 @@ if __name__ == "__main__":
 
     # Random data
     cube = {
-        "pixels": torch.randn(3, 12, 256, 256),
-        "timestep": torch.tensor(data=[[24.0, 13.0], [31.0, 17.5], [24.0, 13.0]]),
+        "pixels": torch.randn(3, 13, 256, 256),
+        "timestep": torch.tensor(
+            data=[[2017.0, 10.0, 5.0], [2020.0, 1.0, 31.0], [2022.0, 5.0, 15.0]]
+        ),
         "latlon": torch.tensor(
             data=[
                 [math.radians(57.0), math.radians(-2.0)],
