@@ -11,6 +11,7 @@ References:
 """
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.cli import ArgsType, LightningCLI
+from lightning.pytorch.plugins.io import AsyncCheckpointIO
 
 from src.datamodule import GeoTIFFDataPipeModule
 from src.model_vit import ViTLitModule
@@ -34,6 +35,7 @@ def cli_main(
             ),
         ],
         "logger": False,
+        "plugins": [AsyncCheckpointIO()],
         "precision": "bf16-mixed",
     },
     args: ArgsType = None,
