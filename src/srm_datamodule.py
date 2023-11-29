@@ -1,12 +1,12 @@
 import random
-from typing import List
 from pathlib import Path
+from typing import List
 
+import lightning as L
 import numpy as np
 import rasterio as rio
-import lightning as L
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 
 class ClayDataset(Dataset):
