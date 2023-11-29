@@ -1,8 +1,6 @@
 import torch
+from einops import rearrange, reduce, repeat
 from torch import nn
-import torch.nn.functional as F
-from einops import rearrange, repeat, reduce
-
 from vit_pytorch.vit import Transformer
 
 
@@ -202,7 +200,9 @@ class Encoder(nn.Module):
             masked_matrix, dim=1, index=reverse_indices
         )  # [B GL] -> [B GL] - reorder the patches
         masked_matrix = rearrange(
-            masked_matrix, "B (G L) -> B G L", G=self.num_group_patches  # [B G L]
+            masked_matrix,
+            "B (G L) -> B G L",
+            G=self.num_group_patches,  # [B G L]
         )
 
         # mask out the patches

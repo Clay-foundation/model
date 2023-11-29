@@ -1,8 +1,8 @@
 import math
 
 import torch
-from torch import nn
 from einops import rearrange, repeat
+from torch import nn
 from vit_pytorch.vit import Transformer
 
 
@@ -42,7 +42,7 @@ class GeoViT(nn.Module):
         },
         dim_head=64,
         dropout=0.0,
-        emb_dropout=0.0
+        emb_dropout=0.0,
     ):
         super().__init__()
         assert (
