@@ -6,7 +6,7 @@ from src.geomae import GeoMAE
 
 
 class GeoMAEModule(L.LightningModule):
-    def __init__(self, lr=1e-3):
+    def __init__(self, lr=1e-2):
         super().__init__()
         self.save_hyperparameters(logger=True)
         self.model = GeoMAE()

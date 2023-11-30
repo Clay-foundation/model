@@ -2,6 +2,7 @@ import torch
 from einops import rearrange, reduce, repeat
 from torch import nn
 from vit_pytorch.vit import Transformer
+import pdb
 
 
 class Patchify(nn.Module):
@@ -61,7 +62,6 @@ class Encoder(nn.Module):
         # Split the embedding dimensions between spatial & band patches equally
         pos_dim = band_dim = dim // 2
 
-        self.cube_norm = nn.BatchNorm2d(bands)
         self.latlon_embedding = nn.Linear(2, dim)
         self.time_embedding = nn.Linear(3, dim)
         self.patch_embedding = nn.ModuleDict(
@@ -226,20 +226,24 @@ class Encoder(nn.Module):
 
     def forward(self, datacube):
         """"""
+        # pdb.set_trace()
         cube, time, latlon = (
-            self.cube_norm(datacube["pixels"]),
+            datacube["pixels"],
             datacube["timestep"],
             datacube["latlon"],
         )  # [B C H W], [B 2], [B 2]
+
         B, C, H, W = cube.shape
 
         patches = self.to_patch_embed(
             cube
         )  # [B G L D] - patchify & create embeddings per patch
+        # print("patches", patches.mean(dim=(0, 2, 3)))
 
         patches = self.add_encodings(
             patches
         )  # [B G L D] - add position & band encoding to the embeddings
+        # print("patches + encode", patches.mean(dim=(0, 2, 3)))
 
         patches = rearrange(patches, "B G L D -> B (G L) D")  # [B (GL) D]
         patches = self.dropout(patches)  # [B (GL) D]
@@ -258,11 +262,13 @@ class Encoder(nn.Module):
         unmasked_patches = self.embed_metadata(
             unmasked_patches, latlon, time
         )  # [B (GL:(1 - mask_ratio) + 2) D]
+        # print("unmasked_patches", unmasked_patches.mean(dim=(0, 2)))
 
         # pass the unmasked patches through the transformer
         encoded_unmasked_patches = self.transformer(
             unmasked_patches
         )  # [B (GL:(1 - mask_ratio) + 2) D]
+        # print("encoded_unmasked_patches", encoded_unmasked_patches.mean(dim=(0, 2)))
 
         return (
             encoded_unmasked_patches,
@@ -532,7 +538,8 @@ class GeoMAE(nn.Module):
             p1=self.patch_size,
             p2=self.patch_size,
         )  # [B C L PP]
-
+        # print("patch", patches.mean(dim=(0, 2, 3)))
+        # print("pixel", pixels.mean(dim=(0, 2, 3)))
         loss = (patches - pixels) ** 2  # loss per pixel
         loss = reduce(loss, "B C L PP -> B C L", reduction="mean")  # loss per patch
 
@@ -549,6 +556,7 @@ class GeoMAE(nn.Module):
                 :, i
             ].sum()  # (B, L) -> (B) -> scalar
 
+        # print(actual_loss, masked_patches_in_group)
         return actual_loss / masked_patches_in_group
 
     def forward(self, datacube):
@@ -561,6 +569,7 @@ class GeoMAE(nn.Module):
         ) = self.encoder(
             datacube
         )  # [B (GL:(1 - mask_ratio) + 2) D], [(1-mask_ratio)], [mask_ratio], [B G L]
+        # print("encoded_unmasked_patches", encoded_unmasked_patches.mean(dim=(0, 2)))
 
         # DECODER
         pixels = self.decoder(
@@ -593,4 +602,4 @@ if __name__ == "__main__":
 
     model = GeoMAE()
     loss = model(cube)
-    print(loss)
+    # print(loss)

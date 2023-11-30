@@ -12,6 +12,7 @@ References:
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.cli import ArgsType, LightningCLI
 from lightning.pytorch.plugins.io import AsyncCheckpointIO
+from lightning.pytorch.loggers import CSVLogger
 import lightning as L
 
 from src.srm_datamodule import ClayDataModule
@@ -19,15 +20,16 @@ from src.model_geomae import GeoMAEModule
 
 
 def main():
-    dm = ClayDataModule()
-    model = GeoMAEModule()
+    dm = ClayDataModule(batch_size=128, num_workers=8)
+    model = GeoMAEModule(lr=1e-2)
     trainer = L.Trainer(
         fast_dev_run=False,
         accelerator="gpu",
         devices=1,
-        precision="16-mixed",
-        max_epochs=2,
-        log_every_n_steps=1,
+        # precision="16-mixed",
+        max_epochs=50,
+        # log_every_n_steps=100,
+        logger=CSVLogger("logs", name="geomae"),
     )
 
     trainer.fit(model, dm)
