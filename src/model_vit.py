@@ -141,20 +141,27 @@ class ViTLitModule(L.LightningModule):
         outputs_encoder: dict = self(x)
 
         # Get embeddings generated from encoder
-        embeddings: torch.Tensor = outputs_encoder.last_hidden_state
-        assert embeddings.shape == torch.Size(
+        embeddings_raw: torch.Tensor = outputs_encoder.last_hidden_state
+        assert embeddings_raw.shape == torch.Size(
             [self.B, 65, 768]  # (batch_size, sequence_length, hidden_size)
         )
-        assert not torch.isnan(embeddings).any()  # ensure no NaNs in embedding
+        assert not torch.isnan(embeddings_raw).any()  # ensure no NaNs in embedding
+
+        # Take the mean of the embeddings along the sequence_length dimension
+        # excluding the first cls token embedding, compute over patch embeddings
+        embeddings_mean: torch.Tensor = embeddings_raw[:, 1:, :].mean(dim=1)
+        assert embeddings_mean.shape == torch.Size(
+            [self.B, 768]  # (batch_size, hidden_size)
+        )
 
         # Save embeddings in npy format
         outfolder: str = f"{self.trainer.default_root_dir}/data/embeddings"
         os.makedirs(name=outfolder, exist_ok=True)
         outfile = f"{outfolder}/embedding_{batch_idx}.npy"
-        np.save(file=outfile, arr=embeddings.cpu())
-        print(f"Saved embeddings of shape {tuple(embeddings.shape)} to {outfile}")
+        np.save(file=outfile, arr=embeddings_mean.cpu())
+        print(f"Saved embeddings of shape {tuple(embeddings_mean.shape)} to {outfile}")
 
-        return embeddings
+        return embeddings_mean
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """

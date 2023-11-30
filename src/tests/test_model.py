@@ -59,6 +59,6 @@ def test_model_vit(datapipe):
         trainer.predict(model=model, dataloaders=dataloader)
         assert os.path.exists(path := f"{tmpdirname}/data/embeddings/embedding_0.npy")
         embeddings: np.ndarray = np.load(file=path)
-        assert embeddings.shape == (2, 65, 768)
+        assert embeddings.shape == (2, 768)
         assert embeddings.dtype == "float32"
         assert not np.isnan(embeddings).any()
