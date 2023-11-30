@@ -1,15 +1,15 @@
-import random
 import math
-from typing import List
+import random
 from pathlib import Path
+from typing import List
 
 import lightning as L
 import numpy as np
 import rasterio as rio
 import torch
-from torchvision.transforms import v2
 from pyproj import Transformer as ProjTransformer
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
+from torchvision.transforms import v2
 
 
 class ClayDataset(Dataset):

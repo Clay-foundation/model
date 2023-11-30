@@ -12,9 +12,8 @@ References:
 import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.cli import ArgsType, LightningCLI
-from lightning.pytorch.plugins.io import AsyncCheckpointIO
 from lightning.pytorch.loggers import CSVLogger
-import lightning as L
+from lightning.pytorch.plugins.io import AsyncCheckpointIO
 
 from src.model_geomae import GeoMAEModule
 from src.srm_datamodule import ClayDataModule
