@@ -145,6 +145,7 @@ class ViTLitModule(L.LightningModule):
         assert embeddings.shape == torch.Size(
             [self.B, 65, 768]  # (batch_size, sequence_length, hidden_size)
         )
+        assert not torch.isnan(embeddings).any()  # ensure no NaNs in embedding
 
         # Save embeddings in npy format
         outfolder: str = f"{self.trainer.default_root_dir}/data/embeddings"
