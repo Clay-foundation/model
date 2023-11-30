@@ -1,9 +1,9 @@
 from pathlib import Path
 
-import rasterio as rio
 import lightning as L
+import rasterio as rio
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 
 class ClayDataset(Dataset):

@@ -9,14 +9,15 @@ References:
 - https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html
 - https://pytorch-lightning.medium.com/introducing-lightningcli-v2-supercharge-your-training-c070d43c7dd6
 """
+import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.cli import ArgsType, LightningCLI
 from lightning.pytorch.plugins.io import AsyncCheckpointIO
 from lightning.pytorch.loggers import CSVLogger
 import lightning as L
 
-from src.srm_datamodule import ClayDataModule
 from src.model_geomae import GeoMAEModule
+from src.srm_datamodule import ClayDataModule
 
 
 def main():
