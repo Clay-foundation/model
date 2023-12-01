@@ -35,10 +35,12 @@ def filter_clouds_nodata(tile):
     - bool: True if the tile is approved, False if rejected.
     """
     # Check for nodata pixels
-    nodata_pixel_count = int(tile.sel(band="B02").isin([NODATA]).sum())
-    if nodata_pixel_count:
+    bands_to_check = ["B02", "vv", "vh", "DEM"]
+    nodata_pixel_count = sum(int(tile.sel(band=band).isin([NODATA]).sum()) for band in bands_to_check)
+
+    if nodata_pixel_count > 0:
         print("Too much no-data")
-        return False
+        return False    
 
     # Check for cloud coverage
     cloudy_pixel_count = int(tile.sel(band="SCL").isin(SCL_FILTER).sum())
