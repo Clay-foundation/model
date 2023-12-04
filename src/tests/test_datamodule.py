@@ -47,9 +47,18 @@ def test_geotiffdatapipemodule(geotiff_folder):
     datamodule: L.LightningDataModule = GeoTIFFDataPipeModule(
         data_path=geotiff_folder, batch_size=2
     )
-    datamodule.setup()
 
+    # Train/validation stage
+    datamodule.setup(stage="fit")
     it = iter(datamodule.train_dataloader())
+    image = next(it)
+
+    assert image.shape == torch.Size([2, 3, 256, 256])
+    assert image.dtype == torch.float16
+
+    # Predict stage
+    datamodule.setup(stage="predict")
+    it = iter(datamodule.predict_dataloader())
     image = next(it)
 
     assert image.shape == torch.Size([2, 3, 256, 256])
