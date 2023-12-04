@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from einops import rearrange, reduce, repeat
 from torch import nn
 from vit_pytorch.vit import Transformer
@@ -368,9 +369,9 @@ class Decoder(nn.Module):
         Returns:
             decoder_patches (torch.Tensor): A tensor of shape (B, GL, D) containing the embeddings for the decoder part of the model
         """
-        import pdb
+        # import pdb
 
-        pdb.set_trace()
+        # pdb.set_trace()
         B, *_ = unmasked_patches.shape
 
         # align position & band embeddings across patches

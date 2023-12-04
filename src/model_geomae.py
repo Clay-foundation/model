@@ -2,6 +2,7 @@ import lightning as L
 import torch
 
 from src.geomae import GeoMAE
+from vit_pytorch import MAE
 
 
 class GeoMAEModule(L.LightningModule):
@@ -25,7 +26,7 @@ class GeoMAEModule(L.LightningModule):
             on_step=True,
             on_epoch=True,
             prog_bar=True,
-            logger=False,
+            logger=True,
         )
         return loss
 
