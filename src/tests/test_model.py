@@ -21,8 +21,8 @@ def fixture_datapipe() -> torchdata.datapipes.iter.IterDataPipe:
     """
     datapipe = torchdata.datapipes.iter.IterableWrapper(
         iterable=[
-            torch.randn(2, 13, 256, 256).to(dtype=torch.float16),
-            torch.randn(2, 13, 256, 256).to(dtype=torch.float16),
+            {"image": torch.randn(2, 13, 256, 256).to(dtype=torch.float16)},
+            {"image": torch.randn(2, 13, 256, 256).to(dtype=torch.float16)},
         ]
     )
     return datapipe

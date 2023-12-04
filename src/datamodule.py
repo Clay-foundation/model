@@ -2,6 +2,8 @@
 LightningDataModule to load Earth Observation data from GeoTIFF files using
 rasterio.
 """
+import pathlib
+
 import lightning as L
 import numpy as np
 import rasterio
@@ -17,10 +19,20 @@ def _array_to_torch(filepath: str) -> torch.Tensor:
     """
     # GeoTIFF - Rasterio
     with rasterio.open(fp=filepath) as dataset:
+        # Get image data
         array: np.ndarray = dataset.read()
         tensor: torch.Tensor = torch.as_tensor(data=array.astype(dtype="float16"))
 
-    return tensor
+        # Get spatial bounding box and coordinate reference system in UTM projection
+        bbox: torch.Tensor = torch.as_tensor(  # xmin, ymin, xmax, ymax
+            data=dataset.bounds, dtype=torch.float64
+        )
+        crs: int = torch.as_tensor(data=dataset.crs.to_epsg(), dtype=torch.int32)
+
+        # Get date
+        date: str = pathlib.Path(filepath).name[15:25]  # YYYY-MM-DD format
+
+    return {"image": tensor, "bbox": bbox, "crs": crs, "date": date}
 
 
 class GeoTIFFDataPipeModule(L.LightningDataModule):

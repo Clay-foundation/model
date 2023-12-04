@@ -23,7 +23,10 @@ def fixture_geotiff_folder():
     use in the tests.
     """
     with tempfile.TemporaryDirectory() as tmpdirname:
-        for filename in ["one", "two"]:
+        for filename in [
+            "claytile-12ABC-2022-12-31-01-1",
+            "claytile-12ABC-2023-12-31-01-2",
+        ]:
             array: np.ndarray = np.ones(shape=(3, 256, 256))
             with rasterio.open(
                 fp=f"{tmpdirname}/{filename}.tif",
@@ -32,6 +35,7 @@ def fixture_geotiff_folder():
                 height=256,
                 count=3,
                 dtype=rasterio.uint16,
+                crs="EPSG:32646",
             ) as dst:
                 dst.write(array)
 
@@ -50,7 +54,24 @@ def test_geotiffdatapipemodule(geotiff_folder):
     datamodule.setup()
 
     it = iter(datamodule.train_dataloader())
-    image = next(it)
+    batch = next(it)
+
+    image = batch["image"]
+    bbox = batch["bbox"]
+    crs = batch["crs"]
+    date = batch["date"]
 
     assert image.shape == torch.Size([2, 3, 256, 256])
     assert image.dtype == torch.float16
+
+    torch.testing.assert_close(
+        actual=bbox,
+        expected=torch.tensor(
+            data=[[0.0, 256.0, 256.0, 0.0], [0.0, 256.0, 256.0, 0.0]],
+            dtype=torch.float64,
+        ),
+    )
+    torch.testing.assert_close(
+        actual=crs, expected=torch.tensor(data=[32646, 32646], dtype=torch.int32)
+    )
+    assert date == ["2022-12-31", "2023-12-31"]
