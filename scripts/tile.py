@@ -36,9 +36,16 @@ def filter_clouds_nodata(tile):
     """
     # Check for nodata pixels
     bands_to_check = ["B02", "vv", "vh", "DEM"]
-    nodata_pixel_count = sum(int(tile.sel(band=band).isin([NODATA]).sum()) for band in bands_to_check)
-
-    if nodata_pixel_count > 0:
+    if int(tile.sel(band=bands_to_check[0]).isin([NODATA]).sum()):
+        print("Too much no-data")
+        return False
+    elif int(tile.sel(band=bands_to_check[1]).isin([NODATA]).sum()):
+        print("Too much no-data")
+        return False
+    elif int(tile.sel(band=bands_to_check[2]).isin([NODATA]).sum()):
+        print("Too much no-data")
+        return False
+    elif int(tile.sel(band=bands_to_check[3]).isin([NODATA]).sum()):
         print("Too much no-data")
         return False    
 
