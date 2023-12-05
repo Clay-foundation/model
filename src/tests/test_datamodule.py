@@ -43,7 +43,10 @@ def fixture_geotiff_folder():
 
 
 # %%
-def test_geotiffdatapipemodule(geotiff_folder):
+@pytest.mark.parametrize(
+    "stage,dataloader", [("fit", "train_dataloader"), ("predict", "predict_dataloader")]
+)
+def test_geotiffdatapipemodule(geotiff_folder, stage, dataloader):
     """
     Ensure that GeoTIFFDataPipeModule works to load data from a GeoTIFF file
     into torch.Tensor objects.
@@ -52,9 +55,9 @@ def test_geotiffdatapipemodule(geotiff_folder):
         data_path=geotiff_folder, batch_size=2
     )
 
-    # Train/validation stage
-    datamodule.setup(stage="fit")
-    it = iter(datamodule.train_dataloader())
+    # Train/validation/predict stage
+    datamodule.setup(stage=stage)
+    it = iter(getattr(datamodule, dataloader)())
     batch = next(it)
 
     image = batch["image"]
@@ -76,13 +79,3 @@ def test_geotiffdatapipemodule(geotiff_folder):
         actual=crs, expected=torch.tensor(data=[32646, 32646], dtype=torch.int32)
     )
     assert date == ["2022-12-31", "2023-12-31"]
-
-    # Predict stage
-    datamodule.setup(stage="predict")
-    it = iter(datamodule.predict_dataloader())
-    batch = next(it)
-
-    image = batch["image"]
-
-    assert image.shape == torch.Size([2, 3, 256, 256])
-    assert image.dtype == torch.float16
