@@ -51,8 +51,9 @@ def test_geotiffdatapipemodule(geotiff_folder):
     datamodule: L.LightningDataModule = GeoTIFFDataPipeModule(
         data_path=geotiff_folder, batch_size=2
     )
-    datamodule.setup()
 
+    # Train/validation stage
+    datamodule.setup(stage="fit")
     it = iter(datamodule.train_dataloader())
     batch = next(it)
 
@@ -75,3 +76,13 @@ def test_geotiffdatapipemodule(geotiff_folder):
         actual=crs, expected=torch.tensor(data=[32646, 32646], dtype=torch.int32)
     )
     assert date == ["2022-12-31", "2023-12-31"]
+
+    # Predict stage
+    datamodule.setup(stage="predict")
+    it = iter(datamodule.predict_dataloader())
+    batch = next(it)
+
+    image = batch["image"]
+
+    assert image.shape == torch.Size([2, 3, 256, 256])
+    assert image.dtype == torch.float16

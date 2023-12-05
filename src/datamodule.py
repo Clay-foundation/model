@@ -82,19 +82,31 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
             root=self.data_path, masks="*.tif", recursive=True, length=423
         )
 
-        # Step 2 - Split GeoTIFF chips into train/val sets (80%/20%)
-        # https://pytorch.org/data/0.7/generated/torchdata.datapipes.iter.RandomSplitter.html
-        dp_train, dp_val = dp_paths.random_split(
-            weights={"train": 0.8, "validation": 0.2}, total_length=423, seed=42
-        )
+        if stage == "fit":  # training/validation loop
+            # Step 2 - Split GeoTIFF chips into train/val sets (80%/20%)
+            # https://pytorch.org/data/0.7/generated/torchdata.datapipes.iter.RandomSplitter.html
+            dp_train, dp_val = dp_paths.random_split(
+                weights={"train": 0.8, "validation": 0.2}, total_length=423, seed=42
+            )
 
-        # Step 3 - Read GeoTIFF into numpy.ndarray, batch and convert to torch.Tensor
-        self.datapipe_train = (
-            dp_train.map(fn=_array_to_torch).batch(batch_size=self.batch_size).collate()
-        )
-        self.datapipe_val = (
-            dp_val.map(fn=_array_to_torch).batch(batch_size=self.batch_size).collate()
-        )
+            # Step 3 - Read GeoTIFF into numpy array, batch and convert to torch.Tensor
+            self.datapipe_train = (
+                dp_train.map(fn=_array_to_torch)
+                .batch(batch_size=self.batch_size)
+                .collate()
+            )
+            self.datapipe_val = (
+                dp_val.map(fn=_array_to_torch)
+                .batch(batch_size=self.batch_size)
+                .collate()
+            )
+
+        elif stage == "predict":  # prediction loop
+            self.datapipe_predict = (
+                dp_paths.map(fn=_array_to_torch)
+                .batch(batch_size=self.batch_size)
+                .collate()
+            )
 
     def train_dataloader(self) -> torch.utils.data.DataLoader:
         """
@@ -112,6 +124,16 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
         """
         return torch.utils.data.DataLoader(
             dataset=self.datapipe_val,
+            batch_size=None,  # handled in datapipe already
+            num_workers=self.num_workers,
+        )
+
+    def predict_dataloader(self) -> torch.utils.data.DataLoader:
+        """
+        Loads the data used in the prediction loop.
+        """
+        return torch.utils.data.DataLoader(
+            dataset=self.datapipe_predict,
             batch_size=None,  # handled in datapipe already
             num_workers=self.num_workers,
         )
