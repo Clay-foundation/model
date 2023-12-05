@@ -12,10 +12,25 @@ import torchdata
 
 
 # %%
-def _array_to_torch(filepath: str) -> torch.Tensor:
+def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
     """
-    Read a GeoTIFF file using rasterio into a numpy.ndarray, and convert it
-    to a torch.Tensor (float16 dtype).
+    Read a GeoTIFF file using rasterio into a numpy.ndarray, convert it to a
+    torch.Tensor (float16 dtype), and also output spatiotemporal metadata
+    associated with the image.
+
+    Parameters
+    ----------
+    filepath : str
+        The path to the GeoTIFF file.
+
+    Returns
+    -------
+    outputs : dict
+        A dictionary containing the following items:
+        - image: torch.Tensor - multi-band raster image with shape (Band, Height, Width)
+        - bbox: torch.Tensor - spatial bounding box as (xmin, ymin, xmax, ymax)
+        - crs: torch.Tensor - coordinate reference system as an EPSG code
+        - date: str - the date the image was acquired in YYYY-MM-DD format
     """
     # GeoTIFF - Rasterio
     with rasterio.open(fp=filepath) as dataset:
