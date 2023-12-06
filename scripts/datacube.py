@@ -424,7 +424,7 @@ def convert_attrs_and_coords_objects_to_str(data):
     help="For debugging, subset x and y to this pixel window.",
 )
 def main(sample, index, subset, bucket):
-    print("Starting algorithm", index)
+    print("Starting algorithm for MGRS tile with index", index)
     index = int(index)
     tiles = gpd.read_file(sample)
     tile = tiles.iloc[index]
