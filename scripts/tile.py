@@ -110,6 +110,7 @@ def tiler(stack, date, mgrs, bucket):
 
                 with rasterio.open(name, "r+") as rst:
                     rst.colorinterp = color
+                    rst.update_tags(date=date)
 
         print(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
         subprocess.run(
