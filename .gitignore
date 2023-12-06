@@ -1,3 +1,6 @@
+# Batch package
+batch-fetch-and-run.zip
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
