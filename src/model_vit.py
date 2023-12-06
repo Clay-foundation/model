@@ -91,7 +91,7 @@ class ViTLitModule(L.LightningModule):
         Reference:
         - https://github.com/huggingface/transformers/blob/v4.35.2/src/transformers/models/vit_mae/modeling_vit_mae.py#L948-L1010
         """
-        x: torch.Tensor = batch
+        x: torch.Tensor = batch["image"]
         # x: torch.Tensor = torch.randn(32, 13, 256, 256)  # BCHW
 
         # Forward encoder
@@ -133,7 +133,7 @@ class ViTLitModule(L.LightningModule):
         """
         Logic for the neural network's prediction loop.
         """
-        x: torch.Tensor = batch
+        x: torch.Tensor = batch["image"]
         # x: torch.Tensor = torch.randn(32, 13, 256, 256)  # BCHW
 
         # Forward encoder
