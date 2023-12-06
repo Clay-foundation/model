@@ -21,7 +21,7 @@ TILE_SIZE = 256
 PIXELS_PER_TILE = TILE_SIZE * TILE_SIZE
 BAD_PIXEL_MAX_PERCENTAGE = 0.3
 SCL_FILTER = [0, 1, 3, 8, 9, 10]
-VERSION = "01"
+VERSION = "02"
 
 
 def filter_clouds_nodata(tile):
