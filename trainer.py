@@ -41,7 +41,7 @@ def cli_main(
     args: ArgsType = None,
 ):
     """
-    Command-line inteface to run ViTLitModule with BaseDataModule.
+    Command-line inteface to run ViTLitModule with GeoTIFFDataPipeModule.
     """
     cli = LightningCLI(
         model_class=ViTLitModule,
