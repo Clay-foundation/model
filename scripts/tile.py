@@ -99,7 +99,13 @@ def tiler(stack, date, mgrs, bucket):
                 ] * (len(tile.band) - 3)
 
                 # Write tile to tempdir
-                name = f"{dir}/claytile-{mgrs}-{date}-{VERSION}-{counter}.tif"
+                name = "{dir}/claytile_{mgrs}_{date}_v{version}_{counter}.tif".format(
+                    dir=dir,
+                    mgrs=mgrs,
+                    date=date.replace("-", ""),
+                    version=VERSION,
+                    counter=str(counter).zfill(4),
+                )
                 tile.rio.to_raster(name, compress="deflate")
 
                 with rasterio.open(name, "r+") as rst:
