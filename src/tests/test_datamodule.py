@@ -62,7 +62,7 @@ def test_geotiffdatapipemodule(geotiff_folder, stage, dataloader):
 
     image = batch["image"]
     bbox = batch["bbox"]
-    crs = batch["crs"]
+    epsg = batch["epsg"]
     date = batch["date"]
 
     assert image.shape == torch.Size([2, 3, 256, 256])
@@ -76,6 +76,6 @@ def test_geotiffdatapipemodule(geotiff_folder, stage, dataloader):
         ),
     )
     torch.testing.assert_close(
-        actual=crs, expected=torch.tensor(data=[32646, 32646], dtype=torch.int32)
+        actual=epsg, expected=torch.tensor(data=[32646, 32646], dtype=torch.int32)
     )
     assert date == ["2022-12-31", "2023-12-31"]

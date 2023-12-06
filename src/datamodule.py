@@ -29,7 +29,7 @@ def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
         A dictionary containing the following items:
         - image: torch.Tensor - multi-band raster image with shape (Band, Height, Width)
         - bbox: torch.Tensor - spatial bounding box as (xmin, ymin, xmax, ymax)
-        - crs: torch.Tensor - coordinate reference system as an EPSG code
+        - epsg: torch.Tensor - coordinate reference system as an EPSG code
         - date: str - the date the image was acquired in YYYY-MM-DD format
     """
     # GeoTIFF - Rasterio
@@ -42,12 +42,12 @@ def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
         bbox: torch.Tensor = torch.as_tensor(  # xmin, ymin, xmax, ymax
             data=dataset.bounds, dtype=torch.float64
         )
-        crs: int = torch.as_tensor(data=dataset.crs.to_epsg(), dtype=torch.int32)
+        epsg: int = torch.as_tensor(data=dataset.crs.to_epsg(), dtype=torch.int32)
 
         # Get date
         date: str = pathlib.Path(filepath).name[15:25]  # YYYY-MM-DD format
 
-    return {"image": tensor, "bbox": bbox, "crs": crs, "date": date}
+    return {"image": tensor, "bbox": bbox, "epsg": epsg, "date": date}
 
 
 class GeoTIFFDataPipeModule(L.LightningDataModule):
