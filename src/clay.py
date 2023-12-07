@@ -4,7 +4,8 @@ from einops import rearrange, reduce, repeat
 from torch import nn
 import torch.nn.functional as F
 from vit_pytorch.vit import Transformer
-from src.utils import posemb_sincos_2d, posemb_sincos_1d
+
+from src.utils import posemb_sincos_1d, posemb_sincos_2d
 
 
 class Patchify(nn.Module):
