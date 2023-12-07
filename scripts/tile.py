@@ -11,6 +11,7 @@ and a tiling function that generates smaller tiles from the input stack.
 import subprocess
 import tempfile
 
+import numpy as np
 import rasterio
 import rioxarray  # noqa: F401
 import xarray as xr
@@ -36,18 +37,19 @@ def filter_clouds_nodata(tile):
     """
     # Check for nodata pixels
     bands_to_check = ["B02", "vv", "vh", "DEM"]
+    print(f"Checking no data in bands")
     if int(tile.sel(band=bands_to_check[0]).isin([NODATA]).sum()):
-        print("Too much no-data")
+        print(f"Too much no-data in {bands_to_check[0]}")
         return False
-    elif int(tile.sel(band=bands_to_check[1]).isin([NODATA]).sum()):
-        print("Too much no-data")
+    elif int(np.isnan(tile.sel(band=bands_to_check[1])).sum()):
+        print(f"Too much no-data in {bands_to_check[1]}")
         return False
-    elif int(tile.sel(band=bands_to_check[2]).isin([NODATA]).sum()):
-        print("Too much no-data")
+    elif int(np.isnan(tile.sel(band=bands_to_check[2])).sum()):
+        print(f"Too much no-data in {bands_to_check[2]}")
         return False
-    elif int(tile.sel(band=bands_to_check[3]).isin([NODATA]).sum()):
-        print("Too much no-data")
-        return False    
+    elif int(np.isnan(tile.sel(band=bands_to_check[3])).sum()):
+        print(f"Too much no-data in {bands_to_check[3]}")
+        return False
 
     # Check for cloud coverage
     cloudy_pixel_count = int(tile.sel(band="SCL").isin(SCL_FILTER).sum())
