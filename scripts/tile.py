@@ -11,6 +11,7 @@ and a tiling function that generates smaller tiles from the input stack.
 import subprocess
 import tempfile
 
+import numpy as np
 import rasterio
 import rioxarray  # noqa: F401
 import xarray as xr
@@ -35,10 +36,15 @@ def filter_clouds_nodata(tile):
     - bool: True if the tile is approved, False if rejected.
     """
     # Check for nodata pixels
-    nodata_pixel_count = int(tile.sel(band="B02").isin([NODATA]).sum())
-    if nodata_pixel_count:
-        print("Too much no-data")
+    if int(tile.sel(band="B02").isin([NODATA]).sum()):
+        print("Too much no-data in B02")
         return False
+
+    bands_to_check = ["vv", "vh", "dem"]
+    for band in bands_to_check:
+        if int(np.isnan(tile.sel(band=band)).sum()):
+            print(f"Too much no-data in {band}")
+            return False
 
     # Check for cloud coverage
     cloudy_pixel_count = int(tile.sel(band="SCL").isin(SCL_FILTER).sum())
