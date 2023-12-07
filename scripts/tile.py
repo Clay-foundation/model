@@ -120,6 +120,13 @@ def tiler(stack, date, mgrs, bucket):
 
         print(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
         subprocess.run(
-            ["aws", "s3", "sync", dir, f"s3://{bucket}/{VERSION}/{mgrs}/{date}"],
+            [
+                "aws",
+                "s3",
+                "sync",
+                dir,
+                f"s3://{bucket}/{VERSION}/{mgrs}/{date}",
+                "--no-progress",
+            ],
             check=True,
         )
