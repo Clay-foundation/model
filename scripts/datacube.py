@@ -47,7 +47,7 @@ SPATIAL_RESOLUTION = 10
 CLOUD_COVER_PERCENTAGE = 50
 NODATA_PIXEL_PERCENTAGE = 20
 NODATA = 0
-S1_MATCH_ATTEMPTS = 10
+S1_MATCH_ATTEMPTS = 20
 
 
 def get_surrounding_days(reference, interval_days):
@@ -268,8 +268,8 @@ def make_datasets(s2_items, s1_items, dem_items, resolution):
         items=s2_items,
         assets=S2_BANDS,
         resolution=resolution,
-        dtype=np.float32,
-        fill_value=np.nan,
+        dtype=np.uint16,
+        fill_value=0,
     )
 
     da_sen1: xr.DataArray = stackstac.stack(
@@ -309,9 +309,7 @@ def make_datasets(s2_items, s1_items, dem_items, resolution):
 
     da_dem = da_dem.drop_vars([var for var in da_dem.coords if var not in da_dem.dims])
 
-    result = xr.concat([da_sen2, da_sen1, da_dem], dim="band")
-    result = result.rename("tile")
-    return result
+    return [da_sen2, da_sen1, da_dem]
 
 
 def process(
@@ -402,24 +400,37 @@ def convert_attrs_and_coords_objects_to_str(data):
 
 @click.command()
 @click.option(
+    "--sample",
+    required=False,
+    default="https://clay-mgrs-samples.s3.amazonaws.com/mgrs_sample.fgb",
+    help="Location of MGRS tile sample",
+)
+@click.option(
     "--index",
-    required=True,
-    default=42,
+    required=False,
+    default=0,
     help="Index of MGRS tile from sample file that should be processed",
+)
+@click.option(
+    "--bucket",
+    required=False,
+    default="",
+    help="Specify the bucket for where to write the data.",
 )
 @click.option(
     "--subset",
     required=False,
+    default=None,
     help="For debugging, subset x and y to this pixel window.",
 )
-def main(index, subset):
-    print("Starting algorithm", index)
+def main(sample, index, subset, bucket):
+    print("Starting algorithm for MGRS tile with index", index)
     index = int(index)
-    tiles = gpd.read_file("mgrs_sample.geojson")
+    tiles = gpd.read_file(sample)
     tile = tiles.iloc[index]
     start_year = 2017
     end_year = 2023
-    date, merged = process(
+    date, pixels = process(
         tile.geometry,
         start_year,
         end_year,
@@ -431,13 +442,13 @@ def main(index, subset):
     if subset:
         subset = [int(dat) for dat in subset.split(",")]
         print(f"Subsetting to {subset}")
-        merged = merged.sel(
-            x=slice(merged.x.values[subset[0]], merged.x.values[subset[2]]),
-            y=slice(merged.y.values[subset[1]], merged.y.values[subset[3]]),
-        )
-    merged = merged.compute()
+        pixels = [
+            part[:, subset[1] : subset[3], subset[0] : subset[2]] for part in pixels
+        ]
 
-    tiler(merged, date, mgrs)
+    pixels = [part.compute() for part in pixels]
+
+    tiler(pixels, date, mgrs, bucket)
 
 
 if __name__ == "__main__":

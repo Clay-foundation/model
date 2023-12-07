@@ -4,7 +4,10 @@ Model architecture code.
 Code structure adapted from Lightning project seed at
 https://github.com/Lightning-AI/deep-learning-project-template
 """
+import os
+
 import lightning as L
+import numpy as np
 import torch
 import transformers
 
@@ -78,9 +81,6 @@ class ViTLitModule(L.LightningModule):
         outputs: dict = self.vit.base_model(x)
 
         self.B = x.shape[0]
-        assert outputs.last_hidden_state.shape == torch.Size([self.B, 17, 768])
-        assert outputs.ids_restore.shape == torch.Size([self.B, 64])
-        assert outputs.mask.shape == torch.Size([self.B, 64])
 
         return outputs
 
@@ -91,11 +91,14 @@ class ViTLitModule(L.LightningModule):
         Reference:
         - https://github.com/huggingface/transformers/blob/v4.35.2/src/transformers/models/vit_mae/modeling_vit_mae.py#L948-L1010
         """
-        x: torch.Tensor = batch
+        x: torch.Tensor = batch["image"]
         # x: torch.Tensor = torch.randn(32, 13, 256, 256)  # BCHW
 
         # Forward encoder
         outputs_encoder: dict = self(x)
+        assert outputs_encoder.last_hidden_state.shape == torch.Size([self.B, 17, 768])
+        assert outputs_encoder.ids_restore.shape == torch.Size([self.B, 64])
+        assert outputs_encoder.mask.shape == torch.Size([self.B, 64])
 
         # Forward decoder
         outputs_decoder: dict = self.vit.decoder.forward(
@@ -125,6 +128,40 @@ class ViTLitModule(L.LightningModule):
         Logic for the neural network's validation loop.
         """
         pass
+
+    def predict_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+        """
+        Logic for the neural network's prediction loop.
+        """
+        x: torch.Tensor = batch["image"]
+        # x: torch.Tensor = torch.randn(32, 13, 256, 256)  # BCHW
+
+        # Forward encoder
+        self.vit.config.mask_ratio = 0  # disable masking
+        outputs_encoder: dict = self(x)
+
+        # Get embeddings generated from encoder
+        embeddings_raw: torch.Tensor = outputs_encoder.last_hidden_state
+        assert embeddings_raw.shape == torch.Size(
+            [self.B, 65, 768]  # (batch_size, sequence_length, hidden_size)
+        )
+        assert not torch.isnan(embeddings_raw).any()  # ensure no NaNs in embedding
+
+        # Take the mean of the embeddings along the sequence_length dimension
+        # excluding the first cls token embedding, compute over patch embeddings
+        embeddings_mean: torch.Tensor = embeddings_raw[:, 1:, :].mean(dim=1)
+        assert embeddings_mean.shape == torch.Size(
+            [self.B, 768]  # (batch_size, hidden_size)
+        )
+
+        # Save embeddings in npy format
+        outfolder: str = f"{self.trainer.default_root_dir}/data/embeddings"
+        os.makedirs(name=outfolder, exist_ok=True)
+        outfile = f"{outfolder}/embedding_{batch_idx}.npy"
+        np.save(file=outfile, arr=embeddings_mean.cpu())
+        print(f"Saved embeddings of shape {tuple(embeddings_mean.shape)} to {outfile}")
+
+        return embeddings_mean
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """
