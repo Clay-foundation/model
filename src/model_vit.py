@@ -135,6 +135,41 @@ class ViTLitModule(L.LightningModule):
     def predict_step(self, batch: torch.Tensor, batch_idx: int) -> gpd.GeoDataFrame:
         """
         Logic for the neural network's prediction loop.
+
+        Takes batches of image inputs, generate the embeddings, and store it in
+        a GeoParquet file with spatiotemporal metadata.
+
+        Steps:
+        1. Image inputs are passed through the encoder model to produce raw
+           embeddings of shape (B, 65, 768), where B is the batch size, 65 is
+           the dimension that consists of 1 cls_token + 64 patch embeddings
+           (that were flattened from the original 8x8 grid), and 768 is the
+           embedding length.
+        2. Taking only the (B, 64, 768) patch embeddings, we compute the mean
+           along the 64-dim, to obtain final embeddings of shape (B, 768).
+
+                                                ______
+         cls_token    /        Patch          /      /|
+         embeddings  /    +    embeddings    /_____ / |    =>  (1+64, 768)
+         (1, 768)   /          (8x8, 768)   |      |  |        = (65, 768)
+                   /           = (64, 768)  |      | /
+                                            |______|/
+                                                |                            /
+                                                --------> Final embedding   /
+                           compute mean along spatial dim = (1, 768)       /
+                                                                          /
+
+        3. Embeddings are joined with spatiotemporal metadata (date and
+           bounding box polygon) in a geopandas.GeoDataFrame table. The
+           coordinates of the bounding box are in an OGC:CRS84 projection (i.e.
+           longitude/latitude).
+        4. The geodataframe table is saved out to a GeoParquet file.
+
+           |    date    |      embeddings      |   geometry   |
+           |------------|----------------------|--------------|
+           | 2021-01-01 | [0.1, 0.4, ... x768] | POLYGON(...) |   ---> *.gpq
+           | 2021-06-30 | [0.2, 0.5, ... x768] | POLYGON(...) |
+           | 2021-12-31 | [0.3, 0.6, ... x768] | POLYGON(...) |
         """
         x: torch.Tensor = batch["image"]
         bboxes: np.ndarray = batch["bbox"].cpu().__array__()  # bounding boxes
