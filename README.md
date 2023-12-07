@@ -139,7 +139,7 @@ the batch fetch and run can use it.
 ```bash
 zip -FSrj "batch-fetch-and-run.zip" ./scripts/* -x "scripts/*.pyc"
 
-aws s3api put-object --bucket clay-fetch-and-run-zip --key "batch-fetch-and-run.zip" --body "batch-fetch-and-run.zip"
+aws s3api put-object --bucket clay-fetch-and-run-packages --key "batch-fetch-and-run.zip" --body "batch-fetch-and-run.zip"
 ```
 
 #### Submit job
