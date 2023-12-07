@@ -22,8 +22,7 @@ Functions:
       Search for DEM items within a given bounding box.
 - make_datasets(s2_item, s1_items, dem_items, resolution):
       Create xarray Datasets for Sentinel-2, Sentinel-1, and DEM data.
-- process(aoi, start_year, end_year, resolution, cloud_cover_percentage,
-          nodata_pixel_percentage):
+- process(aoi, year, resolution, cloud_cover_percentage, nodata_pixel_percentage):
       Process Sentinel-2, Sentinel-1, and DEM data for a specified time range,
       area of interest, and resolution.
 """
@@ -48,6 +47,7 @@ CLOUD_COVER_PERCENTAGE = 50
 NODATA_PIXEL_PERCENTAGE = 20
 NODATA = 0
 S1_MATCH_ATTEMPTS = 20
+DATES_PER_LOCATION = 3
 
 
 def get_surrounding_days(reference, interval_days):
@@ -124,6 +124,8 @@ def search_sentinel2(
 
     s2_items = search.item_collection()
     print(f"Found {len(s2_items)} Sentinel-2 items")
+    if not len(s2_items):
+        return None, None
 
     s2_items_gdf = gpd.GeoDataFrame.from_features(s2_items.to_dict())
 
@@ -314,22 +316,20 @@ def make_datasets(s2_items, s1_items, dem_items, resolution):
 
 def process(
     aoi,
-    start_year,
-    end_year,
+    year,
     resolution,
     cloud_cover_percentage,
     nodata_pixel_percentage,
 ):
     """
     Process Sentinel-2, Sentinel-1, and Copernicus DEM data for a specified
-    time range, area of interest (AOI), resolution, EPSG code, cloud cover
+    year, area of interest (AOI), resolution, EPSG code, cloud cover
     percentage, and nodata pixel percentage.
 
     Parameters:
     - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of
         Interest (AOI).
-    - start_year (int): The starting year of the date range.
-    - end_year (int): The ending year of the date range.
+    - year (int): The year for finding imagery.
     - resolution (int): Spatial resolution.
     - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage
         for Sentinel-2 images.
@@ -339,7 +339,6 @@ def process(
     Returns:
     - xr.Dataset: Merged xarray Dataset containing processed data.
     """
-    year = random.randint(start_year, end_year)
     date_range = f"{year}-01-01/{year}-12-31"
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
 
@@ -352,6 +351,8 @@ def process(
             nodata_pixel_percentage,
             index=i,
         )
+        if not s2_item:
+            continue
 
         surrounding_days = get_surrounding_days(s2_item.datetime, interval_days=3)
         print("Searching S1 in date range", surrounding_days)
@@ -362,9 +363,11 @@ def process(
             break
 
     if i == S1_MATCH_ATTEMPTS - 1:
-        raise ValueError(
-            f"No match for S1 scenes found after {S1_MATCH_ATTEMPTS} attempts."
+        print(
+            "No match for S1 scenes found for year "
+            f"{year} after {S1_MATCH_ATTEMPTS} attempts."
         )
+        return None, None
 
     dem_items = search_dem(bbox, catalog)
 
@@ -424,31 +427,49 @@ def convert_attrs_and_coords_objects_to_str(data):
     help="For debugging, subset x and y to this pixel window.",
 )
 def main(sample, index, subset, bucket):
-    print("Starting algorithm for MGRS tile with index", index)
     index = int(index)
     tiles = gpd.read_file(sample)
     tile = tiles.iloc[index]
-    start_year = 2017
-    end_year = 2023
-    date, pixels = process(
-        tile.geometry,
-        start_year,
-        end_year,
-        SPATIAL_RESOLUTION,
-        CLOUD_COVER_PERCENTAGE,
-        NODATA_PIXEL_PERCENTAGE,
-    )
     mgrs = tile["name"]
-    if subset:
-        subset = [int(dat) for dat in subset.split(",")]
-        print(f"Subsetting to {subset}")
-        pixels = [
-            part[:, subset[1] : subset[3], subset[0] : subset[2]] for part in pixels
-        ]
 
-    pixels = [part.compute() for part in pixels]
+    print(f"Starting algorithm for MGRS tile {tile['name']} with index {index}")
 
-    tiler(pixels, date, mgrs, bucket)
+    # Shuffle years, use index as seed for reproducibility but no
+    # to have the same shuffle every time.
+    years = [2017, 2018, 2019, 2020, 2021, 2022, 2023]
+    random.seed(index)
+    random.shuffle(years)
+    match_count = 0
+    for year in years:
+        print(f"Processing data for year {year}")
+        date, pixels = process(
+            tile.geometry,
+            year,
+            SPATIAL_RESOLUTION,
+            CLOUD_COVER_PERCENTAGE,
+            NODATA_PIXEL_PERCENTAGE,
+        )
+        if date is None:
+            continue
+        else:
+            match_count += 1
+
+        if subset:
+            subset = [int(dat) for dat in subset.split(",")]
+            print(f"Subsetting to {subset}")
+            pixels = [
+                part[:, subset[1] : subset[3], subset[0] : subset[2]] for part in pixels
+            ]
+
+        pixels = [part.compute() for part in pixels]
+
+        tiler(pixels, date, mgrs, bucket)
+
+        if match_count == DATES_PER_LOCATION:
+            break
+
+    if not match_count:
+        raise ValueError("No matching data found")
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ import xarray as xr
 from rasterio.enums import ColorInterp
 
 NODATA = 0
-TILE_SIZE = 256
+TILE_SIZE = 512
 PIXELS_PER_TILE = TILE_SIZE * TILE_SIZE
 BAD_PIXEL_MAX_PERCENTAGE = 0.3
 SCL_FILTER = [0, 1, 3, 8, 9, 10]
@@ -89,12 +89,12 @@ def tiler(stack, date, mgrs, bucket):
                 # Only concat here to save memory, it converts S2 data to float
                 tile = xr.concat(parts, dim="band").rename("tile")
 
-                if not filter_clouds_nodata(tile):
-                    continue
-
                 counter += 1
                 if counter % 100 == 0:
                     print(f"Counted {counter} tiles")
+
+                if not filter_clouds_nodata(tile):
+                    continue
 
                 tile = tile.drop_sel(band="SCL")
 
@@ -120,6 +120,13 @@ def tiler(stack, date, mgrs, bucket):
 
         print(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
         subprocess.run(
-            ["aws", "s3", "sync", dir, f"s3://{bucket}/{VERSION}/{mgrs}/{date}"],
+            [
+                "aws",
+                "s3",
+                "sync",
+                dir,
+                f"s3://{bucket}/{VERSION}/{mgrs}/{date}",
+                "--no-progress",
+            ],
             check=True,
         )
