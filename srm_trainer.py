@@ -10,14 +10,14 @@ References:
 - https://pytorch-lightning.medium.com/introducing-lightningcli-v2-supercharge-your-training-c070d43c7dd6
 """
 import lightning as L
-from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
+from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
 from lightning.pytorch.cli import ArgsType, LightningCLI
-from lightning.pytorch.plugins.io import AsyncCheckpointIO
 from lightning.pytorch.loggers import WandbLogger
+from lightning.pytorch.plugins.io import AsyncCheckpointIO
 
+from src.callbacks import LogIntermediatePredictions
 from src.model import CLAYModule
 from src.srm_datamodule import ClayDataModule
-from src.callbacks import LogIntermediatePredictions
 
 
 def main():

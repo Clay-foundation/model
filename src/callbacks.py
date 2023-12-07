@@ -1,9 +1,9 @@
 import lightning as L
-from lightning.pytorch.callbacks import Callback
+import matplotlib.pyplot as plt
 import torch
 import wandb
 from einops import rearrange
-import matplotlib.pyplot as plt
+from lightning.pytorch.callbacks import Callback
 
 
 class LogIntermediatePredictions(Callback):

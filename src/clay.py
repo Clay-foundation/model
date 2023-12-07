@@ -1,8 +1,7 @@
 import torch
-import numpy as np
+import torch.nn.functional as F
 from einops import rearrange, reduce, repeat
 from torch import nn
-import torch.nn.functional as F
 from vit_pytorch.vit import Transformer
 
 from src.utils import posemb_sincos_1d, posemb_sincos_2d
