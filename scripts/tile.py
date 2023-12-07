@@ -89,12 +89,12 @@ def tiler(stack, date, mgrs, bucket):
                 # Only concat here to save memory, it converts S2 data to float
                 tile = xr.concat(parts, dim="band").rename("tile")
 
-                if not filter_clouds_nodata(tile):
-                    continue
-
                 counter += 1
                 if counter % 100 == 0:
                     print(f"Counted {counter} tiles")
+
+                if not filter_clouds_nodata(tile):
+                    continue
 
                 tile = tile.drop_sel(band="SCL")
 
