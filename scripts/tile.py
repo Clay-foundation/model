@@ -21,7 +21,7 @@ TILE_SIZE = 256
 PIXELS_PER_TILE = TILE_SIZE * TILE_SIZE
 BAD_PIXEL_MAX_PERCENTAGE = 0.3
 SCL_FILTER = [0, 1, 3, 8, 9, 10]
-VERSION = "01"
+VERSION = "02"
 
 
 def filter_clouds_nodata(tile):
@@ -99,11 +99,18 @@ def tiler(stack, date, mgrs, bucket):
                 ] * (len(tile.band) - 3)
 
                 # Write tile to tempdir
-                name = f"{dir}/claytile-{mgrs}-{date}-{VERSION}-{counter}.tif"
+                name = "{dir}/claytile_{mgrs}_{date}_v{version}_{counter}.tif".format(
+                    dir=dir,
+                    mgrs=mgrs,
+                    date=date.replace("-", ""),
+                    version=VERSION,
+                    counter=str(counter).zfill(4),
+                )
                 tile.rio.to_raster(name, compress="deflate")
 
                 with rasterio.open(name, "r+") as rst:
                     rst.colorinterp = color
+                    rst.update_tags(date=date)
 
         print(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
         subprocess.run(
