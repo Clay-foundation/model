@@ -434,7 +434,7 @@ def main(sample, index, subset, bucket):
 
     print(f"Starting algorithm for MGRS tile {tile['name']} with index {index}")
 
-    # Shuffle years, use index as seed for reproducability but no
+    # Shuffle years, use index as seed for reproducibility but no
     # to have the same shuffle every time.
     years = [2017, 2018, 2019, 2020, 2021, 2022, 2023]
     random.seed(index)
