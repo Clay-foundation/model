@@ -90,9 +90,10 @@ To train the model for a hundred epochs:
 
     python trainer.py fit --trainer.max_epochs=100
 
-To generate embeddings from the pretrained model's encoder on one image:
+To generate embeddings from the pretrained model's encoder on 1024 images
+(stored as a GeoParquet file with spatiotemporal metadata):
 
-    python trainer.py predict --ckpt_path=checkpoints/last.ckpt --data.batch_size=1 --trainer.limit_predict_batches=1
+    python trainer.py predict --ckpt_path=checkpoints/last.ckpt --data.batch_size=1000 --trainer.limit_predict_batches=1
 
 More options can be found using `python trainer.py fit --help`, or at the
 [LightningCLI docs](https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html).
