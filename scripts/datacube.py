@@ -47,6 +47,7 @@ CLOUD_COVER_PERCENTAGE = 50
 NODATA_PIXEL_PERCENTAGE = 20
 NODATA = 0
 S1_MATCH_ATTEMPTS = 20
+DATES_PER_LOCATION = 3
 
 
 def get_surrounding_days(reference, interval_days):
@@ -429,6 +430,8 @@ def main(sample, index, subset, bucket):
     index = int(index)
     tiles = gpd.read_file(sample)
     tile = tiles.iloc[index]
+    mgrs = tile["name"]
+
     print(f"Starting algorithm for MGRS tile {tile['name']} with index {index}")
 
     # Shuffle years, use index as seed for reproducability but no
@@ -436,6 +439,7 @@ def main(sample, index, subset, bucket):
     years = [2017, 2018, 2019, 2020, 2021, 2022, 2023]
     random.seed(index)
     random.shuffle(years)
+    match_count = 0
     for year in years:
         print(f"Processing data for year {year}")
         date, pixels = process(
@@ -445,23 +449,27 @@ def main(sample, index, subset, bucket):
             CLOUD_COVER_PERCENTAGE,
             NODATA_PIXEL_PERCENTAGE,
         )
-        if date is not None:
+        if date is None:
+            continue
+        else:
+            match_count += 1
+
+        if subset:
+            subset = [int(dat) for dat in subset.split(",")]
+            print(f"Subsetting to {subset}")
+            pixels = [
+                part[:, subset[1] : subset[3], subset[0] : subset[2]] for part in pixels
+            ]
+
+        pixels = [part.compute() for part in pixels]
+
+        tiler(pixels, date, mgrs, bucket)
+
+        if match_count == DATES_PER_LOCATION:
             break
 
-    if date is None:
+    if not match_count:
         raise ValueError("No matching data found")
-
-    mgrs = tile["name"]
-    if subset:
-        subset = [int(dat) for dat in subset.split(",")]
-        print(f"Subsetting to {subset}")
-        pixels = [
-            part[:, subset[1] : subset[3], subset[0] : subset[2]] for part in pixels
-        ]
-
-    pixels = [part.compute() for part in pixels]
-
-    tiler(pixels, date, mgrs, bucket)
 
 
 if __name__ == "__main__":
