@@ -6,8 +6,11 @@ https://github.com/Lightning-AI/deep-learning-project-template
 """
 import os
 
+import geopandas as gpd
 import lightning as L
 import numpy as np
+import pyarrow as pa
+import shapely
 import torch
 import transformers
 
@@ -129,12 +132,14 @@ class ViTLitModule(L.LightningModule):
         """
         pass
 
-    def predict_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def predict_step(self, batch: torch.Tensor, batch_idx: int) -> gpd.GeoDataFrame:
         """
         Logic for the neural network's prediction loop.
         """
         x: torch.Tensor = batch["image"]
-        # x: torch.Tensor = torch.randn(32, 13, 256, 256)  # BCHW
+        bboxes: np.ndarray = batch["bbox"].cpu().__array__()  # bounding boxes
+        dates: list[str] = batch["date"]  # dates, e.g. ['2022-12-12', '2022-12-12']
+        epsgs: torch.Tensor = batch["epsg"]  # coordinate reference systems as EPSG code
 
         # Forward encoder
         self.vit.config.mask_ratio = 0  # disable masking
@@ -154,14 +159,42 @@ class ViTLitModule(L.LightningModule):
             [self.B, 768]  # (batch_size, hidden_size)
         )
 
-        # Save embeddings in npy format
+        # Create table to store the embeddings with spatiotemporal metadata
+        unique_epsg_codes = set(int(epsg) for epsg in epsgs)
+        if len(unique_epsg_codes) == 1:  # check that there's only 1 unique EPSG
+            epsg: int = batch["epsg"][0]
+        else:
+            raise NotImplementedError(
+                f"More than 1 EPSG code detected: {unique_epsg_codes}"
+            )
+
+        gdf = gpd.GeoDataFrame(
+            data={
+                "date": gpd.pd.to_datetime(arg=dates, format="%Y-%m-%d").astype(
+                    dtype="date32[day][pyarrow]"
+                ),
+                "embeddings": pa.FixedShapeTensorArray.from_numpy_ndarray(
+                    embeddings_mean.cpu().detach().__array__()
+                ),
+            },
+            geometry=shapely.box(
+                xmin=bboxes[:, 0],
+                ymin=bboxes[:, 1],
+                xmax=bboxes[:, 2],
+                ymax=bboxes[:, 3],
+            ),
+            crs=f"EPSG:{epsg}",
+        )
+        gdf = gdf.to_crs(crs="OGC:CRS84")  # reproject from UTM to lonlat coordinates
+
+        # Save embeddings in GeoParquet format
         outfolder: str = f"{self.trainer.default_root_dir}/data/embeddings"
         os.makedirs(name=outfolder, exist_ok=True)
-        outfile = f"{outfolder}/embedding_{batch_idx}.npy"
-        np.save(file=outfile, arr=embeddings_mean.cpu())
-        print(f"Saved embeddings of shape {tuple(embeddings_mean.shape)} to {outfile}")
+        outpath = f"{outfolder}/embeddings_{batch_idx}.gpq"
+        gdf.to_parquet(path=outpath, schema_version="1.0.0")
+        print(f"Saved embeddings of shape {tuple(embeddings_mean.shape)} to {outpath}")
 
-        return embeddings_mean
+        return gdf
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """
