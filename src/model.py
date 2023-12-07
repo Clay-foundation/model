@@ -1,21 +1,36 @@
 import lightning as L
 import torch
 
-from src.geomae import GeoMAE
-from vit_pytorch import MAE
+from src.clay import clay_small
 
 
-class GeoMAEModule(L.LightningModule):
-    def __init__(self, lr=1e-2):
+class CLAYModule(L.LightningModule):
+    def __init__(self, **kwargs):
         super().__init__()
         self.save_hyperparameters(logger=True)
-        self.model = GeoMAE()
+        self.model = clay_small()
 
     def forward(self, cube: dict[str, torch.Tensor]):
         return self.model(cube)
 
     def configure_optimizers(self):
-        return torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)
+        optimizer = torch.optim.AdamW(
+            self.parameters(),
+            lr=self.hparams.lr,
+            weight_decay=self.hparams.wd,
+            betas=(self.hparams.b1, self.hparams.b2),
+        )
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+            optimizer, T_0=100, T_mult=2, eta_min=self.hparams.lr * 100, last_epoch=-1
+        )
+
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "interval": "step",
+            },
+        }
 
     def shared_step(self, batch: dict[str, torch.Tensor], batch_idx: int, phase: str):
         cube = batch

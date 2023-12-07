@@ -2,6 +2,7 @@ import torch
 import numpy as np
 from einops import rearrange, reduce, repeat
 from torch import nn
+import torch.nn.functional as F
 from vit_pytorch.vit import Transformer
 from src.utils import posemb_sincos_2d, posemb_sincos_1d
 
@@ -39,6 +40,7 @@ class Encoder(nn.Module):
         depth,
         heads,
         dim_head,
+        mlp_ratio,
         bands,
         band_groups,
         dropout,
@@ -59,7 +61,9 @@ class Encoder(nn.Module):
         self.num_spatial_patches = (image_size // patch_size) ** 2
         self.num_group_patches = len(band_groups)
         self.num_patches = self.num_spatial_patches * self.num_group_patches
-        self.num_masked_patches = int(self.mask_ratio * self.num_patches)
+        self.num_masked_patches = int(
+            self.mask_ratio * self.num_patches
+        )  # Number of patches to be masked out
 
         # Split the embedding dimensions between spatial & band patches equally
         pos_dim = band_dim = dim // 2
@@ -72,12 +76,8 @@ class Encoder(nn.Module):
                 for name, bands in self.band_groups.items()
             }
         )
-        # self.pos_encoding = nn.Embedding(
-        #     num_embeddings=self.num_spatial_patches, embedding_dim=pos_dim
-        # )
-        # self.band_encoding = nn.Embedding(
-        #     num_embeddings=self.num_group_patches, embedding_dim=band_dim
-        # )
+
+        # Fix the position & band embedding to sine & cosine functions
         self.pos_encoding = posemb_sincos_2d(
             h=image_size // patch_size, w=image_size // patch_size, dim=pos_dim
         )  # [L D/2]
@@ -85,7 +85,7 @@ class Encoder(nn.Module):
             length=self.num_group_patches, dim=band_dim
         )  # [G D/2]
 
-        # freeze the position & band encoding
+        # Freeze the weights of position & band encoding
         self.pos_encoding = self.pos_encoding.to(self.device).requires_grad_(False)
         self.band_encoding = self.band_encoding.to(self.device).requires_grad_(False)
 
@@ -96,12 +96,9 @@ class Encoder(nn.Module):
             depth=depth,
             heads=heads,
             dim_head=dim_head,
-            mlp_dim=dim * 2,
+            mlp_dim=dim * mlp_ratio,
             dropout=dropout,
         )
-        self.to_latent = nn.Identity()
-
-        # self.mlp_head = nn.Linear(dim, num_classes)
 
     def to_patch_embed(self, cube):
         """Patchify the input cube & create embeddings per patch
@@ -131,7 +128,7 @@ class Encoder(nn.Module):
         """
         B, G, L, D = patches.shape
 
-        # align position & band embeddings across patches
+        # Align position & band embeddings across patches
         pos_encoding = repeat(
             self.pos_encoding, "L D -> 1 repeat L D", repeat=G
         )  # [1 G L D/2]
@@ -139,28 +136,12 @@ class Encoder(nn.Module):
         band_encoding = repeat(
             self.band_encoding, "G D -> 1 G repeat D", repeat=L
         )  # [1 G L D/2]
-        # pos_encoding = repeat(
-        #     rearrange(
-        #         self.pos_encoding(torch.arange(L, device=patches.device)),
-        #         "L D -> 1 1 L D",
-        #     ),
-        #     "1 1 L D -> 1 repeat L D",
-        #     repeat=G,
-        # )  # [1 G L D/2]
-        # band_encoding = repeat(
-        #     rearrange(
-        #         self.band_encoding(torch.arange(G, device=patches.device)),
-        #         "G D -> 1 G 1 D",
-        #     ),
-        #     "1 G 1 D -> 1 G repeat D",
-        #     repeat=L,
-        # )  # [1 G L D/2]
 
         pos_band_encoding = torch.cat(
             (pos_encoding, band_encoding), dim=-1
         )  # [1 G L D]
 
-        # add position & band encoding to the input feature vector
+        # Add position & band encoding to the input feature vector
         patches = patches + pos_band_encoding  # [B G L D] + [1 G L D] - broadcasting
         patches = self.dropout(patches)  # [B G L D]
         return patches  # [B G L D]
@@ -232,9 +213,7 @@ class Encoder(nn.Module):
         unmasked_patches = patches[
             batch_indices, unmasked_indices, :
         ]  # [B GL:(1 - mask_ratio) D]
-        masked_patches = patches[
-            batch_indices, masked_indices, :
-        ]  # [B GL:mask_ratio D]
+        _ = patches[batch_indices, masked_indices, :]  # [B GL:mask_ratio D]
 
         return (
             unmasked_patches,
@@ -244,8 +223,6 @@ class Encoder(nn.Module):
         )  # [B GL:(1 - mask_ratio) D], [(1-mask_ratio)], [mask_ratio], [B G L]
 
     def forward(self, datacube):
-        """"""
-        # pdb.set_trace()
         cube, time, latlon = (
             datacube["pixels"],
             datacube["timestep"],
@@ -257,12 +234,10 @@ class Encoder(nn.Module):
         patches = self.to_patch_embed(
             cube
         )  # [B G L D] - patchify & create embeddings per patch
-        # print("patches", patches.mean(dim=(0, 2, 3)))
 
         patches = self.add_encodings(
             patches
         )  # [B G L D] - add position & band encoding to the embeddings
-        # print("patches + encode", patches.mean(dim=(0, 2, 3)))
 
         patches = rearrange(patches, "B G L D -> B (G L) D")  # [B (GL) D]
         patches = self.dropout(patches)  # [B (GL) D]
@@ -281,13 +256,11 @@ class Encoder(nn.Module):
         unmasked_patches = self.embed_metadata(
             unmasked_patches, latlon, time
         )  # [B (GL:(1 - mask_ratio) + 2) D]
-        # print("unmasked_patches", unmasked_patches.mean(dim=(0, 2)))
 
         # pass the unmasked patches through the transformer
         encoded_unmasked_patches = self.transformer(
             unmasked_patches
         )  # [B (GL:(1 - mask_ratio) + 2) D]
-        # print("encoded_unmasked_patches", encoded_unmasked_patches.mean(dim=(0, 2)))
 
         return (
             encoded_unmasked_patches,
@@ -303,10 +276,12 @@ class Decoder(nn.Module):
         mask_ratio,
         image_size,
         patch_size,
+        encoder_dim,
         dim,
         depth,
         heads,
         dim_head,
+        mlp_ratio,
         bands,
         band_groups,
         dropout,
@@ -316,6 +291,7 @@ class Decoder(nn.Module):
         self.mask_ratio = mask_ratio
         self.image_size = image_size
         self.patch_size = patch_size
+        self.encoder_dim = encoder_dim
         self.dim = dim
         self.band_groups = band_groups
         self.device = device
@@ -324,34 +300,37 @@ class Decoder(nn.Module):
         self.num_patches = self.num_spatial_patches * self.num_group_patches
         self.num_masked_patches = int(self.mask_ratio * self.num_patches)
 
+        self.enc_to_dec = (
+            nn.Linear(encoder_dim, dim) if encoder_dim != dim else nn.Identity()
+        )
         self.mask_patch = nn.Parameter(torch.randn(dim))
         self.transformer = Transformer(
             dim=dim,
             depth=depth,
             heads=heads,
             dim_head=dim_head,
-            mlp_dim=dim * 2,
+            mlp_dim=dim * mlp_ratio,
             dropout=dropout,
         )
 
+        # Split the embedding dimensions between spatial & band patches equally
         pos_dim = band_dim = dim // 2
 
+        # Fix the position & band embedding to sine & cosine functions
         self.pos_encoding = posemb_sincos_2d(
             h=image_size // patch_size, w=image_size // patch_size, dim=pos_dim
         )  # [L D/2]
         self.band_encoding = posemb_sincos_1d(
             length=self.num_group_patches, dim=band_dim
         )  # [G D/2]
-        # self.pos_encoding = nn.Embedding((image_size // patch_size) ** 2, pos_dim)
-        # self.band_encoding = nn.Embedding(len(band_groups), band_dim)
 
-        # freeze the position & band encoding
+        # Freeze the weights of position & band encoding
         self.pos_encoding = self.pos_encoding.to(self.device).requires_grad_(False)
         self.band_encoding = self.band_encoding.to(self.device).requires_grad_(False)
 
         self.embed_to_pixels = nn.ModuleDict(
             {
-                name: nn.Linear(dim, len(bands) * (patch_size**2))
+                name: nn.Linear(dim, (patch_size**2) * len(bands))
                 for name, bands in self.band_groups.items()
             }
         )
@@ -369,40 +348,15 @@ class Decoder(nn.Module):
         Returns:
             decoder_patches (torch.Tensor): A tensor of shape (B, GL, D) containing the embeddings for the decoder part of the model
         """
-        # import pdb
-
-        # pdb.set_trace()
         B, *_ = unmasked_patches.shape
 
-        # align position & band embeddings across patches
+        # Align position & band embeddings across patches
         pos_encoding = repeat(
             self.pos_encoding, "L D -> 1 repeat L D", repeat=self.num_group_patches
         )  # [1 G L D/2]
         band_encoding = repeat(
             self.band_encoding, "G D -> 1 G repeat D", repeat=self.num_spatial_patches
         )  # [1 G L D/2]
-        # pos_encoding = repeat(
-        #     rearrange(
-        #         self.pos_encoding(
-        #             torch.arange(
-        #                 self.num_spatial_patches, device=unmasked_patches.device
-        #             )
-        #         ),
-        #         "L D -> 1 1 L D",
-        #     ),
-        #     "1 1 L D -> 1 repeat L D",
-        #     repeat=self.num_group_patches,
-        # )  # [1 G L D/2]
-        # band_encoding = repeat(
-        #     rearrange(
-        #         self.band_encoding(
-        #             torch.arange(self.num_group_patches, device=unmasked_patches.device)
-        #         ),
-        #         "G D -> 1 G 1 D",
-        #     ),
-        #     "1 G 1 D -> 1 G repeat D",
-        #     repeat=self.num_spatial_patches,
-        # )  # [1 G L D/2]
 
         pos_band_encoding = torch.cat(
             (pos_encoding, band_encoding), dim=-1
@@ -424,7 +378,7 @@ class Decoder(nn.Module):
             batch_indices, masked_indices, :
         ]  # [B (GL:mask_ratio) D]
 
-        # reconstruct the masked patches from the random mask patch & add position & band encoding to them
+        # Reconstruct the masked patches from the random mask patch & add position & band encoding to them
         masked_patches = repeat(
             self.mask_patch, "D -> B GL D", B=B, GL=self.num_masked_patches
         )  # [B GL:mask_ratio D]
@@ -432,11 +386,12 @@ class Decoder(nn.Module):
             masked_patches + masked_pos_band_encoding
         )  # [B GL:mask_ratio D] + [B GL:mask_ratio D]
 
-        # add position & band encoding to the unmasked patches
+        # Add position & band encoding to the unmasked patches
         unmasked_patches = (
             unmasked_patches + unmasked_pos_band_encoding
         )  # [B GL:(1 - masked_ratio) D] + [B GL:(1 - mask_ratio) D]
 
+        # Concatenate the masked & unmasked patches
         decoder_patches = torch.zeros(
             (B, self.num_patches, self.dim), device=unmasked_patches.device
         )  # [B GL D]
@@ -464,10 +419,10 @@ class Decoder(nn.Module):
         pixels = []
         for i, (name, bands) in enumerate(self.band_groups.items()):
             group_embeddings = patches[:, i, :, :]  # [B L D]
-            group_pixels = self.embed_to_pixels[name](group_embeddings)  # [B L (C P P)]
+            group_pixels = self.embed_to_pixels[name](group_embeddings)  # [B L (P P C)]
             group_pixels = rearrange(
                 group_pixels,
-                "B L (C PP) -> B C L PP",
+                "B L (PP C) -> B C L PP",
                 PP=(self.patch_size**2),
             )  # [B C L PP]
             pixels.append(group_pixels)  # [B C L PP]
@@ -476,38 +431,58 @@ class Decoder(nn.Module):
         return pixels  # [B C L PP]
 
     def forward(self, encoded_unmasked_patches, unmasked_indices, masked_indices):
+        # Change the embedding dimension from encoder to decoder
+        encoded_unmasked_patches = self.enc_to_dec(encoded_unmasked_patches)
+
+        # Split the patches into encoded unmasked patches & meta patches
         encoded_unmasked_patches, encoded_unmasked_meta_patches = (
             encoded_unmasked_patches[:, :-2, :],
             encoded_unmasked_patches[:, -2:, :],
         )  # [B (GL:(1 - mask_ratio)) D], [B 2 D]
 
-        # reconstruct the patches to feed into the decoder transformer
+        # Reconstruct the patches to feed into the decoder transformer
         decoder_patches = self.reconstruct_and_add_encoding(
             encoded_unmasked_patches, unmasked_indices, masked_indices
         )  # [B GL D]
 
-        # add the metadata patches to the decoder patches
+        # Add the metadata patches back to the decoder patches
         decoder_patches = torch.cat(
             [decoder_patches, encoded_unmasked_meta_patches], dim=1
         )  # [B (GL + 2) D]
 
-        # pass the decoder patches through the transformer
+        # Pass the decoder patches through the transformer
         decoded_patches = self.transformer(decoder_patches)  # [B (GL + 2) D]
 
-        # remove the metadata patches from the decoded patches
+        # Remove the metadata patches from the decoded patches
         decoded_patches = decoded_patches[:, :-2, :]  # [B GL D]
 
-        # pixelify the decoded patches
+        # Piixelify the decoded patches
         pixels = self.pixelify(decoded_patches)  # [B C L PP]
         return pixels
 
 
-class GeoMAE(nn.Module):
+class CLAY(nn.Module):
     def __init__(
         self,
-        mask_ratio=0.75,
-        image_size=256,
-        patch_size=32,
+        mask_ratio,
+        image_size,
+        patch_size,
+        # ENCODER
+        dim,
+        depth,
+        heads,
+        dim_head,
+        mlp_ratio,
+        dropout,
+        emb_dropout,
+        # DECODER
+        decoder_dim,
+        decoder_depth,
+        decoder_heads,
+        decoder_dim_head,
+        decoder_mlp_ratio,
+        decoder_dropout,
+        # EO
         bands=13,
         band_groups={
             "rgb": (2, 1, 0),
@@ -517,19 +492,6 @@ class GeoMAE(nn.Module):
             "sar": (10, 11),
             "dem": (12,),
         },
-        # ENCODER
-        dim=128,
-        depth=2,
-        heads=4,
-        dim_head=32,
-        dropout=0.0,
-        emb_dropout=0.0,
-        # DECODER
-        decoder_dim=128,
-        decoder_depth=1,
-        decoder_heads=4,
-        decoder_dim_head=32,
-        decoder_dropout=0.0,
     ):
         super().__init__()
         self.mask_ratio = mask_ratio
@@ -548,6 +510,7 @@ class GeoMAE(nn.Module):
             depth=depth,
             heads=heads,
             dim_head=dim_head,
+            mlp_ratio=mlp_ratio,
             bands=bands,
             band_groups=band_groups,
             dropout=dropout,
@@ -559,10 +522,12 @@ class GeoMAE(nn.Module):
             mask_ratio=mask_ratio,
             image_size=image_size,
             patch_size=patch_size,
+            encoder_dim=dim,
             dim=decoder_dim,
             depth=decoder_depth,
             heads=decoder_heads,
             dim_head=decoder_dim_head,
+            mlp_ratio=decoder_mlp_ratio,
             bands=bands,
             band_groups=band_groups,
             dropout=decoder_dropout,
@@ -585,9 +550,9 @@ class GeoMAE(nn.Module):
             p1=self.patch_size,
             p2=self.patch_size,
         )  # [B C L PP]
-        # print("patch", patches.mean(dim=(0, 2, 3)))
-        # print("pixel", pixels.mean(dim=(0, 2, 3)))
-        loss = (patches - pixels) ** 2  # loss per pixel
+
+        # loss = (patches - pixels) ** 2  # loss per pixel
+        loss = F.mse_loss(patches, pixels, reduction="none")  # loss per pixel
         loss = reduce(loss, "B C L PP -> B C L", reduction="mean")  # loss per patch
 
         # mask out the loss for unmasked patches
@@ -603,7 +568,6 @@ class GeoMAE(nn.Module):
                 :, i
             ].sum()  # (B, L) -> (B) -> scalar
 
-        # print(actual_loss, masked_patches_in_group)
         return actual_loss / masked_patches_in_group
 
     def forward(self, datacube):
@@ -616,7 +580,6 @@ class GeoMAE(nn.Module):
         ) = self.encoder(
             datacube
         )  # [B (GL:(1 - mask_ratio) + 2) D], [(1-mask_ratio)], [mask_ratio], [B G L]
-        # print("encoded_unmasked_patches", encoded_unmasked_patches.mean(dim=(0, 2)))
 
         # DECODER
         pixels = self.decoder(
@@ -629,24 +592,101 @@ class GeoMAE(nn.Module):
         return loss
 
 
-if __name__ == "__main__":
-    import math
+def clay_tiny(**kwargs):
+    model = CLAY(
+        mask_ratio=0.75,
+        image_size=256,
+        patch_size=32,
+        # ENCODER
+        dim=256,
+        depth=4,
+        heads=4,
+        dim_head=64,
+        mlp_ratio=2,
+        dropout=0.0,
+        emb_dropout=0.0,
+        # DECODER
+        decoder_dim=128,
+        decoder_depth=2,
+        decoder_heads=2,
+        decoder_dim_head=64,
+        decoder_mlp_ratio=2,
+        decoder_dropout=0.0,
+        **kwargs,
+    )
+    return model
 
-    # Random data
-    cube = {
-        "pixels": torch.randn(3, 13, 256, 256),
-        "timestep": torch.tensor(
-            data=[[2017.0, 10.0, 5.0], [2020.0, 1.0, 31.0], [2022.0, 5.0, 15.0]]
-        ),
-        "latlon": torch.tensor(
-            data=[
-                [math.radians(57.0), math.radians(-2.0)],
-                [math.radians(27.0), math.radians(16.5)],
-                [math.radians(57.0), math.radians(-2.0)],
-            ]
-        ),
-    }
 
-    model = GeoMAE()
-    loss = model(cube)
-    # print(loss)
+def clay_small(**kwargs):
+    model = CLAY(
+        mask_ratio=0.75,
+        image_size=256,
+        patch_size=32,
+        # ENCODER
+        dim=768,
+        depth=12,
+        heads=12,
+        dim_head=64,
+        mlp_ratio=4,
+        dropout=0.0,
+        emb_dropout=0.0,
+        # DECODER
+        decoder_dim=512,
+        decoder_depth=8,
+        decoder_heads=8,
+        decoder_dim_head=64,
+        decoder_mlp_ratio=4,
+        decoder_dropout=0.0,
+        **kwargs,
+    )
+    return model
+
+
+def clay_medium(**kwargs):
+    model = CLAY(
+        mask_ratio=0.75,
+        image_size=256,
+        patch_size=16,
+        # ENCODER
+        dim=1024,
+        depth=24,
+        heads=16,
+        dim_head=64,
+        mlp_ratio=4,
+        dropout=0.0,
+        emb_dropout=0.0,
+        # DECODER
+        decoder_dim=512,
+        decoder_depth=8,
+        decoder_heads=16,
+        decoder_dim_head=64,
+        decoder_mlp_ratio=4,
+        decoder_dropout=0.0,
+        **kwargs,
+    )
+    return model
+
+
+def clay_large(**kwargs):
+    model = CLAY(
+        mask_ratio=0.75,
+        image_size=256,
+        patch_size=16,
+        # ENCODER
+        dim=1280,
+        depth=32,
+        heads=16,
+        dim_head=64,
+        mlp_ratio=4,
+        dropout=0.0,
+        emb_dropout=0.0,
+        # DECODER
+        decoder_dim=512,
+        decoder_depth=8,
+        decoder_heads=16,
+        decoder_dim_head=64,
+        decoder_mlp_ratio=4,
+        decoder_dropout=0.0,
+        **kwargs,
+    )
+    return model

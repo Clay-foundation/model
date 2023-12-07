@@ -10,18 +10,19 @@ References:
 - https://pytorch-lightning.medium.com/introducing-lightningcli-v2-supercharge-your-training-c070d43c7dd6
 """
 import lightning as L
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 from lightning.pytorch.cli import ArgsType, LightningCLI
 from lightning.pytorch.plugins.io import AsyncCheckpointIO
 from lightning.pytorch.loggers import WandbLogger
 
-from src.model_geomae import GeoMAEModule
+from src.model import CLAYModule
 from src.srm_datamodule import ClayDataModule
+from src.callbacks import LogIntermediatePredictions
 
 
 def main():
-    model = GeoMAEModule(lr=1e-2)
-    dm = ClayDataModule(batch_size=128, num_workers=8)
+    model = CLAYModule(lr=5e-5, wd=0.05, b1=0.9, b2=0.95)
+    dm = ClayDataModule(batch_size=64, num_workers=8)
     dm.setup()
 
     wandb_logger = WandbLogger(project="CLAY-v0", log_model=False)
@@ -35,14 +36,16 @@ def main():
         auto_insert_metric_name=False,
         filename="mae_epoch-{epoch:02d}_val-loss-{val/loss:.3f}",
     )
+    lr_monitor_callback = LearningRateMonitor(logging_interval="step")
+    log_preds_callback = LogIntermediatePredictions(wandb_logger)
 
     trainer = L.Trainer(
         accelerator="gpu",
         devices=1,
         precision="bf16-mixed",
-        max_epochs=20,
+        max_epochs=50,
         logger=[wandb_logger],
-        callbacks=[ckpt_callback],
+        callbacks=[ckpt_callback, lr_monitor_callback, log_preds_callback],
         log_every_n_steps=1,
     )
 
