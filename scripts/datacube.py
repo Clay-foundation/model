@@ -400,6 +400,12 @@ def convert_attrs_and_coords_objects_to_str(data):
 
 @click.command()
 @click.option(
+    "--sample",
+    required=False,
+    default="https://clay-mgrs-samples.s3.amazonaws.com/mgrs_sample.fgb",
+    help="Location of MGRS tile sample",
+)
+@click.option(
     "--index",
     required=False,
     default=0,
@@ -414,13 +420,13 @@ def convert_attrs_and_coords_objects_to_str(data):
 @click.option(
     "--subset",
     required=False,
-    default="1000,1000,2000,2000",
+    default=None,
     help="For debugging, subset x and y to this pixel window.",
 )
-def main(index, subset, bucket):
-    print("Starting algorithm", index)
+def main(sample, index, subset, bucket):
+    print("Starting algorithm for MGRS tile with index", index)
     index = int(index)
-    tiles = gpd.read_file("mgrs_sample.gpkg")
+    tiles = gpd.read_file(sample)
     tile = tiles.iloc[index]
     start_year = 2017
     end_year = 2023
