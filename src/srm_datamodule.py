@@ -33,17 +33,17 @@ class ClayDataset(Dataset):
 
         return year, month, day
 
-    def normalize_latlon(self, lat, lon):
-        lat_radians = math.radians(lat)
+    def normalize_latlon(self, lon, lat):
         lon_radians = math.radians(lon)
+        lat_radians = math.radians(lat)
 
         # Apply sine and cosine
-        lat = math.sin(lat_radians)
         lon = math.atan2(
             math.cos(lon_radians),
             math.sin(lon_radians),
         )
-        return lat, lon
+        lat = math.sin(lat_radians)
+        return lon, lat
 
     def read_chip(self, chip_path):
         # read timestep & normalize
@@ -58,8 +58,8 @@ class ClayDataset(Dataset):
         cx = (bounds.left + bounds.right) / 2
         cy = (bounds.top + bounds.bottom) / 2
         tfmer = ProjTransformer.from_crs(crs, "epsg:4326", always_xy=True)
-        lat, lon = tfmer.transform(cx, cy)
-        lat, lon = self.normalize_latlon(lat, lon)
+        lon, lat = tfmer.transform(cx, cy)
+        lon, lat = self.normalize_latlon(lon, lat)
 
         return {
             "pixels": chip.read(),
@@ -136,7 +136,7 @@ class ClayDataModule(L.LightningDataModule):
         )
 
     def setup(self, stage: str | None = None) -> None:
-        chips_path = list(self.data_dir.glob("**/*.tif"))
+        chips_path = list(self.data_dir.glob("**/*.tif"))[:10_000]
         random.shuffle(chips_path)
         split_ratio = 0.8
         split = int(len(chips_path) * split_ratio)
