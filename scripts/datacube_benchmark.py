@@ -5,7 +5,7 @@ Cloud to Street - Microsoft Flood benchmark dataset
 (see: https://beta.source.coop/repositories/c2sms/c2smsfloods/description/).
 It produces datacubes that reflect the structure of training data for a pretext MAE model.
 """
-import randomE
+import random
 from datetime import datetime, timedelta
 import boto3
 import click
