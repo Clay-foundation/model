@@ -1,37 +1,16 @@
 #!/usr/bin/env python3
 """
-STAC Data Processing Script
-
-This Python script processes Sentinel-2, Sentinel-1, and Copernicus DEM
-(Digital Elevation Model) data. It utilizes Microsoft's Planetary Computer API
-for data retrieval and manipulation.
-
-Constants:
-- STAC_API: Planetary Computer API endpoint
-- S2_BANDS: Bands used in Sentinel-2 data processing
-
-Functions:
-- get_surrounding_days(reference, interval_days):
-      Get the week range for a given date.
-- search_sentinel2(date_range, aoi, cloud_cover_percentage, nodata_pixel_percentage):
-      Search for Sentinel-2 items within a given date range and area of interest.
-- search_sentinel1(bbox, catalog, date_range):
-      Search for Sentinel-1 items within a given bounding box, STAC catalog,
-      and date range.
-- search_dem(bbox, catalog):
-      Search for DEM items within a given bounding box.
-- make_datasets(s2_item, s1_items, dem_items, resolution):
-      Create xarray Datasets for Sentinel-2, Sentinel-1, and DEM data.
-- process(aoi, start_year, end_year, resolution, cloud_cover_percentage,
-          nodata_pixel_percentage):
-      Process Sentinel-2, Sentinel-1, and DEM data for a specified time range,
-      area of interest, and resolution.
+This script contains functions to process Sentinel-2, Sentinel-1 and DEM data based on the 
+Cloud to Street - Microsoft Flood benchmark dataset 
+(see: https://beta.source.coop/repositories/c2sms/c2smsfloods/description/).
+It produces datacubes that reflect the structure of training data for a pretext MAE model.
 """
-import random
+import randomE
 from datetime import datetime, timedelta
 import boto3
 import click
 import geopandas as gpd
+import io
 import numpy as np
 import planetary_computer as pc
 import pystac_client
@@ -228,7 +207,6 @@ def search_sentinel1(bbox, catalog, date_range):
                 break
             else:
                 pass
-
         s1_items = ItemCollection(
             [item for item in s1_items if item.id in selected_item_ids]
         )
@@ -257,25 +235,25 @@ def search_dem(bbox, catalog):
     return dem_items
 
 
-def make_datasets(s2_items, s1_items, dem_items, resolution):
+def make_datasets(s2_items, s1_items, dem_items, resolution, bbox):
     """
-    Create xarray Datasets for Sentinel-2, Sentinel-1, and Copernicus DEM
-    data.
+    Creates datasets by stacking Sentinel-2, Sentinel-1, and DEM data arrays.
 
-    Parameters:
-    - s2_items (list): List of Sentinel-2 items.
-    - s1_items (list): List of Sentinel-1 items.
-    - dem_items (list): List of DEM items.
-    - resolution (int): Spatial resolution.
+    Args:
+    - s2_items (list): Sentinel-2 items obtained from the STAC API.
+    - s1_items (list): Sentinel-1 items obtained from the STAC API.
+    - dem_items (list): DEM (Digital Elevation Model) items obtained from the STAC API.
+    - resolution (int): Resolution for processing the datasets.
+    - bbox (list): Bounding box coordinates.
 
     Returns:
-    - tuple: A tuple containing xarray Datasets for Sentinel-2, Sentinel-1,
-        and Copernicus DEM.
+    - xarray.DataArray: A concatenated xarray DataArray containing stacked Sentinel-2, Sentinel-1, and DEM data.
     """
     da_sen2: xr.DataArray = stackstac.stack(
         items=s2_items,
         assets=S2_BANDS,
         resolution=resolution,
+        bounds=bbox,
         dtype=np.float32,
         fill_value=np.nan,
     )
@@ -324,92 +302,85 @@ def make_datasets(s2_items, s1_items, dem_items, resolution):
 
 def process(
     s2_item,
-    aoi,
-    start_year,
-    end_year,
+    bbox,
+    bbox_4326,
     resolution,
-    cloud_cover_percentage,
-    nodata_pixel_percentage,
 ):
     """
-    Process Sentinel-2, Sentinel-1, and Copernicus DEM data for a specified
-    time range, area of interest (AOI), resolution, EPSG code, cloud cover
-    percentage, and nodata pixel percentage.
+    Processes Sentinel-2, Sentinel-1 and DEM items retrieved from STAC API to create datasets.
 
-    Parameters:
-    - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of
-        Interest (AOI).
-    - start_year (int): The starting year of the date range.
-    - end_year (int): The ending year of the date range.
-    - resolution (int): Spatial resolution.
-    - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage
-        for Sentinel-2 images.
-    - nodata_pixel_percentage (int): Maximum acceptable percentage of nodata
-        pixels in Sentinel-2 images.
+    Args:
+    - s2_item (pystac.Item): Sentinel-2 item obtained from the STAC API.
+    - bbox (list): Bounding box coordinates in the original CRS format.
+    - bbox_4326 (list): Bounding box coordinates in EPSG:4326 format.
+    - resolution (int): Resolution for processing the datasets.
 
     Returns:
-    - xr.Dataset: Merged xarray Dataset containing processed data.
+    - xarray.DataArray or None: A concatenated xarray DataArray containing stacked Sentinel-2, 
+        Sentinel-1, and DEM data if successful, else None.
     """
-    #year = random.randint(start_year, end_year)
-    date_range = f"{start_year}/{end_year}"
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
 
     for i in range(S1_MATCH_ATTEMPTS):
-        s2_item, bbox = s2_item, aoi
-        print("s2_item: ", s2_item)
+        print("Sentinel-2 item: ", s2_item)
         surrounding_days = get_surrounding_days(s2_item.datetime, interval_days=3)
         print("Searching S1 in date range", surrounding_days)
 
-        s1_items = search_sentinel1(bbox, catalog, surrounding_days)
-
-        s1_items = [i for i in s1_items if i in S1_granules]
-
+        s1_items = search_sentinel1(bbox_4326, catalog, surrounding_days)
         if s1_items:
+            S1_granules_modified = [f"{'_'.join(i.split('_')[:-2])}_rtc" for i in S1_granules]
+            s1_items = [i for i in s1_items if i.id in S1_granules_modified]
+            print("Sentinel-1 items matching benchmark: ", s1_items)
             break
+    #if i == S1_MATCH_ATTEMPTS - 1:
+    #    raise ValueError(
+    #        f"No match for S1 scenes found after {S1_MATCH_ATTEMPTS} attempts."
+    #    )
+    if s1_items:
+        print(f"We retrieved {len(s1_items)} S1 items.")
+        dem_items = search_dem(bbox_4326, catalog)
 
-    if i == S1_MATCH_ATTEMPTS - 1:
-        raise ValueError(
-            f"No match for S1 scenes found after {S1_MATCH_ATTEMPTS} attempts."
+        date = s2_item.properties["datetime"][:10]
+        result = make_datasets(
+            s2_item,
+            s1_items,
+            dem_items,
+            resolution,
+            bbox
         )
 
-    dem_items = search_dem(bbox, catalog)
-
-    date = s2_item.properties["datetime"][:10]
-
-    result = make_datasets(
-        s2_item,
-        s1_items,
-        dem_items,
-        resolution,
-    )
-
-    return date, result
+        return result
+    else:
+        return None
 
 def find_stac_item_by_granule_name(catalog, collection_name, granule_name, bbox, time_range):
     """
-    Find a STAC Item by its granule name within a specific collection in a catalog.
+    Search for a STAC item within a specific collection by granule name, bounding box, and time range.
 
     Args:
-    - catalog_url (str): URL to the STAC catalog endpoint.
-    - collection_name (str): The name of the collection within the catalog.
-    - granule_name (str): The granule name to search for.
+    - catalog (pystac.Catalog): The PySTAC catalog containing the collection.
+    - collection_name (str): The name of the collection within the catalog to search.
+    - granule_name (str or None): The granule name to find within the collection. If None, returns the first item.
+    - bbox (list or tuple): Bounding box coordinates in [minx, miny, maxx, maxy] order.
+    - time_range (str): Time range in ISO8601 format, e.g., '2023-01-01T00:00:00Z/2023-12-31T23:59:59Z'.
 
     Returns:
-    - pystac.Item or None: The STAC Item if found, otherwise None.
+    - pystac.Item or None: The STAC item corresponding to the provided granule name within the specified collection.
+      Returns None if the granule name is not found or if no granule name is provided (granule_name=None).
     """
-    found_item = None
     search = catalog.search(collections=[collection_name], bbox=bbox, datetime=f"{time_range}/{time_range}")
     items = search.item_collection()
     print(f"Found {len(items)} items")
 
     for item in items:
         if granule_name and granule_name in item.id:
-            found_item = item
             break
         elif granule_name is None:
-            found_item = item
             break
-    return items[0]
+    if items:
+        return items[0]
+    else:
+        return None
 
 def list_objects_recursive(client, bucket_name, prefix=''):
     """
@@ -446,7 +417,7 @@ def get_image_granules(bucket_name, prefix):
     - prefix (str): The prefix (directory path) in the S3 bucket.
 
     Returns:
-    - tuple: A tuple containing lists of S2 images, S1 images, S2 granules, and S1 granules.
+    - tuple: A tuple containing lists of S2 images, S1 images, S2 granules, S1 granules and tile IDs.
     """
     # Initialize Boto3 S3 client
     s3 = boto3.client('s3')
@@ -457,10 +428,12 @@ def get_image_granules(bucket_name, prefix):
     # Filter S2 and S1 images
     S2_images = [i for i in files_in_s3 if '/s2/' in i]
     S1_images = [i for i in files_in_s3 if '/s1/' in i]
+    S2_images = list(set(['/'.join(i.split('/')[:-1]) for i in S2_images]))
+    S1_images = list(set(['/'.join(i.split('/')[:-1]) for i in S1_images]))
 
     # Extract granules from image paths
-    S2_granules = list(set([i.split('/')[-2] for i in S2_images]))
-    S1_granules = list(set([i.split('/')[-2] for i in S1_images]))
+    S2_granules = list(set([i.split('/')[-1] for i in S2_images]))
+    S1_granules = list(set([i.split('/')[-1] for i in S1_images]))
 
     tile_ids = [i.split('/')[2] for i in S2_images]
 
@@ -468,22 +441,25 @@ def get_image_granules(bucket_name, prefix):
 
 def process_image_granule(image_granule_path, bucket_name, bands=None):
     """
-    Process an image granule from an S3 bucket.
+    Extracts information from an image granule stored in an AWS S3 bucket.
 
     Args:
-    - image_granule_path (str): Path to the Sentinel-2 image granule in the S3 bucket.
-    - bucket_name (str): The name of the S3 bucket.
-    - bands (list): List of bands to consider (optional).
+    - image_granule_path (str): The path to the image granule in the S3 bucket.
+    - bucket_name (str): The name of the AWS S3 bucket containing the image granule.
+    - bands (list, optional): List of bands to consider from the image. Defaults to None.
 
     Returns:
-    - str: Extracted date from the granule name.
+    - tuple: A tuple containing:
+        - granule_name (str): The name of the processed granule.
+        - time_stamp (str): The timestamp extracted from the granule's name.
+        - bounds (list): The bounds of the processed granule.
+        - bounds_4326 (list): The bounds of the processed granule in EPSG:4326.
+        - crs: The CRS (Coordinate Reference System) of the granule.
     """
-
     # S3 bucket and file information
     b = bands[0]  # Take first band just for metadata
     print("image_granule_path: ", image_granule_path)
     file_key = f"{image_granule_path}/{b}.tif"  # File's key in S3 bucket
-    print(file_key)
 
     # Initialize a Boto3 S3 client
     s3 = boto3.client('s3')
@@ -496,13 +472,11 @@ def process_image_granule(image_granule_path, bucket_name, bands=None):
 
     data_array = data_array.rename(f"{b}")
     print("CRS: ", data_array.rio.crs)
-    print("Transform: ", data_array.rio.transform())
-
     # Get bounds
     bbox = data_array.rio.bounds()
     gbbox = gpd.GeoDataFrame(geometry=[box(bbox[0], bbox[1], bbox[2], bbox[3])])
     gbbox.crs = data_array.rio.crs
-    geobbox = gbbox.to_crs(f"EPSG:4326")
+    gbbox_4326 = gbbox.to_crs(f"EPSG:4326")
     granule = image_granule_path.split('/')[-1]
     print("Granule: ", granule)
     if "L1C" in granule:
@@ -518,7 +492,38 @@ def process_image_granule(image_granule_path, bucket_name, bands=None):
     time_stamp = str(time_stamp).split()[0]
     print("Extracted Date as datetime (without hours):", time_stamp)
 
-    return granule_name, time_stamp, geobbox.total_bounds.tolist()
+    return granule_name, time_stamp, gbbox.total_bounds.tolist(), gbbox_4326.total_bounds.tolist(), gbbox.crs
+
+def write_stack_to_s3(merged, bucket_name, granule_name, crs, tile_id):
+    """
+    Writes an xarray dataset stack to a GeoTIFF in an AWS S3 bucket.
+
+    Args:
+    - merged (xarray.Dataset): The dataset to be written to a GeoTIFF.
+    - bucket_name (str): The name of the AWS S3 bucket to write the GeoTIFF file.
+    - granule_name (str): The name of the granule.
+    - crs (str): The CRS (Coordinate Reference System) information.
+    - tile_id (str): The ID of the tile.
+
+    Returns:
+    - None: The GeoTIFF file is written to the specified S3 bucket and path.
+    """
+    merged = merged.drop_sel(band="SCL")
+    # Write tile to tempdir
+    name = f"{granule_name}.tif"
+    
+    # Set the geospatial information
+    merged.rio.set_spatial_dims('x', 'y', inplace=True)
+    merged.rio.write_crs(crs, inplace=True) 
+    merged.attrs["long_name"] = [str(x.values) for x in merged.band]
+
+    # Write the dataset to a GeoTIFF file in memory
+    tif_bytes = io.BytesIO()
+    merged.rio.to_raster(tif_bytes, driver='GTiff')
+
+    # Write the GeoTIFF file to S3
+    s3 = boto3.client('s3')
+    s3.put_object(Body=tif_bytes.getvalue(), Bucket=bucket_name, Key=f"c2smsfloods/datacube/chips_512/{tile_id}/{name}")
 
 def convert_attrs_and_coords_objects_to_str(data):
     """
@@ -539,38 +544,32 @@ def convert_attrs_and_coords_objects_to_str(data):
 
 
 def main(image_granule_path, bucket_name, prefix):
-    start_year = 2017
-    end_year = 2023
-
-    s3 = boto3.client('s3')
-
     collection = "sentinel-2-l2a"
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
     tile_id = image_granule_path.split('/')[2]
-    image_granule_path = '/'.join(image_granule_path.split('/')[:-1])
-    granule_name, time_stamp, bbox = process_image_granule(image_granule_path, bucket_name=bucket_name, bands=S2_BANDS_c2smsfloods)
+    granule_name, time_stamp, bbox, bbox_4326, crs = process_image_granule(image_granule_path, bucket_name=bucket_name, bands=S2_BANDS_c2smsfloods)
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
-    S2_L2A_item = find_stac_item_by_granule_name(catalog, collection, granule_name, bbox, time_stamp)
+    S2_L2A_item = find_stac_item_by_granule_name(catalog, collection, granule_name, bbox_4326, time_stamp)
 
-    date, merged = process(
-        S2_L2A_item,
-        bbox,
-        time_stamp,
-        time_stamp,
-        SPATIAL_RESOLUTION,
-        CLOUD_COVER_PERCENTAGE,
-        NODATA_PIXEL_PERCENTAGE,
-    )
-    merged = merged.compute()
-    print(merged)
-    # mgrs = 'na'
-    # tiler(merged, date, mgrs)
+    if S2_L2A_item:
+        merged = process(
+            S2_L2A_item,
+            bbox,
+            bbox_4326,
+            SPATIAL_RESOLUTION,
+        )
+        if merged is not None:
+            merged = merged.compute()
+            print(merged)
+            write_stack_to_s3(merged, bucket_name, granule_name, crs, tile_id)
+        return merged
+    else:
+        pass
 
 # List objects in the specified prefix (directory) in the bucket
-S2_images, S1_images, S2_granules, S1_granules, tile_ids = get_image_granules(bucket_name=BUCKET_NAME, prefix=PREFIX)  # Include the folder path or prefix
-# Test
-S2_images = S2_images[0:4]
-S1_images = S1_images[0:4]
+S2_images, S1_images, S2_granules, S1_granules, tile_ids = get_image_granules(bucket_name=BUCKET_NAME, prefix=PREFIX)
+print(f"We have {len(S2_images)} images to process.")
 
 for i in S2_images:
+    print(f"Processing {i}")
     main(str(i), BUCKET_NAME, PREFIX)
