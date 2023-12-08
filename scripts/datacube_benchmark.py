@@ -349,7 +349,7 @@ def process(
             bbox
         )
 
-        return result
+        return result, s1_items
     else:
         return None
 
@@ -494,7 +494,7 @@ def process_image_granule(image_granule_path, bucket_name, bands=None):
 
     return granule_name, time_stamp, gbbox.total_bounds.tolist(), gbbox_4326.total_bounds.tolist(), gbbox.crs
 
-def write_stack_to_s3(merged, bucket_name, granule_name, crs, tile_id):
+def write_stack_to_s3(merged, bucket_name, granule_name, s1_granule_name, crs, tile_id):
     """
     Writes an xarray dataset stack to a GeoTIFF in an AWS S3 bucket.
 
@@ -510,7 +510,7 @@ def write_stack_to_s3(merged, bucket_name, granule_name, crs, tile_id):
     """
     merged = merged.drop_sel(band="SCL")
     # Write tile to tempdir
-    name = f"{granule_name}.tif"
+    name = f"{granule_name}_{s1_granule_name}.tif"
     
     # Set the geospatial information
     merged.rio.set_spatial_dims('x', 'y', inplace=True)
@@ -523,7 +523,7 @@ def write_stack_to_s3(merged, bucket_name, granule_name, crs, tile_id):
 
     # Write the GeoTIFF file to S3
     s3 = boto3.client('s3')
-    s3.put_object(Body=tif_bytes.getvalue(), Bucket=bucket_name, Key=f"c2smsfloods/datacube/chips_512/{tile_id}/{name}")
+    s3.put_object(Body=tif_bytes.getvalue(), Bucket=bucket_name, Key=f"c2smsfloods/datacube/chips_512_v1/{tile_id}/{name}")
 
 def convert_attrs_and_coords_objects_to_str(data):
     """
@@ -550,19 +550,25 @@ def main(image_granule_path, bucket_name, prefix):
     granule_name, time_stamp, bbox, bbox_4326, crs = process_image_granule(image_granule_path, bucket_name=bucket_name, bands=S2_BANDS_c2smsfloods)
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
     S2_L2A_item = find_stac_item_by_granule_name(catalog, collection, granule_name, bbox_4326, time_stamp)
-
-    if S2_L2A_item:
-        merged = process(
-            S2_L2A_item,
-            bbox,
-            bbox_4326,
-            SPATIAL_RESOLUTION,
-        )
-        if merged is not None:
-            merged = merged.compute()
-            print(merged)
-            write_stack_to_s3(merged, bucket_name, granule_name, crs, tile_id)
-        return merged
+    S1_items = search_sentinel1(bbox_4326, catalog, get_surrounding_days(S2_L2A_item.datetime, interval_days=3))
+    S1_granules_modified = [f"{'_'.join(i.split('_')[:-2])}_rtc" for i in S1_granules]
+    if S1_items:
+        S1_item_passing = [i for i in S1_items if i.id in S1_granules_modified]
+        if S2_L2A_item and S1_item_passing:
+            merged, s1_items = process(
+                S2_L2A_item,
+                bbox,
+                bbox_4326,
+                SPATIAL_RESOLUTION,
+            )
+            if merged is not None and s1_items is not None:
+                merged = merged.compute()
+                # print(merged)
+                print("s1_items: ", s1_items)
+                s1_granule_name = [i.id for i in s1_items]
+                write_stack_to_s3(merged, bucket_name, granule_name, s1_granule_name[0], crs, tile_id)
+                print("written")
+            return merged
     else:
         pass
 
@@ -570,6 +576,7 @@ def main(image_granule_path, bucket_name, prefix):
 S2_images, S1_images, S2_granules, S1_granules, tile_ids = get_image_granules(bucket_name=BUCKET_NAME, prefix=PREFIX)
 print(f"We have {len(S2_images)} images to process.")
 
-for i in S2_images:
+for i, c in zip(S2_images, range(len(S2_images))):
+    print("Image count: ", c)
     print(f"Processing {i}")
     main(str(i), BUCKET_NAME, PREFIX)
