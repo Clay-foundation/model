@@ -7,6 +7,7 @@ https://github.com/Lightning-AI/lightning/blob/2.1.0/.github/CONTRIBUTING.md#how
 import os
 import tempfile
 
+import geopandas as gpd
 import lightning as L
 import numpy as np
 import pytest
@@ -25,8 +26,17 @@ def fixture_datapipe() -> torchdata.datapipes.iter.IterDataPipe:
     """
     datapipe = torchdata.datapipes.iter.IterableWrapper(
         iterable=[
-            {"image": torch.randn(2, 13, 256, 256).to(dtype=torch.float16)},
-            {"image": torch.randn(2, 13, 256, 256).to(dtype=torch.float16)},
+            {
+                "image": torch.randn(2, 13, 256, 256).to(dtype=torch.float16),
+                "bbox": torch.tensor(
+                    data=[
+                        [499975.0, 3397465.0, 502535.0, 3400025.0],
+                        [530695.0, 3397465.0, 533255.0, 3400025.0],
+                    ]
+                ),
+                "date": ["2020-01-01", "2020-12-31"],
+                "epsg": torch.tensor(data=[32646, 32646]),
+            },
         ]
     )
     return datapipe
@@ -57,8 +67,16 @@ def test_model_vit(datapipe):
 
         # Prediction
         trainer.predict(model=model, dataloaders=dataloader)
-        assert os.path.exists(path := f"{tmpdirname}/data/embeddings/embedding_0.npy")
-        embeddings: np.ndarray = np.load(file=path)
-        assert embeddings.shape == (2, 768)
-        assert embeddings.dtype == "float32"
-        assert not np.isnan(embeddings).any()
+        assert os.path.exists(path := f"{tmpdirname}/data/embeddings/embeddings_0.gpq")
+        geodataframe: gpd.GeoDataFrame = gpd.read_parquet(path=path)
+
+        assert geodataframe.shape == (2, 3)
+        assert all(geodataframe.columns == ["date", "embeddings", "geometry"])
+        assert geodataframe.date.dtype == "date32[day][pyarrow]"
+        assert geodataframe.embeddings.dtype == "object"
+        assert geodataframe.geometry.dtype == gpd.array.GeometryDtype()
+
+        for embeddings in geodataframe.embeddings:
+            assert embeddings.shape == (768,)
+            assert embeddings.dtype == "float32"
+            assert not np.isnan(embeddings).any()
