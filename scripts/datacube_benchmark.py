@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-This script contains functions to process Sentinel-2, Sentinel-1 and DEM data based on the 
-Cloud to Street - Microsoft Flood benchmark dataset 
+This script contains functions to process Sentinel-2, Sentinel-1 and DEM data based on the
+Cloud to Street - Microsoft Flood benchmark dataset
 (see: https://beta.source.coop/repositories/c2sms/c2smsfloods/description/).
 It produces datacubes that reflect the structure of training data for a pretext MAE model.
 """
-import random
-from datetime import datetime, timedelta
-import boto3
-import click
-import geopandas as gpd
 import io
+from datetime import datetime, timedelta
+
+import boto3
+import geopandas as gpd
 import numpy as np
 import planetary_computer as pc
 import pystac_client
@@ -20,15 +19,14 @@ import stackstac
 import xarray as xr
 from pystac import ItemCollection
 from shapely.geometry import box
-from tile import tiler
 
 STAC_API = "https://planetarycomputer.microsoft.com/api/stac/v1"
 S2_BANDS = ["B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B11", "B12", "SCL"]
 S2_BANDS_c2smsfloods = ["B2", "B3", "B4", "B5", "B6", "B7", "B8", "B8A", "B11", "B12"]
 S1_BANDS_c2smsfloods = ["VV", "VH"]
 
-BUCKET_NAME = 'clay-benchmark'
-PREFIX = 'c2smsfloods/chips/'
+BUCKET_NAME = "clay-benchmark"
+PREFIX = "c2smsfloods/chips/"
 
 SPATIAL_RESOLUTION = 10
 CLOUD_COVER_PERCENTAGE = 50
@@ -316,7 +314,7 @@ def process(
     - resolution (int): Resolution for processing the datasets.
 
     Returns:
-    - xarray.DataArray or None: A concatenated xarray DataArray containing stacked Sentinel-2, 
+    - xarray.DataArray or None: A concatenated xarray DataArray containing stacked Sentinel-2,
         Sentinel-1, and DEM data if successful, else None.
     """
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
@@ -328,11 +326,13 @@ def process(
 
         s1_items = search_sentinel1(bbox_4326, catalog, surrounding_days)
         if s1_items:
-            S1_granules_modified = [f"{'_'.join(i.split('_')[:-2])}_rtc" for i in S1_granules]
+            S1_granules_modified = [
+                f"{'_'.join(i.split('_')[:-2])}_rtc" for i in S1_granules
+            ]
             s1_items = [i for i in s1_items if i.id in S1_granules_modified]
             print("Sentinel-1 items matching benchmark: ", s1_items)
             break
-    #if i == S1_MATCH_ATTEMPTS - 1:
+    # if i == S1_MATCH_ATTEMPTS - 1:
     #    raise ValueError(
     #        f"No match for S1 scenes found after {S1_MATCH_ATTEMPTS} attempts."
     #    )
@@ -341,19 +341,16 @@ def process(
         dem_items = search_dem(bbox_4326, catalog)
 
         date = s2_item.properties["datetime"][:10]
-        result = make_datasets(
-            s2_item,
-            s1_items,
-            dem_items,
-            resolution,
-            bbox
-        )
+        result = make_datasets(s2_item, s1_items, dem_items, resolution, bbox)
 
         return result, s1_items
     else:
         return None
 
-def find_stac_item_by_granule_name(catalog, collection_name, granule_name, bbox, time_range):
+
+def find_stac_item_by_granule_name(
+    catalog, collection_name, granule_name, bbox, time_range
+):
     """
     Search for a STAC item within a specific collection by granule name, bounding box, and time range.
 
@@ -368,7 +365,9 @@ def find_stac_item_by_granule_name(catalog, collection_name, granule_name, bbox,
     - pystac.Item or None: The STAC item corresponding to the provided granule name within the specified collection.
       Returns None if the granule name is not found or if no granule name is provided (granule_name=None).
     """
-    search = catalog.search(collections=[collection_name], bbox=bbox, datetime=f"{time_range}/{time_range}")
+    search = catalog.search(
+        collections=[collection_name], bbox=bbox, datetime=f"{time_range}/{time_range}"
+    )
     items = search.item_collection()
     print(f"Found {len(items)} items")
 
@@ -382,7 +381,8 @@ def find_stac_item_by_granule_name(catalog, collection_name, granule_name, bbox,
     else:
         return None
 
-def list_objects_recursive(client, bucket_name, prefix=''):
+
+def list_objects_recursive(client, bucket_name, prefix=""):
     """
     List all objects (file keys) in an S3 bucket recursively under a specified prefix.
 
@@ -394,19 +394,20 @@ def list_objects_recursive(client, bucket_name, prefix=''):
     Returns:
     - list: A list of file keys (object keys) found under the specified prefix.
     """
-    paginator = client.get_paginator('list_objects_v2')
+    paginator = client.get_paginator("list_objects_v2")
 
     # Initial page request with the prefix
     page_iterator = paginator.paginate(Bucket=bucket_name, Prefix=prefix)
 
     file_keys = []
     for page in page_iterator:
-        if 'Contents' in page:
+        if "Contents" in page:
             # Append the file keys (object keys) from the current page
-            file_keys.extend([obj['Key'] for obj in page['Contents']])
+            file_keys.extend([obj["Key"] for obj in page["Contents"]])
 
     # Return the list of file keys
     return file_keys
+
 
 def get_image_granules(bucket_name, prefix):
     """
@@ -420,24 +421,25 @@ def get_image_granules(bucket_name, prefix):
     - tuple: A tuple containing lists of S2 images, S1 images, S2 granules, S1 granules and tile IDs.
     """
     # Initialize Boto3 S3 client
-    s3 = boto3.client('s3')
+    s3 = boto3.client("s3")
 
     # List objects in the specified prefix (directory) in the bucket
     files_in_s3 = list_objects_recursive(s3, bucket_name, prefix)
 
     # Filter S2 and S1 images
-    S2_images = [i for i in files_in_s3 if '/s2/' in i]
-    S1_images = [i for i in files_in_s3 if '/s1/' in i]
-    S2_images = list(set(['/'.join(i.split('/')[:-1]) for i in S2_images]))
-    S1_images = list(set(['/'.join(i.split('/')[:-1]) for i in S1_images]))
+    S2_images = [i for i in files_in_s3 if "/s2/" in i]
+    S1_images = [i for i in files_in_s3 if "/s1/" in i]
+    S2_images = list(set(["/".join(i.split("/")[:-1]) for i in S2_images]))
+    S1_images = list(set(["/".join(i.split("/")[:-1]) for i in S1_images]))
 
     # Extract granules from image paths
-    S2_granules = list(set([i.split('/')[-1] for i in S2_images]))
-    S1_granules = list(set([i.split('/')[-1] for i in S1_images]))
+    S2_granules = list(set([i.split("/")[-1] for i in S2_images]))
+    S1_granules = list(set([i.split("/")[-1] for i in S1_images]))
 
-    tile_ids = [i.split('/')[2] for i in S2_images]
+    tile_ids = [i.split("/")[2] for i in S2_images]
 
     return S2_images, S1_images, S2_granules, S1_granules, tile_ids
+
 
 def process_image_granule(image_granule_path, bucket_name, bands=None):
     """
@@ -462,11 +464,11 @@ def process_image_granule(image_granule_path, bucket_name, bands=None):
     file_key = f"{image_granule_path}/{b}.tif"  # File's key in S3 bucket
 
     # Initialize a Boto3 S3 client
-    s3 = boto3.client('s3')
+    s3 = boto3.client("s3")
 
     # Load the image file from S3 directly into memory using rasterio
     obj = s3.get_object(Bucket=bucket_name, Key=file_key)
-    with rasterio.io.MemoryFile(obj['Body'].read()) as memfile:
+    with rasterio.io.MemoryFile(obj["Body"].read()) as memfile:
         with memfile.open() as dataset:
             data_array = rioxarray.open_rasterio(dataset)
 
@@ -476,8 +478,8 @@ def process_image_granule(image_granule_path, bucket_name, bands=None):
     bbox = data_array.rio.bounds()
     gbbox = gpd.GeoDataFrame(geometry=[box(bbox[0], bbox[1], bbox[2], bbox[3])])
     gbbox.crs = data_array.rio.crs
-    gbbox_4326 = gbbox.to_crs(f"EPSG:4326")
-    granule = image_granule_path.split('/')[-1]
+    gbbox_4326 = gbbox.to_crs("EPSG:4326")
+    granule = image_granule_path.split("/")[-1]
     print("Granule: ", granule)
     if "L1C" in granule:
         granule_name = granule.replace("MSIL1C", "L2A")
@@ -492,7 +494,14 @@ def process_image_granule(image_granule_path, bucket_name, bands=None):
     time_stamp = str(time_stamp).split()[0]
     print("Extracted Date as datetime (without hours):", time_stamp)
 
-    return granule_name, time_stamp, gbbox.total_bounds.tolist(), gbbox_4326.total_bounds.tolist(), gbbox.crs
+    return (
+        granule_name,
+        time_stamp,
+        gbbox.total_bounds.tolist(),
+        gbbox_4326.total_bounds.tolist(),
+        gbbox.crs,
+    )
+
 
 def write_stack_to_s3(merged, bucket_name, granule_name, s1_granule_name, crs, tile_id):
     """
@@ -511,19 +520,24 @@ def write_stack_to_s3(merged, bucket_name, granule_name, s1_granule_name, crs, t
     merged = merged.drop_sel(band="SCL")
     # Write tile to tempdir
     name = f"{granule_name}_{s1_granule_name}.tif"
-    
+
     # Set the geospatial information
-    merged.rio.set_spatial_dims('x', 'y', inplace=True)
-    merged.rio.write_crs(crs, inplace=True) 
+    merged.rio.set_spatial_dims("x", "y", inplace=True)
+    merged.rio.write_crs(crs, inplace=True)
     merged.attrs["long_name"] = [str(x.values) for x in merged.band]
 
     # Write the dataset to a GeoTIFF file in memory
     tif_bytes = io.BytesIO()
-    merged.rio.to_raster(tif_bytes, driver='GTiff')
+    merged.rio.to_raster(tif_bytes, driver="GTiff")
 
     # Write the GeoTIFF file to S3
-    s3 = boto3.client('s3')
-    s3.put_object(Body=tif_bytes.getvalue(), Bucket=bucket_name, Key=f"c2smsfloods/datacube/chips_512_v1/{tile_id}/{name}")
+    s3 = boto3.client("s3")
+    s3.put_object(
+        Body=tif_bytes.getvalue(),
+        Bucket=bucket_name,
+        Key=f"c2smsfloods/datacube/chips_512_v1/{tile_id}/{name}",
+    )
+
 
 def convert_attrs_and_coords_objects_to_str(data):
     """
@@ -546,11 +560,17 @@ def convert_attrs_and_coords_objects_to_str(data):
 def main(image_granule_path, bucket_name, prefix):
     collection = "sentinel-2-l2a"
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
-    tile_id = image_granule_path.split('/')[2]
-    granule_name, time_stamp, bbox, bbox_4326, crs = process_image_granule(image_granule_path, bucket_name=bucket_name, bands=S2_BANDS_c2smsfloods)
+    tile_id = image_granule_path.split("/")[2]
+    granule_name, time_stamp, bbox, bbox_4326, crs = process_image_granule(
+        image_granule_path, bucket_name=bucket_name, bands=S2_BANDS_c2smsfloods
+    )
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
-    S2_L2A_item = find_stac_item_by_granule_name(catalog, collection, granule_name, bbox_4326, time_stamp)
-    S1_items = search_sentinel1(bbox_4326, catalog, get_surrounding_days(S2_L2A_item.datetime, interval_days=3))
+    S2_L2A_item = find_stac_item_by_granule_name(
+        catalog, collection, granule_name, bbox_4326, time_stamp
+    )
+    S1_items = search_sentinel1(
+        bbox_4326, catalog, get_surrounding_days(S2_L2A_item.datetime, interval_days=3)
+    )
     S1_granules_modified = [f"{'_'.join(i.split('_')[:-2])}_rtc" for i in S1_granules]
     if S1_items:
         S1_item_passing = [i for i in S1_items if i.id in S1_granules_modified]
@@ -566,14 +586,19 @@ def main(image_granule_path, bucket_name, prefix):
                 # print(merged)
                 print("s1_items: ", s1_items)
                 s1_granule_name = [i.id for i in s1_items]
-                write_stack_to_s3(merged, bucket_name, granule_name, s1_granule_name[0], crs, tile_id)
+                write_stack_to_s3(
+                    merged, bucket_name, granule_name, s1_granule_name[0], crs, tile_id
+                )
                 print("written")
             return merged
     else:
         pass
 
+
 # List objects in the specified prefix (directory) in the bucket
-S2_images, S1_images, S2_granules, S1_granules, tile_ids = get_image_granules(bucket_name=BUCKET_NAME, prefix=PREFIX)
+S2_images, S1_images, S2_granules, S1_granules, tile_ids = get_image_granules(
+    bucket_name=BUCKET_NAME, prefix=PREFIX
+)
 print(f"We have {len(S2_images)} images to process.")
 
 for i, c in zip(S2_images, range(len(S2_images))):
