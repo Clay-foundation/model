@@ -87,7 +87,9 @@ class ViTLitModule(L.LightningModule):
 
         return outputs
 
-    def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def training_step(
+        self, batch: dict[str, torch.Tensor | list[str]], batch_idx: int
+    ) -> torch.Tensor:
         """
         Logic for the neural network's training loop.
 
@@ -126,18 +128,22 @@ class ViTLitModule(L.LightningModule):
 
         return loss
 
-    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def validation_step(
+        self, batch: dict[str, torch.Tensor | list[str]], batch_idx: int
+    ) -> torch.Tensor:
         """
         Logic for the neural network's validation loop.
         """
         pass
 
-    def predict_step(self, batch: torch.Tensor, batch_idx: int) -> gpd.GeoDataFrame:
+    def predict_step(
+        self, batch: dict[str, torch.Tensor | list[str]], batch_idx: int
+    ) -> gpd.GeoDataFrame:
         """
         Logic for the neural network's prediction loop.
 
-        Takes batches of image inputs, generate the embeddings, and store it in
-        a GeoParquet file with spatiotemporal metadata.
+        Takes batches of image inputs, generate the embeddings, and store them
+        in a GeoParquet file with spatiotemporal metadata.
 
         Steps:
         1. Image inputs are passed through the encoder model to produce raw
@@ -171,10 +177,11 @@ class ViTLitModule(L.LightningModule):
            | 2021-06-30 | [0.2, 0.5, ... x768] | POLYGON(...) |
            | 2021-12-31 | [0.3, 0.6, ... x768] | POLYGON(...) |
         """
-        x: torch.Tensor = batch["image"]
+        # Get image, bounding box, EPSG code, and date inputs
+        x: torch.Tensor = batch["image"]  # image of shape (1, 13, 256, 256) # BCHW
         bboxes: np.ndarray = batch["bbox"].cpu().__array__()  # bounding boxes
-        dates: list[str] = batch["date"]  # dates, e.g. ['2022-12-12', '2022-12-12']
         epsgs: torch.Tensor = batch["epsg"]  # coordinate reference systems as EPSG code
+        dates: list[str] = batch["date"]  # dates, e.g. ['2022-12-12', '2022-12-12']
 
         # Forward encoder
         self.vit.config.mask_ratio = 0  # disable masking
