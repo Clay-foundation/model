@@ -44,8 +44,13 @@ class LogIntermediatePredictions(Callback):
                 encoded_unmasked_patches, unmasked_indices, masked_indices
             )
             pixels = rearrange(
-                pixels, "b c (h w) (p1 p2) -> b c (h p1) (w p2)", h=8, p1=32
+                pixels,
+                "b c (h w) (p1 p2) -> b c (h p1) (w p2)",
+                h=8,
+                p1=pl_module.model.patch_size,
             )
+
+            assert pixels.shape == batch["pixels"].shape
 
             n_rows = 2
             n_cols = 8
