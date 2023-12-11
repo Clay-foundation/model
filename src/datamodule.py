@@ -64,7 +64,7 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
         num_workers: int = 8,
     ):
         """
-        Go from datacubes to 256x256 chips!
+        Go from datacubes to 512x512 chips!
 
         Parameters
         ----------
