@@ -14,6 +14,8 @@ import shapely
 import torch
 import transformers
 
+torch.set_float32_matmul_precision(precision="medium")
+
 
 # %%
 class ViTLitModule(L.LightningModule):
@@ -56,14 +58,14 @@ class ViTLitModule(L.LightningModule):
         config_vit = transformers.ViTMAEConfig(
             hidden_size=768,
             num_hidden_layers=12,
-            ntermediate_size=3072,
+            intermediate_size=3072,
             hidden_act="gelu",
             hidden_dropout_prob=0.0,
             attention_probs_dropout_prob=0.0,
             initializer_range=0.02,
             layer_norm_eps=1e-12,
-            image_size=256,  # default was 224
-            patch_size=32,  # default was 16
+            image_size=512,  # default was 224
+            patch_size=64,  # default was 16
             num_channels=13,  # default was 3
             qkv_bias=True,
             decoder_num_attention_heads=16,
@@ -111,7 +113,7 @@ class ViTLitModule(L.LightningModule):
             ids_restore=outputs_encoder.ids_restore,
         )
         # output shape (batch_size, num_patches, patch_size*patch_size*num_channels)
-        assert outputs_decoder.logits.shape == torch.Size([self.B, 64, 13312])
+        assert outputs_decoder.logits.shape == torch.Size([self.B, 64, 53248])
 
         # Log training loss and metrics
         loss: torch.Tensor = self.vit.forward_loss(
