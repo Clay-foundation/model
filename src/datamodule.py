@@ -2,7 +2,6 @@
 LightningDataModule to load Earth Observation data from GeoTIFF files using
 rasterio.
 """
-import pathlib
 
 import lightning as L
 import numpy as np
@@ -45,7 +44,7 @@ def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
         epsg: int = torch.as_tensor(data=dataset.crs.to_epsg(), dtype=torch.int32)
 
         # Get date
-        date: str = pathlib.Path(filepath).name[15:25]  # YYYY-MM-DD format
+        date: str = dataset.tags()["date"]  # YYYY-MM-DD format
 
     return {"image": tensor, "bbox": bbox, "epsg": epsg, "date": date}
 

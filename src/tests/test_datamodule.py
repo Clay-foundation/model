@@ -23,9 +23,9 @@ def fixture_geotiff_folder():
     use in the tests.
     """
     with tempfile.TemporaryDirectory() as tmpdirname:
-        for filename in [
-            "claytile-12ABC-2022-12-31-01-1",
-            "claytile-12ABC-2023-12-31-01-2",
+        for filename, date in [
+            ("claytile-12ABC-2022-12-31-01-1", "2022-12-31"),
+            ("claytile-12ABC-2023-12-31-01-2", "2023-12-31"),
         ]:
             array: np.ndarray = np.ones(shape=(3, 256, 256))
             with rasterio.open(
@@ -38,6 +38,7 @@ def fixture_geotiff_folder():
                 crs="EPSG:32646",
             ) as dst:
                 dst.write(array)
+                dst.update_tags(date=date)
 
         yield tmpdirname
 
