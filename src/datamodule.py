@@ -99,7 +99,6 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
             the prediction loop. Choose from either 'fit' or 'predict'.
         """
         # Step 1 - Get list of GeoTIFF filepaths from s3 bucket or data/ folder
-        # self.data_path = "s3://clay-tiles-02/02/"
         if self.data_path.startswith("s3://"):
             dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_path])
             self.dp_paths = dp.list_files_by_s3(masks="*.tif")
