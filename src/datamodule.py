@@ -2,7 +2,7 @@
 LightningDataModule to load Earth Observation data from GeoTIFF files using
 rasterio.
 """
-import pathlib
+from typing import Literal
 
 import lightning as L
 import numpy as np
@@ -45,7 +45,7 @@ def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
         epsg: int = torch.as_tensor(data=dataset.crs.to_epsg(), dtype=torch.int32)
 
         # Get date
-        date: str = pathlib.Path(filepath).name[15:25]  # YYYY-MM-DD format
+        date: str = dataset.tags()["date"]  # YYYY-MM-DD format
 
     return {"image": tensor, "bbox": bbox, "epsg": epsg, "date": date}
 
@@ -64,7 +64,7 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
         num_workers: int = 8,
     ):
         """
-        Go from datacubes to 256x256 chips!
+        Go from datacubes to 512x512 chips!
 
         Parameters
         ----------
@@ -87,38 +87,51 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
         self.batch_size: int = batch_size
         self.num_workers: int = num_workers
 
-    def setup(self, stage: str | None = None):
+    def setup(self, stage: Literal["fit", "predict"] | None = None):
         """
         Data operations to perform on every GPU.
         Split data into training and test sets, etc.
+
+        Parameters
+        ----------
+        stage : str or None
+            Whether to setup the datapipe for the training/validation loop, or
+            the prediction loop. Choose from either 'fit' or 'predict'.
         """
-        # Step 1 - Get list of GeoTIFF filepaths from data/ folder
-        dp_paths = torchdata.datapipes.iter.FileLister(
-            root=self.data_path, masks="*.tif", recursive=True, length=423
-        )
+        # Step 1 - Get list of GeoTIFF filepaths from s3 bucket or data/ folder
+        if self.data_path.startswith("s3://"):
+            dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_path])
+            self.dp_paths = dp.list_files_by_s3(masks="*.tif")
+        else:  # if self.data_path is a local data path
+            self.dp_paths = torchdata.datapipes.iter.FileLister(
+                root=self.data_path, masks="*.tif", recursive=True
+            )
 
         if stage == "fit":  # training/validation loop
             # Step 2 - Split GeoTIFF chips into train/val sets (80%/20%)
             # https://pytorch.org/data/0.7/generated/torchdata.datapipes.iter.RandomSplitter.html
-            dp_train, dp_val = dp_paths.random_split(
+            dp_train, dp_val = self.dp_paths.random_split(
                 weights={"train": 0.8, "validation": 0.2}, total_length=423, seed=42
             )
 
             # Step 3 - Read GeoTIFF into numpy array, batch and convert to torch.Tensor
             self.datapipe_train = (
-                dp_train.map(fn=_array_to_torch)
+                dp_train.sharding_filter()
+                .map(fn=_array_to_torch)
                 .batch(batch_size=self.batch_size)
                 .collate()
             )
             self.datapipe_val = (
-                dp_val.map(fn=_array_to_torch)
+                dp_val.sharding_filter()
+                .map(fn=_array_to_torch)
                 .batch(batch_size=self.batch_size)
                 .collate()
             )
 
         elif stage == "predict":  # prediction loop
             self.datapipe_predict = (
-                dp_paths.map(fn=_array_to_torch)
+                self.dp_paths.sharding_filter()
+                .map(fn=_array_to_torch)
                 .batch(batch_size=self.batch_size)
                 .collate()
             )
