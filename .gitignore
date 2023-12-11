@@ -10,7 +10,7 @@ __pycache__/
 *.so
 
 # Checkpoints and logs
-checkpoints/*.ckpt
+checkpoints/**/*.ckpt
 lightning_logs/
 wandb/
 logs/
