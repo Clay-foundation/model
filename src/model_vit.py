@@ -14,6 +14,8 @@ import shapely
 import torch
 import transformers
 
+torch.set_float32_matmul_precision(precision="medium")
+
 
 # %%
 class ViTLitModule(L.LightningModule):
