@@ -244,13 +244,14 @@ class ViTLitModule(L.LightningModule):
         mgrs_codes = gdf.source_url.str.split("/").str[-1].str.split("_").str[1]
         unique_mgrs_codes = mgrs_codes.unique()
         for mgrs_code in unique_mgrs_codes:
-            assert re.match(pattern=r"(\d{2}[A-Z]{3})", string=mgrs_code) is not None, (
-                "MGRS code should have 2 numbers and 3 letters (e.g. 12ABC), "
-                f"but got {mgrs_code} instead"
-            )
+            if re.match(pattern=r"(\d{2}[A-Z]{3})", string=mgrs_code) is None:
+                raise ValueError(
+                    "MGRS code should have 2 numbers and 3 letters (e.g. 12ABC), "
+                    f"but got {mgrs_code} instead"
+                )
             outpath = f"{outfolder}/{mgrs_code}_v01.gpq"  # {MGRS:5}_v{VERSION:2}.gpq
             _gdf: gpd.GeoDataFrame = gdf.loc[mgrs_codes == mgrs_code]
-            _gdf.to_parquet(path=outpath, schema_version="1.0.0")
+            _gdf.to_parquet(path=outpath, schema_version="1.0.0", compression="ZSTD")
             print(
                 f"Saved {len(_gdf)} rows of embeddings of "
                 f"shape {tuple(embeddings_mean.shape)} to {outpath}"
