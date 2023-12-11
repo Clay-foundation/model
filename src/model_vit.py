@@ -5,6 +5,7 @@ Code structure adapted from Lightning project seed at
 https://github.com/Lightning-AI/deep-learning-project-template
 """
 import os
+import re
 
 import geopandas as gpd
 import lightning as L
@@ -235,12 +236,25 @@ class ViTLitModule(L.LightningModule):
         )
         gdf = gdf.to_crs(crs="OGC:CRS84")  # reproject from UTM to lonlat coordinates
 
-        # Save embeddings in GeoParquet format
+        # Save embeddings in GeoParquet format, one file for each MGRS code
         outfolder: str = f"{self.trainer.default_root_dir}/data/embeddings"
         os.makedirs(name=outfolder, exist_ok=True)
-        outpath = f"{outfolder}/embeddings_{batch_idx}.gpq"
-        gdf.to_parquet(path=outpath, schema_version="1.0.0")
-        print(f"Saved embeddings of shape {tuple(embeddings_mean.shape)} to {outpath}")
+        # Find unique MGRS names (e.g. '12ABC'), e.g.
+        # from 's3://.../.../claytile_12ABC_20201231_v02_0001.tif', get 12ABC
+        mgrs_codes = gdf.source_url.str.split("/").str[-1].str.split("_").str[1]
+        unique_mgrs_codes = mgrs_codes.unique()
+        for mgrs_code in unique_mgrs_codes:
+            assert re.match(pattern=r"(\d{2}[A-Z]{3})", string=mgrs_code) is not None, (
+                "MGRS code should have 2 numbers and 3 letters (e.g. 12ABC), "
+                f"but got {mgrs_code} instead"
+            )
+            outpath = f"{outfolder}/{mgrs_code}_v01.gpq"  # {MGRS:5}_v{VERSION:2}.gpq
+            _gdf: gpd.GeoDataFrame = gdf.loc[mgrs_codes == mgrs_code]
+            _gdf.to_parquet(path=outpath, schema_version="1.0.0")
+            print(
+                f"Saved {len(_gdf)} rows of embeddings of "
+                f"shape {tuple(embeddings_mean.shape)} to {outpath}"
+            )
 
         return gdf
 
