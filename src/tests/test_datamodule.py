@@ -53,7 +53,7 @@ def test_geotiffdatapipemodule(geotiff_folder, stage, dataloader):
     into torch.Tensor objects.
     """
     datamodule: L.LightningDataModule = GeoTIFFDataPipeModule(
-        data_path=geotiff_folder, batch_size=2
+        data_path=geotiff_folder, batch_size=2, num_workers=1
     )
 
     # Train/validation/predict stage

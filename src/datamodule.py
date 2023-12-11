@@ -117,19 +117,22 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
 
             # Step 3 - Read GeoTIFF into numpy array, batch and convert to torch.Tensor
             self.datapipe_train = (
-                dp_train.map(fn=_array_to_torch)
+                dp_train.sharding_filter()
+                .map(fn=_array_to_torch)
                 .batch(batch_size=self.batch_size)
                 .collate()
             )
             self.datapipe_val = (
-                dp_val.map(fn=_array_to_torch)
+                dp_val.sharding_filter()
+                .map(fn=_array_to_torch)
                 .batch(batch_size=self.batch_size)
                 .collate()
             )
 
         elif stage == "predict":  # prediction loop
             self.datapipe_predict = (
-                self.dp_paths.map(fn=_array_to_torch)
+                self.dp_paths.sharding_filter()
+                .map(fn=_array_to_torch)
                 .batch(batch_size=self.batch_size)
                 .collate()
             )
