@@ -36,6 +36,7 @@ def fixture_datapipe() -> torchdata.datapipes.iter.IterDataPipe:
                 ),
                 "date": ["2020-01-01", "2020-12-31"],
                 "epsg": torch.tensor(data=[32646, 32646]),
+                "source_url": ["s3://file1.tif", "s3:/file2.tif"],
             },
         ]
     )
@@ -70,8 +71,11 @@ def test_model_vit(datapipe):
         assert os.path.exists(path := f"{tmpdirname}/data/embeddings/embeddings_0.gpq")
         geodataframe: gpd.GeoDataFrame = gpd.read_parquet(path=path)
 
-        assert geodataframe.shape == (2, 3)
-        assert all(geodataframe.columns == ["date", "embeddings", "geometry"])
+        assert geodataframe.shape == (2, 4)  # 2 rows, 4 columns
+        assert all(
+            geodataframe.columns == ["source_url", "date", "embeddings", "geometry"]
+        )
+        assert geodataframe.source_url.dtype == "string"
         assert geodataframe.date.dtype == "date32[day][pyarrow]"
         assert geodataframe.embeddings.dtype == "object"
         assert geodataframe.geometry.dtype == gpd.array.GeometryDtype()

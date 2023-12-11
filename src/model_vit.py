@@ -184,6 +184,9 @@ class ViTLitModule(L.LightningModule):
         bboxes: np.ndarray = batch["bbox"].cpu().__array__()  # bounding boxes
         epsgs: torch.Tensor = batch["epsg"]  # coordinate reference systems as EPSG code
         dates: list[str] = batch["date"]  # dates, e.g. ['2022-12-12', '2022-12-12']
+        source_urls: list[str] = batch[  # URLs, e.g. ['s3://1.tif', 's3://2.tif']
+            "source_url"
+        ]
 
         # Forward encoder
         self.vit.config.mask_ratio = 0  # disable masking
@@ -214,6 +217,7 @@ class ViTLitModule(L.LightningModule):
 
         gdf = gpd.GeoDataFrame(
             data={
+                "source_url": gpd.pd.Series(data=source_urls, dtype="string[pyarrow]"),
                 "date": gpd.pd.to_datetime(arg=dates, format="%Y-%m-%d").astype(
                     dtype="date32[day][pyarrow]"
                 ),
