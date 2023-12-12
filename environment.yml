@@ -18,4 +18,5 @@ dependencies:
   - torchdata~=0.7.1
   - transformers~=4.35.2
   - typeshed-client~=2.4.0
+  - wandb~=0.15.12
   - zarr~=2.16.1
