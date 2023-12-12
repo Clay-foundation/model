@@ -10,6 +10,7 @@ import re
 import geopandas as gpd
 import lightning as L
 import numpy as np
+import pandas as pd
 import pyarrow as pa
 import shapely
 import torch
@@ -146,7 +147,7 @@ class ViTLitModule(L.LightningModule):
         Logic for the neural network's prediction loop.
 
         Takes batches of image inputs, generate the embeddings, and store them
-        in a GeoParquet file with spatiotemporal metadata.
+        in a geopandas.GeoDataFrame with spatiotemporal metadata.
 
         Steps:
         1. Image inputs are passed through the encoder model to produce raw
@@ -171,14 +172,13 @@ class ViTLitModule(L.LightningModule):
         3. Embeddings are joined with spatiotemporal metadata (date and
            bounding box polygon) in a geopandas.GeoDataFrame table. The
            coordinates of the bounding box are in an OGC:CRS84 projection (i.e.
-           longitude/latitude).
-        4. The geodataframe table is saved out to a GeoParquet file.
+           longitude/latitude). The table is as follows:
 
-           |    date    |      embeddings      |   geometry   |
-           |------------|----------------------|--------------|
-           | 2021-01-01 | [0.1, 0.4, ... x768] | POLYGON(...) |   ---> *.gpq
-           | 2021-06-30 | [0.2, 0.5, ... x768] | POLYGON(...) |
-           | 2021-12-31 | [0.3, 0.6, ... x768] | POLYGON(...) |
+           |  source_url  |    date    |      embeddings      |   geometry   |
+           |--------------|------------|----------------------|--------------|
+           | s3://1A.tif  | 2021-01-01 | [0.1, 0.4, ... x768] | POLYGON(...) |
+           | s3://2B.tif  | 2021-06-30 | [0.2, 0.5, ... x768] | POLYGON(...) |
+           | s3://3C.tif  | 2021-12-31 | [0.3, 0.6, ... x768] | POLYGON(...) |
         """
         # Get image, bounding box, EPSG code, and date inputs
         x: torch.Tensor = batch["image"]  # image of shape (1, 13, 256, 256) # BCHW
@@ -218,8 +218,8 @@ class ViTLitModule(L.LightningModule):
 
         gdf = gpd.GeoDataFrame(
             data={
-                "source_url": gpd.pd.Series(data=source_urls, dtype="string[pyarrow]"),
-                "date": gpd.pd.to_datetime(arg=dates, format="%Y-%m-%d").astype(
+                "source_url": pd.Series(data=source_urls, dtype="string[pyarrow]"),
+                "date": pd.to_datetime(arg=dates, format="%Y-%m-%d").astype(
                     dtype="date32[day][pyarrow]"
                 ),
                 "embeddings": pa.FixedShapeTensorArray.from_numpy_ndarray(
@@ -236,9 +236,48 @@ class ViTLitModule(L.LightningModule):
         )
         gdf = gdf.to_crs(crs="OGC:CRS84")  # reproject from UTM to lonlat coordinates
 
+        return gdf
+
+    def on_predict_epoch_end(self) -> gpd.GeoDataFrame:
+        """
+        Logic to gather all the results from one epoch in a prediction loop.
+
+        This is where we combine all the vector embeddings generated from each
+        mini-batch prediction (stored in geopandas.GeoDataFrame tables) in a
+        row-wise manner. The embeddings are then output to GeoParquet files
+        according to their MGRS code.
+
+        Steps:
+        1. Concatenate all geopandas.GeoDataFrame objects row-wise
+        2. Find all unique MGRS names in the big GeoDataFrame.
+        3. Split the GeoDataFrame by MGRS name, and output each MGRS-subsetted
+           table to a GeoParquet file.
+            ________________     ________________     ________________
+           |                |   |                |   |                |
+           | GeoDataFrame 1 |   | GeoDataFrame 2 |   | GeoDataFrame 3 |
+           | for MGRS 12ABC |   | for MGRS 23DEF |   | for MGRS 45GHI |
+           |________________|   |________________|   |________________|
+                    |                    |                    |
+                    v                    v                    v
+               12ABC_v01.gpq        23DEF_v01.gpq        45GHI_v01.gpq
+        """
+        # Combine list of geopandas.GeoDataFrame objects
+        results: list[gpd.GeoDataFrame] = self.trainer.predict_loop.predictions
+        if results:
+            gdf: gpd.GeoDataFrame = pd.concat(
+                objs=results, axis="index", ignore_index=True
+            )
+        else:
+            print(
+                "No embeddings generated, "
+                f"possibly no GeoTIFF files in {self.trainer.datamodule.data_path}"
+            )
+            return
+
         # Save embeddings in GeoParquet format, one file for each MGRS code
         outfolder: str = f"{self.trainer.default_root_dir}/data/embeddings"
         os.makedirs(name=outfolder, exist_ok=True)
+
         # Find unique MGRS names (e.g. '12ABC'), e.g.
         # from 's3://.../.../claytile_12ABC_20201231_v02_0001.tif', get 12ABC
         mgrs_codes = gdf.source_url.str.split("/").str[-1].str.split("_").str[1]
@@ -249,12 +288,14 @@ class ViTLitModule(L.LightningModule):
                     "MGRS code should have 2 numbers and 3 letters (e.g. 12ABC), "
                     f"but got {mgrs_code} instead"
                 )
-            outpath = f"{outfolder}/{mgrs_code}_v01.gpq"  # {MGRS:5}_v{VERSION:2}.gpq
+
+            # Output to a GeoParquet filename like {MGRS:5}_v{VERSION:2}.gpq
+            outpath = f"{outfolder}/{mgrs_code}_v01.gpq"
             _gdf: gpd.GeoDataFrame = gdf.loc[mgrs_codes == mgrs_code]
             _gdf.to_parquet(path=outpath, schema_version="1.0.0", compression="ZSTD")
             print(
                 f"Saved {len(_gdf)} rows of embeddings of "
-                f"shape {tuple(embeddings_mean.shape)} to {outpath}"
+                f"shape {gdf.embeddings.iloc[0].shape} to {outpath}"
             )
 
         return gdf
