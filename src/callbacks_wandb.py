@@ -25,6 +25,7 @@ References:
 """
 import lightning as L
 import numpy as np
+import skimage
 import torch
 import wandb
 
@@ -105,12 +106,18 @@ class LogMAEReconstruction(L.Callback):
                 figures: list[wandb.Image] = []
                 for i in range(self.num_samples):
                     img_original = wandb.Image(
-                        data_or_path=rgb_original[i] / 6000, caption=f"RGB Image {i}"
+                        data_or_path=skimage.exposure.equalize_hist(
+                            image=rgb_original[i]
+                        ),
+                        caption=f"RGB Image {i}",
                     )
                     figures.append(img_original)
 
                     img_reconstruction = wandb.Image(
-                        data_or_path=rgb_reconstruction[i], caption=f"Reconstructed {i}"
+                        data_or_path=skimage.exposure.equalize_hist(
+                            image=rgb_reconstruction[i]
+                        ),
+                        caption=f"Reconstructed {i}",
                     )
                     figures.append(img_reconstruction)
 
