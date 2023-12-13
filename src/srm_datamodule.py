@@ -136,7 +136,8 @@ class ClayDataModule(L.LightningDataModule):
         )
 
     def setup(self, stage: str | None = None) -> None:
-        chips_path = list(self.data_dir.glob("**/*.tif"))[:10_000]
+        chips_path = list(self.data_dir.glob("**/*.tif"))
+        print(len(chips_path))
         random.shuffle(chips_path)
         split_ratio = 0.8
         split = int(len(chips_path) * split_ratio)

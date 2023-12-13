@@ -595,7 +595,7 @@ class CLAY(nn.Module):
 def clay_tiny(**kwargs):
     model = CLAY(
         mask_ratio=0.75,
-        image_size=256,
+        image_size=512,
         patch_size=32,
         # ENCODER
         dim=256,
@@ -619,8 +619,8 @@ def clay_tiny(**kwargs):
 
 def clay_small(**kwargs):
     model = CLAY(
-        mask_ratio=0.75,
-        image_size=256,
+        mask_ratio=0.60,
+        image_size=512,
         patch_size=32,
         # ENCODER
         dim=768,
@@ -645,7 +645,7 @@ def clay_small(**kwargs):
 def clay_medium(**kwargs):
     model = CLAY(
         mask_ratio=0.75,
-        image_size=256,
+        image_size=512,
         patch_size=16,
         # ENCODER
         dim=1024,
@@ -670,7 +670,7 @@ def clay_medium(**kwargs):
 def clay_large(**kwargs):
     model = CLAY(
         mask_ratio=0.75,
-        image_size=256,
+        image_size=512,
         patch_size=16,
         # ENCODER
         dim=1280,

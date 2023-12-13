@@ -9,6 +9,8 @@ References:
 - https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html
 - https://pytorch-lightning.medium.com/introducing-lightningcli-v2-supercharge-your-training-c070d43c7dd6
 """
+from pathlib import Path
+
 import lightning as L
 from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
 from lightning.pytorch.cli import ArgsType, LightningCLI
@@ -21,8 +23,8 @@ from src.srm_datamodule import ClayDataModule
 
 
 def main():
-    model = CLAYModule(lr=5e-5, wd=0.05, b1=0.9, b2=0.95)
-    dm = ClayDataModule(batch_size=64, num_workers=8)
+    model = CLAYModule(lr=1e-4, wd=0.05, b1=0.9, b2=0.95)
+    dm = ClayDataModule(data_dir=Path("/data/02"), batch_size=10, num_workers=8)
     dm.setup()
 
     wandb_logger = WandbLogger(project="CLAY-v0", log_model=False)
@@ -43,10 +45,11 @@ def main():
         accelerator="gpu",
         devices=1,
         precision="bf16-mixed",
-        max_epochs=50,
+        max_epochs=100,
         logger=[wandb_logger],
         callbacks=[ckpt_callback, lr_monitor_callback, log_preds_callback],
         log_every_n_steps=1,
+        accumulate_grad_batches=20,
     )
 
     trainer.fit(
