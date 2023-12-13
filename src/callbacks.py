@@ -46,10 +46,10 @@ class LogIntermediatePredictions(Callback):
             pixels = rearrange(
                 pixels,
                 "b c (h w) (p1 p2) -> b c (h p1) (w p2)",
-                h=pl_module.model.image_size//pl_module.model.patch_size,
+                h=pl_module.model.image_size // pl_module.model.patch_size,
                 p1=pl_module.model.patch_size,
             )
-            
+
             assert pixels.shape == batch["pixels"].shape
 
             n_rows = 2
