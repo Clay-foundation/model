@@ -84,7 +84,8 @@ class LogMAEReconstruction(L.Callback):
         """
         Called in the validation loop at the start of every mini-batch.
 
-        Gather data from a single batch.
+        Gather a sample of data from the first mini-batch, get the RGB bands,
+        apply histogram equalization to the image, and log it to WandB.
         """
         if self.ready and batch_idx == 0:  # only run on first mini-batch
             with torch.inference_mode():
@@ -108,7 +109,7 @@ class LogMAEReconstruction(L.Callback):
                 y_hat: torch.Tensor = torch.einsum(
                     "bchw->bhwc", y_hat[: self.num_samples]
                 )
-                # assert y_hat.shape == torch.Size([6, 512, 512, 13])
+                # assert y_hat.shape == torch.Size([8, 512, 512, 13])
                 assert x.shape == y_hat.shape
 
                 # Plot original and reconstructed RGB images of Sentinel-2
