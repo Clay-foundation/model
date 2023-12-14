@@ -27,7 +27,11 @@ import lightning as L
 import numpy as np
 import skimage
 import torch
-import wandb
+
+try:
+    import wandb
+except ImportError:
+    wandb = None
 
 
 # %%
@@ -48,6 +52,14 @@ class LogMAEReconstruction(L.Callback):
         super().__init__()
         self.num_samples: int = num_samples
         self.ready: bool = False
+
+        if wandb is None:
+            raise ModuleNotFoundError(
+                "Package `wandb` is required to be installed to use this callback. "
+                "Please use `pip install wandb` or "
+                "`conda install -c conda-forge wandb` "
+                "to install the package"
+            )
 
     def on_sanity_check_start(self, trainer, pl_module):
         """
