@@ -36,14 +36,14 @@ class LogMAEReconstruction(L.Callback):
     Logs reconstructed RGB images from a Masked Autoencoder's decoder to WandB.
     """
 
-    def __init__(self, num_samples: int = 6):
+    def __init__(self, num_samples: int = 8):
         """
         Define how many sample images to log.
 
         Parameters
         ----------
         num_samples : int
-            The number of RGB image samples to upload to WandB. Default is 6.
+            The number of RGB image samples to upload to WandB. Default is 8.
         """
         super().__init__()
         self.num_samples: int = num_samples
@@ -90,9 +90,13 @@ class LogMAEReconstruction(L.Callback):
                 # assert y_hat.shape == torch.Size([32, 13, 512, 512])
 
                 # Reshape tensors from channel-first to channel-last
-                x: torch.Tensor = torch.einsum("bchw->bhwc", batch["image"]).detach()
-                y_hat: torch.Tensor = torch.einsum("bchw->bhwc", y_hat).detach()
-                # assert y_hat.shape == torch.Size([32, 512, 512, 13])
+                x: torch.Tensor = torch.einsum(
+                    "bchw->bhwc", batch["image"][: self.num_samples]
+                )
+                y_hat: torch.Tensor = torch.einsum(
+                    "bchw->bhwc", y_hat[: self.num_samples]
+                )
+                # assert y_hat.shape == torch.Size([6, 512, 512, 13])
                 assert x.shape == y_hat.shape
 
                 # Plot original and reconstructed RGB images of Sentinel-2
@@ -104,7 +108,7 @@ class LogMAEReconstruction(L.Callback):
                 )
 
                 figures: list[wandb.Image] = []
-                for i in range(self.num_samples):
+                for i in range(min(x.shape[0], self.num_samples)):
                     img_original = wandb.Image(
                         data_or_path=skimage.exposure.equalize_hist(
                             image=rgb_original[i]
