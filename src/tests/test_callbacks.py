@@ -16,7 +16,7 @@ from src.model_vit import ViTLitModule
 
 
 # %%
-def test_callbacks_wandb_log_mae_reconstruction(monkeypatch):
+def test_callbacks_wandb_log_mae_reconstruction():
     """
     Ensure that the LogMAEReconstruction callback can log a set of images to
     Weights & Biases.
