@@ -41,8 +41,8 @@ def test_callbacks_wandb_log_mae_reconstruction():
         wandb_images: list[wandb.Image] = callback.on_validation_batch_end(
             trainer=trainer,
             pl_module=pl_module,
-            outputs={"logits": torch.rand(32, 64, 53248)},
-            batch={"image": torch.rand(32, 13, 512, 512)},
+            outputs={"logits": torch.rand(4, 64, 53248)},
+            batch={"image": torch.rand(4, 13, 512, 512)},
             batch_idx=0,
         )
 
