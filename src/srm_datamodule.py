@@ -75,6 +75,7 @@ class ClayDataset(Dataset):
         cube["pixels"] = torch.nan_to_num(torch.as_tensor(data=cube["pixels"]), nan=0.0)
         cube["latlon"] = torch.as_tensor(data=cube["latlon"])
         cube["timestep"] = torch.as_tensor(data=cube["timestep"])
+        cube["path"] = str(chip_path.absolute())
 
         if self.transform:
             # convert to float16 and normalize
@@ -132,6 +133,7 @@ class ClayDataModule(L.LightningDataModule):
         self.tfm = v2.Compose(
             [
                 v2.Normalize(mean=self.MEAN, std=self.STD),
+                # v2.Resize((512, 512)), # resize only if your images are not of the same size
             ]
         )
 
