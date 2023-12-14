@@ -123,7 +123,7 @@ class ClayDataModule(L.LightningDataModule):
     def __init__(
         self,
         data_dir: Path = Path("data/"),
-        batch_size: int = 64,
+        batch_size: int = 10,
         num_workers: int = 8,
     ):
         super().__init__()

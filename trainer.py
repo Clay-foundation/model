@@ -9,12 +9,18 @@ References:
 - https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html
 - https://pytorch-lightning.medium.com/introducing-lightningcli-v2-supercharge-your-training-c070d43c7dd6
 """
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import (
+    LearningRateMonitor,  # noqa: F401
+    ModelCheckpoint,
+)
 from lightning.pytorch.cli import ArgsType, LightningCLI
 from lightning.pytorch.plugins.io import AsyncCheckpointIO
 
-from src.datamodule import GeoTIFFDataPipeModule
-from src.model_vit import ViTLitModule
+from src.callbacks import LogIntermediatePredictions  # noqa: F401
+from src.datamodule import GeoTIFFDataPipeModule  # noqa: F401
+from src.model import CLAYModule
+from src.model_vit import ViTLitModule  # noqa: F401
+from src.srm_datamodule import ClayDataModule
 
 
 # %%
@@ -22,30 +28,37 @@ def cli_main(
     save_config_callback=None,
     seed_everything_default=42,
     trainer_defaults: dict = {
+        "accelerator": "auto",
         "callbacks": [
             ModelCheckpoint(
                 # dirpath="checkpoints/",
                 auto_insert_metric_name=False,
-                filename="vit_epoch-{epoch:02d}_train_loss-{train/loss:.2f}",
-                monitor="train/loss",
+                filename="mae_epoch-{epoch:02d}_val-loss-{val/loss:.2f}",
+                monitor="val/loss",
                 mode="min",
                 save_last=True,
                 save_top_k=3,
                 save_weights_only=True,
+                verbose=True,
             ),
+            # LearningRateMonitor(logging_interval="step"),
+            # LogIntermediatePredictions(logger=wandb_logger),
         ],
-        "logger": False,
+        "logger": False,  # WandbLogger(project="CLAY-v0", log_model=False)
         "plugins": [AsyncCheckpointIO()],
         "precision": "bf16-mixed",
+        "max_epochs": 20,
+        "log_every_n_steps": 1,
+        "accumulate_grad_batches": 20,
     },
     args: ArgsType = None,
 ):
     """
-    Command-line inteface to run ViTLitModule with BaseDataModule.
+    Command-line inteface to run CLAYModule with ClayDataModule.
     """
     cli = LightningCLI(
-        model_class=ViTLitModule,
-        datamodule_class=GeoTIFFDataPipeModule,
+        model_class=CLAYModule,
+        datamodule_class=ClayDataModule,
         save_config_callback=save_config_callback,
         seed_everything_default=seed_everything_default,
         trainer_defaults=trainer_defaults,

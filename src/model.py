@@ -5,10 +5,10 @@ from src.clay import clay_small
 
 
 class CLAYModule(L.LightningModule):
-    def __init__(self, **kwargs):
+    def __init__(self, lr=1e-4, wd=0.05, b1=0.9, b2=0.95):
         super().__init__()
         self.save_hyperparameters(logger=True)
-        self.model = clay_small(**kwargs)
+        self.model = clay_small(lr=lr, wd=wd, b1=b1, b2=b2)
 
     def forward(self, cube: dict[str, torch.Tensor]):
         return self.model(cube)
