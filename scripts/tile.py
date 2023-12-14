@@ -8,22 +8,21 @@ or no-data pixels.
 It includes functions to filter tiles based on cloud coverage and no-data pixels,
 and a tiling function that generates smaller tiles from the input stack.
 """
-import os
 import subprocess
 import tempfile
 
 import numpy as np
 import rasterio
 import rioxarray  # noqa: F401
+import xarray as xr
 from rasterio.enums import ColorInterp
 
 NODATA = 0
-TILE_SIZE = 256
+TILE_SIZE = 512
 PIXELS_PER_TILE = TILE_SIZE * TILE_SIZE
-BAD_PIXEL_MAX_PERCENTAGE = 0.9
+BAD_PIXEL_MAX_PERCENTAGE = 0.3
 SCL_FILTER = [0, 1, 3, 8, 9, 10]
-EPSILON = 0.1
-VERSION = "01"
+VERSION = "02"
 
 
 def filter_clouds_nodata(tile):
@@ -37,10 +36,15 @@ def filter_clouds_nodata(tile):
     - bool: True if the tile is approved, False if rejected.
     """
     # Check for nodata pixels
-    nodata_pixel_count = int(tile.sel(band="B02").isin([NODATA]).sum())
-    if nodata_pixel_count:
-        print("Too much no-data")
+    if int(tile.sel(band="B02").isin([NODATA]).sum()):
+        print("Too much no-data in B02")
         return False
+
+    bands_to_check = ["vv", "vh", "dem"]
+    for band in bands_to_check:
+        if int(np.isnan(tile.sel(band=band)).sum()):
+            print(f"Too much no-data in {band}")
+            return False
 
     # Check for cloud coverage
     cloudy_pixel_count = int(tile.sel(band="SCL").isin(SCL_FILTER).sum())
@@ -51,7 +55,7 @@ def filter_clouds_nodata(tile):
     return True  # If both conditions pass
 
 
-def tiler(stack, date, mgrs):
+def tiler(stack, date, mgrs, bucket):
     """
     Function to tile a multi-dimensional imagery stack while filtering out
     tiles with high cloud coverage or no-data pixels.
@@ -59,13 +63,12 @@ def tiler(stack, date, mgrs):
     Args:
     - stack (xarray.Dataset): The input multi-dimensional imagery stack.
     - date (str): Date string yyyy-mm-dd
-    - mgrs (Str): MGRS Tile id
+    - mgrs (str): MGRS Tile id
+    - bucket(str): AWS S3 bucket to write tiles to
     """
     # Calculate the number of full tiles in x and y directions
-    num_x_tiles = stack.x.size // TILE_SIZE
-    num_y_tiles = stack.y.size // TILE_SIZE
-
-    bucket = os.environ.get("TARGET_BUCKET", "whis-imagery")
+    num_x_tiles = stack[0].x.size // TILE_SIZE
+    num_y_tiles = stack[0].y.size // TILE_SIZE
 
     counter = 0
     with tempfile.TemporaryDirectory() as dir:
@@ -73,9 +76,6 @@ def tiler(stack, date, mgrs):
         # Iterate through each chunk of x and y dimensions and create tiles
         for y_idx in range(num_y_tiles):
             for x_idx in range(num_x_tiles):
-                counter += 1
-                print(f"Counted {counter} tiles")
-
                 # Calculate the start and end indices for x and y dimensions
                 # for the current tile
                 x_start = x_idx * TILE_SIZE
@@ -84,18 +84,14 @@ def tiler(stack, date, mgrs):
                 y_end = y_start + TILE_SIZE
 
                 # Select the subset of data for the current tile
-                tile = stack.sel(
-                    x=slice(
-                        stack.x.values[x_start],
-                        stack.x.values[x_end]
-                        + np.sign(stack.rio.transform()[4]) * EPSILON,
-                    ),
-                    y=slice(
-                        stack.y.values[y_start],
-                        stack.y.values[y_end]
-                        + np.sign(stack.rio.transform()[0]) * EPSILON,
-                    ),
-                )
+                parts = [part[:, y_start:y_end, x_start:x_end] for part in stack]
+
+                # Only concat here to save memory, it converts S2 data to float
+                tile = xr.concat(parts, dim="band").rename("tile")
+
+                counter += 1
+                if counter % 100 == 0:
+                    print(f"Counted {counter} tiles")
 
                 if not filter_clouds_nodata(tile):
                     continue
@@ -109,18 +105,28 @@ def tiler(stack, date, mgrs):
                 ] * (len(tile.band) - 3)
 
                 # Write tile to tempdir
-                name = f"{dir}/claytile-{mgrs}-{date}-{VERSION}-{counter}.tif"
+                name = "{dir}/claytile_{mgrs}_{date}_v{version}_{counter}.tif".format(
+                    dir=dir,
+                    mgrs=mgrs,
+                    date=date.replace("-", ""),
+                    version=VERSION,
+                    counter=str(counter).zfill(4),
+                )
                 tile.rio.to_raster(name, compress="deflate")
 
                 with rasterio.open(name, "r+") as rst:
                     rst.colorinterp = color
+                    rst.update_tags(date=date)
 
-        import shutil
-
-        shutil.copytree(dir, "/home/tam/Desktop/claytiles", dirs_exist_ok=True)
-
-        print(f"Syncing {dir} with s3://{bucket}/clay/{VERSION}/{mgrs}/{date}")
+        print(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
         subprocess.run(
-            ["aws", "s3", "sync", dir, f"s3://{bucket}/clay/{VERSION}/{mgrs}/{date}"],
+            [
+                "aws",
+                "s3",
+                "sync",
+                dir,
+                f"s3://{bucket}/{VERSION}/{mgrs}/{date}",
+                "--no-progress",
+            ],
             check=True,
         )

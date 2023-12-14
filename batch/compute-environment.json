@@ -1,0 +1,42 @@
+{
+  "computeEnvironmentName": "fetch-and-run",
+  "computeEnvironmentArn": "arn:aws:batch:us-east-1:939659358055:compute-environment/fetch-and-run",
+  "ecsClusterArn": "arn:aws:ecs:us-east-1:939659358055:cluster/AWSBatch-fetch-and-run-6c59b338-7c7a-3d17-9cae-48fa8cb01fd1",
+  "tags": {},
+  "type": "MANAGED",
+  "state": "ENABLED",
+  "status": "VALID",
+  "statusReason": "ComputeEnvironment Healthy",
+  "computeResources": {
+    "type": "SPOT",
+    "allocationStrategy": "SPOT_PRICE_CAPACITY_OPTIMIZED",
+    "minvCpus": 0,
+    "maxvCpus": 256,
+    "desiredvCpus": 0,
+    "instanceTypes": [
+      "optimal"
+    ],
+    "subnets": [
+      "subnet-065db57a9bbe9db39",
+      "subnet-071e09a3c54797241",
+      "subnet-02b3216f099a85184",
+      "subnet-082a6aa9a80b134ce",
+      "subnet-021cbf7ad41e521ff",
+      "subnet-0ea444ed7a76a64ee"
+    ],
+    "securityGroupIds": [
+      "sg-076376c48cdb15a88"
+    ],
+    "instanceRole": "arn:aws:iam::939659358055:instance-profile/ecsInstanceRole",
+    "tags": {},
+    "bidPercentage": 100,
+    "ec2Configuration": [
+      {
+        "imageType": "ECS_AL2"
+      }
+    ]
+  },
+  "serviceRole": "arn:aws:iam::939659358055:role/aws-service-role/batch.amazonaws.com/AWSServiceRoleForBatch",
+  "containerOrchestrationType": "ECS",
+  "uuid": "b105b281-f736-36de-af70-450cafda628a"
+}
