@@ -57,6 +57,8 @@ def test_callbacks_wandb_log_mae_reconstruction(monkeypatch):
             ]
         )
 
+        del trainer, pl_module
+
     # Check that images logged by WandB have the correct caption and format
     assert len(wandb_images) == 8  # noqa: PLR2004
     assert all(isinstance(w, wandb.Image) for w in wandb_images)
