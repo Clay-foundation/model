@@ -48,12 +48,14 @@ def test_callbacks_wandb_log_mae_reconstruction():
 
         # Check that wandb saved some log files to the temporary directory
         assert os.path.exists(path := f"{tmpdirname}/wandb/latest-run/")
-        assert os.listdir(path=path) == [
-            f"run-{trainer.logger.version}.wandb",
-            "tmp",
-            "files",
-            "logs",
-        ]
+        assert set(os.listdir(path=path)) == set(
+            [
+                f"run-{trainer.logger.version}.wandb",
+                "tmp",
+                "files",
+                "logs",
+            ]
+        )
 
         # Check that images logged by WandB have the correct caption and format
         assert len(wandb_images) == 8  # noqa: PLR2004
