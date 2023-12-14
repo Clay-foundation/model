@@ -80,7 +80,7 @@ class LogMAEReconstruction(L.Callback):
         outputs: dict[str, torch.Tensor],
         batch: dict[str, torch.Tensor | list[str]],
         batch_idx: int,
-    ):
+    ) -> list:
         """
         Called in the validation loop at the start of every mini-batch.
 
@@ -139,3 +139,5 @@ class LogMAEReconstruction(L.Callback):
 
                 # Upload figures to WandB
                 logger.experiment.log(data={"Examples": figures})
+
+            return figures
