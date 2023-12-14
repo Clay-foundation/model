@@ -16,12 +16,13 @@ from src.model_vit import ViTLitModule
 
 
 # %%
-def test_callbacks_wandb_log_mae_reconstruction():
+def test_callbacks_wandb_log_mae_reconstruction(monkeypatch):
     """
     Ensure that the LogMAEReconstruction callback can log a set of images to
     Weights & Biases.
     """
     wandb = pytest.importorskip(modname="wandb")
+    monkeypatch.setenv("WANDB_CONSOLE", "off")
 
     with tempfile.TemporaryDirectory() as tmpdirname:
         pl_module: L.LightningModule = ViTLitModule()
