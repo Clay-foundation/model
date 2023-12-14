@@ -8,7 +8,7 @@ class CLAYModule(L.LightningModule):
     def __init__(self, **kwargs):
         super().__init__()
         self.save_hyperparameters(logger=True)
-        self.model = clay_small()
+        self.model = clay_small(**kwargs)
 
     def forward(self, cube: dict[str, torch.Tensor]):
         return self.model(cube)

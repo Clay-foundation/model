@@ -227,7 +227,7 @@ class Encoder(nn.Module):
             datacube["pixels"],
             datacube["timestep"],
             datacube["latlon"],
-        )  # [B C H W], [B 2], [B 2]
+        )  # [B C H W]
 
         B, C, H, W = cube.shape
 
@@ -492,6 +492,7 @@ class CLAY(nn.Module):
             "sar": (10, 11),
             "dem": (12,),
         },
+        **kwargs,
     ):
         super().__init__()
         self.mask_ratio = mask_ratio
@@ -593,100 +594,101 @@ class CLAY(nn.Module):
 
 
 def clay_tiny(**kwargs):
-    model = CLAY(
-        mask_ratio=0.75,
-        image_size=512,
-        patch_size=32,
+    args = {
+        "mask_ratio": 0.75,
+        "image_size": 512,
+        "patch_size": 32,
         # ENCODER
-        dim=256,
-        depth=4,
-        heads=4,
-        dim_head=64,
-        mlp_ratio=2,
-        dropout=0.0,
-        emb_dropout=0.0,
+        "dim": 256,
+        "depth": 4,
+        "heads": 4,
+        "dim_head": 64,
+        "mlp_ratio": 2,
+        "dropout": 0.0,
+        "emb_dropout": 0.0,
         # DECODER
-        decoder_dim=128,
-        decoder_depth=2,
-        decoder_heads=2,
-        decoder_dim_head=64,
-        decoder_mlp_ratio=2,
-        decoder_dropout=0.0,
-        **kwargs,
-    )
+        "decoder_dim": 128,
+        "decoder_depth": 2,
+        "decoder_heads": 2,
+        "decoder_dim_head": 64,
+        "decoder_mlp_ratio": 2,
+        "decoder_dropout": 0.0,
+    }
+    model = CLAY(**args.update(kwargs))
     return model
 
 
 def clay_small(**kwargs):
-    model = CLAY(
-        mask_ratio=0.60,
-        image_size=512,
-        patch_size=32,
+    args = {
+        "mask_ratio": 0.75,
+        "image_size": 512,
+        "patch_size": 32,
         # ENCODER
-        dim=768,
-        depth=12,
-        heads=12,
-        dim_head=64,
-        mlp_ratio=4,
-        dropout=0.0,
-        emb_dropout=0.0,
+        "dim": 768,
+        "depth": 12,
+        "heads": 12,
+        "dim_head": 64,
+        "mlp_ratio": 4,
+        "dropout": 0.0,
+        "emb_dropout": 0.0,
         # DECODER
-        decoder_dim=512,
-        decoder_depth=8,
-        decoder_heads=8,
-        decoder_dim_head=64,
-        decoder_mlp_ratio=4,
-        decoder_dropout=0.0,
-        **kwargs,
-    )
+        "decoder_dim": 512,
+        "decoder_depth": 8,
+        "decoder_heads": 8,
+        "decoder_dim_head": 64,
+        "decoder_mlp_ratio": 4,
+        "decoder_dropout": 0.0,
+    }
+    args.update(kwargs)
+    model = CLAY(**args)
     return model
 
 
 def clay_medium(**kwargs):
-    model = CLAY(
-        mask_ratio=0.75,
-        image_size=512,
-        patch_size=16,
+    args = {
+        "mask_ratio": 0.75,
+        "image_size": 512,
+        "patch_size": 16,
         # ENCODER
-        dim=1024,
-        depth=24,
-        heads=16,
-        dim_head=64,
-        mlp_ratio=4,
-        dropout=0.0,
-        emb_dropout=0.0,
+        "dim": 1024,
+        "depth": 24,
+        "heads": 16,
+        "dim_head": 64,
+        "mlp_ratio": 4,
+        "dropout": 0.0,
+        "emb_dropout": 0.0,
         # DECODER
-        decoder_dim=512,
-        decoder_depth=8,
-        decoder_heads=16,
-        decoder_dim_head=64,
-        decoder_mlp_ratio=4,
-        decoder_dropout=0.0,
-        **kwargs,
-    )
+        "decoder_dim": 512,
+        "decoder_depth": 8,
+        "decoder_heads": 16,
+        "decoder_dim_head": 64,
+        "decoder_mlp_ratio": 4,
+        "decoder_dropout": 0.0,
+    }
+    model = CLAY(**args.update(kwargs))
     return model
 
 
 def clay_large(**kwargs):
-    model = CLAY(
-        mask_ratio=0.75,
-        image_size=512,
-        patch_size=16,
+    args = {
+        "mask_ratio": 0.75,
+        "image_size": 512,
+        "patch_size": 16,
         # ENCODER
-        dim=1280,
-        depth=32,
-        heads=16,
-        dim_head=64,
-        mlp_ratio=4,
-        dropout=0.0,
-        emb_dropout=0.0,
+        "dim": 1280,
+        "depth": 32,
+        "heads": 16,
+        "dim_head": 64,
+        "mlp_ratio": 4,
+        "dropout": 0.0,
+        "emb_dropout": 0.0,
         # DECODER
-        decoder_dim=512,
-        decoder_depth=8,
-        decoder_heads=16,
-        decoder_dim_head=64,
-        decoder_mlp_ratio=4,
-        decoder_dropout=0.0,
-        **kwargs,
-    )
+        "decoder_dim": 512,
+        "decoder_depth": 8,
+        "decoder_heads": 16,
+        "decoder_dim_head": 64,
+        "decoder_mlp_ratio": 4,
+        "decoder_dropout": 0.0,
+    }
+    model = CLAY(**args.update(kwargs))
     return model
