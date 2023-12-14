@@ -40,4 +40,4 @@ jobs:
       - name: Test with pytest
         run: |
             micromamba install python=${{ matrix.python-version }} pytest
-            python -m pytest --verbose src/tests/
+            PYTEST_DEBUG=1 python -m pytest --verbose src/tests/

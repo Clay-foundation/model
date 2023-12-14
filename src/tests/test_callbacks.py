@@ -23,6 +23,7 @@ def test_callbacks_wandb_log_mae_reconstruction(monkeypatch):
     """
     wandb = pytest.importorskip(modname="wandb")
 
+    # Run tests in a temporary folder
     with tempfile.TemporaryDirectory() as tmpdirname:
         pl_module: L.LightningModule = ViTLitModule()
         trainer: L.Trainer = L.Trainer(
@@ -57,12 +58,10 @@ def test_callbacks_wandb_log_mae_reconstruction(monkeypatch):
             ]
         )
 
-        del trainer, pl_module
-
-    # Check that images logged by WandB have the correct caption and format
-    assert len(wandb_images) == 8  # noqa: PLR2004
-    assert all(isinstance(w, wandb.Image) for w in wandb_images)
-    assert wandb_images[0]._caption == "RGB Image 0"
-    assert wandb_images[0].format == "png"
-    assert wandb_images[1]._caption == "Reconstructed 0"
-    assert wandb_images[1].format == "png"
+        # Check that images logged by WandB have the correct caption and format
+        assert len(wandb_images) == 8  # noqa: PLR2004
+        assert all(isinstance(w, wandb.Image) for w in wandb_images)
+        assert wandb_images[0]._caption == "RGB Image 0"
+        assert wandb_images[0].format == "png"
+        assert wandb_images[1]._caption == "Reconstructed 0"
+        assert wandb_images[1].format == "png"
