@@ -8,6 +8,7 @@ dependencies:
   - fiona~=1.9.5
   - geopandas-base~=0.14.1
   - h5netcdf~=1.3.0
+  - jupyter-book~=0.15.1
   - jupyterlab~=4.0.7
   - jsonargparse~=4.27.0
   - lightning~=2.1.0
