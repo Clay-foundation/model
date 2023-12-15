@@ -18,7 +18,7 @@ from lightning.pytorch.plugins.io import AsyncCheckpointIO
 
 from src.callbacks import LogIntermediatePredictions  # noqa: F401
 from src.datamodule import GeoTIFFDataPipeModule  # noqa: F401
-from src.model import CLAYModule
+from src.model_clay import CLAYModule
 from src.model_vit import ViTLitModule  # noqa: F401
 from src.srm_datamodule import ClayDataModule
 
