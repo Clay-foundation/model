@@ -9,7 +9,8 @@ classes.
 
 ## LightningModule (model architecture)
 
-- model_vit.py - Vision Transformer neural network model architecture
+- model_clay.py - Clay Foundation Model architecture with spatiotemporal encoders
+- model_vit.py - Vanilla Vision Transformer neural network model architecture
 
 ## Callbacks (custom plugins)
 
