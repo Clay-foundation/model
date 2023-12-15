@@ -129,19 +129,23 @@ class ClayDataModule(L.LightningDataModule):
 
     def __init__(
         self,
-        data_dir: Path = Path("data/"),
-        batch_size: int = 4,
+        data_dir: str = "data",
+        batch_size: int = 10,
         num_workers: int = 8,
     ):
         super().__init__()
-        self.data_dir = data_dir
+        self.data_dir = Path(data_dir)
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.tfm = v2.Compose([v2.Normalize(mean=self.MEAN, std=self.STD)])
+        self.tfm = v2.Compose(
+            [
+                v2.Normalize(mean=self.MEAN, std=self.STD),
+            ]
+        )
 
     def setup(self, stage: str | None = None) -> None:
         chips_path = list(self.data_dir.glob("**/*.tif"))
-        print(len(chips_path))
+        print(f"Total number of chips: {len(chips_path)}")
         random.shuffle(chips_path)
         split_ratio = 0.8
         split = int(len(chips_path) * split_ratio)

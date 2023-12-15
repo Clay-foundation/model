@@ -7,6 +7,8 @@ from vit_pytorch.vit import Transformer
 
 from src.utils import posemb_sincos_1d, posemb_sincos_2d
 
+torch.set_float32_matmul_precision(precision="medium")
+
 
 class Patchify(nn.Module):
     """
@@ -670,9 +672,6 @@ class CLAY(nn.Module):
 
 def clay_tiny(**kwargs):
     args = {
-        "mask_ratio": 0.75,
-        "image_size": 512,
-        "patch_size": 32,
         # ENCODER
         "dim": 256,
         "depth": 4,
@@ -689,15 +688,13 @@ def clay_tiny(**kwargs):
         "decoder_mlp_ratio": 2,
         "decoder_dropout": 0.0,
     }
-    model = CLAY(**args.update(kwargs))
+    args.update(kwargs)
+    model = CLAY(**args)
     return model
 
 
 def clay_small(**kwargs):
     args = {
-        "mask_ratio": 0.75,
-        "image_size": 512,
-        "patch_size": 32,
         # ENCODER
         "dim": 768,
         "depth": 12,
@@ -721,9 +718,6 @@ def clay_small(**kwargs):
 
 def clay_medium(**kwargs):
     args = {
-        "mask_ratio": 0.75,
-        "image_size": 512,
-        "patch_size": 16,
         # ENCODER
         "dim": 1024,
         "depth": 24,
@@ -740,15 +734,13 @@ def clay_medium(**kwargs):
         "decoder_mlp_ratio": 4,
         "decoder_dropout": 0.0,
     }
-    model = CLAY(**args.update(kwargs))
+    args.update(kwargs)
+    model = CLAY(**args)
     return model
 
 
 def clay_large(**kwargs):
     args = {
-        "mask_ratio": 0.75,
-        "image_size": 512,
-        "patch_size": 16,
         # ENCODER
         "dim": 1280,
         "depth": 32,
@@ -765,15 +757,41 @@ def clay_large(**kwargs):
         "decoder_mlp_ratio": 4,
         "decoder_dropout": 0.0,
     }
-    model = CLAY(**args.update(kwargs))
+    args.update(kwargs)
+    model = CLAY(**args)
     return model
 
 
 class CLAYModule(L.LightningModule):
-    def __init__(self, lr=1e-4, wd=0.05, b1=0.9, b2=0.95):
+    def __init__(
+        self,
+        model_size="small",
+        mask_ratio=0.75,
+        image_size=512,
+        patch_size=32,
+        lr=1e-4,
+        wd=0.05,
+        b1=0.9,
+        b2=0.95,
+    ):
         super().__init__()
         self.save_hyperparameters(logger=True)
-        self.model = clay_small(lr=lr, wd=wd, b1=b1, b2=b2)
+        model_map = {
+            "tiny": clay_tiny,
+            "small": clay_small,
+            "medium": clay_medium,
+            "large": clay_large,
+        }
+        if model_size in model_map:
+            self.model = model_map[model_size](
+                mask_ratio=mask_ratio,
+                image_size=image_size,
+                patch_size=patch_size,
+            )
+        else:
+            raise ValueError(
+                f"Invalid model size {model_size}. Expected one of {model_map.keys()}"
+            )
 
     def forward(self, cube: dict[str, torch.Tensor]):
         return self.model(cube)
