@@ -24,9 +24,11 @@ References:
 - https://github.com/ashleve/lightning-hydra-template/blob/wandb-callbacks/src/callbacks/wandb_callbacks.py#L245
 """
 import lightning as L
+import matplotlib.pyplot as plt
 import numpy as np
 import skimage
 import torch
+from einops import rearrange
 
 try:
     import wandb
@@ -35,6 +37,28 @@ except ImportError:
 
 
 # %%
+def get_wandb_logger(trainer: L.Trainer) -> L.pytorch.loggers.WandbLogger:
+    """
+    Safely get Weights & Biases logger from Trainer.
+    """
+
+    if trainer.fast_dev_run:
+        raise Exception(
+            "Cannot use wandb callbacks since pytorch lightning disables "
+            "loggers in `fast_dev_run=true` mode."
+        )
+
+    for logger in trainer.loggers:
+        if isinstance(logger, L.pytorch.loggers.WandbLogger):
+            return logger
+            break
+
+    raise Exception(
+        "You are using wandb related callback, "
+        "but WandbLogger was not found for some reason..."
+    )
+
+
 class LogMAEReconstruction(L.Callback):
     """
     Logs reconstructed RGB images from a Masked Autoencoder's decoder to WandB.
@@ -90,9 +114,7 @@ class LogMAEReconstruction(L.Callback):
         if self.ready and batch_idx == 0:  # only run on first mini-batch
             with torch.inference_mode():
                 # Get WandB logger
-                for logger in trainer.loggers:
-                    if isinstance(logger, L.pytorch.loggers.WandbLogger):
-                        break
+                self.logger = get_wandb_logger(trainer=trainer)
 
                 # Turn raw logits into reconstructed 512x512 images
                 patchified_pixel_values: torch.Tensor = outputs["logits"]
@@ -139,6 +161,73 @@ class LogMAEReconstruction(L.Callback):
                     figures.append(img_reconstruction)
 
                 # Upload figures to WandB
-                logger.experiment.log(data={"Examples": figures})
+                self.logger.experiment.log(data={"Examples": figures})
 
             return figures
+
+
+class LogIntermediatePredictions(L.Callback):
+    """Visualize the model results at the end of every epoch."""
+
+    def __init__(self):
+        """
+        Instantiates with wandb-logger.
+        """
+        super().__init__()
+
+    def on_validation_end(
+        self,
+        trainer: L.Trainer,
+        pl_module: L.LightningModule,
+    ) -> None:
+        """
+        Called when the validation loop ends.
+        At the end of each epoch, takes the first batch from validation dataset
+        & logs the model predictions to wandb-logger for humans to interpret
+        how model evolves over time.
+        """
+        with torch.no_grad():
+            # Get WandB logger
+            self.logger = get_wandb_logger(trainer=trainer)
+
+            # get the first batch from trainer
+            batch = next(iter(trainer.val_dataloaders))
+            batch = {k: v.to(pl_module.device) for k, v in batch.items()}
+            # ENCODER
+            (
+                encoded_unmasked_patches,
+                unmasked_indices,
+                masked_indices,
+                masked_matrix,
+            ) = pl_module.model.encoder(batch)
+
+            # DECODER
+            pixels = pl_module.model.decoder(
+                encoded_unmasked_patches, unmasked_indices, masked_indices
+            )
+            pixels = rearrange(
+                pixels,
+                "b c (h w) (p1 p2) -> b c (h p1) (w p2)",
+                h=pl_module.model.image_size // pl_module.model.patch_size,
+                p1=pl_module.model.patch_size,
+            )
+
+            assert pixels.shape == batch["pixels"].shape
+
+            n_rows = 2
+            n_cols = 8
+
+            fig, axs = plt.subplots(n_rows, n_cols, figsize=(20, 4))
+
+            for i in range(n_cols):
+                axs[0, i].imshow(
+                    batch["pixels"][i][0].detach().cpu().numpy(), cmap="bwr"
+                )
+                axs[0, i].set_title(f"Image {i}")
+                axs[0, i].axis("off")
+
+                axs[1, i].imshow(pixels[i][0].detach().cpu().numpy(), cmap="gray")
+                axs[1, i].set_title(f"Preds {i}")
+                axs[1, i].axis("off")
+
+            wandb.log({"Images": wandb.Image(fig)})
