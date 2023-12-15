@@ -11,6 +11,7 @@ dependencies:
   - jupyterlab~=4.0.7
   - jsonargparse~=4.27.0
   - lightning~=2.1.0
+  - matplotlib-base~=3.8.2
   - planetary-computer~=1.0.0
   - pytorch~=2.1.0=*cuda120*
   - python=3.11

@@ -13,7 +13,7 @@
 version: 1
 metadata:
   content_hash:
-    linux-64: ec11a40a42e76bdc89d9c213794e60b28f3aad6497146c48e19847ed7fc5d375
+    linux-64: 382af838d072f7ebabfe46ced62e6391fe215c320ec68fd27fccc75fc8289084
   channels:
   - url: conda-forge
     used_env_vars: []
@@ -531,7 +531,7 @@ package:
   category: main
   optional: false
 - name: botocore
-  version: 1.34.0
+  version: 1.34.1
   manager: conda
   platform: linux-64
   dependencies:
@@ -539,10 +539,39 @@ package:
     python: '>=3.8'
     python-dateutil: '>=2.1,<3.0.0'
     urllib3: '>=1.25.4,<1.27'
-  url: https://conda.anaconda.org/conda-forge/noarch/botocore-1.34.0-pyhd8ed1ab_0.conda
+  url: https://conda.anaconda.org/conda-forge/noarch/botocore-1.34.1-pyhd8ed1ab_0.conda
   hash:
-    md5: 61c8f5df4abbfa8ab19b1b307913723c
-    sha256: 2d72f7a2703c1044a6532b353b6a7e553e587a4a5fae78745e35b55b5b3a7ad4
+    md5: b60f64c4bef6aee697f8291bfffa42b2
+    sha256: 73a1348256e47aa620b014b3a7e3a0de29f8adfff97ded965fa4e05dd9a8d7e2
+  category: main
+  optional: false
+- name: brotli
+  version: 1.1.0
+  manager: conda
+  platform: linux-64
+  dependencies:
+    brotli-bin: 1.1.0
+    libbrotlidec: 1.1.0
+    libbrotlienc: 1.1.0
+    libgcc-ng: '>=12'
+  url: https://conda.anaconda.org/conda-forge/linux-64/brotli-1.1.0-hd590300_1.conda
+  hash:
+    md5: f27a24d46e3ea7b70a1f98e50c62508f
+    sha256: f2d918d351edd06c55a6c2d84b488fe392f85ea018ff227daac07db22b408f6b
+  category: main
+  optional: false
+- name: brotli-bin
+  version: 1.1.0
+  manager: conda
+  platform: linux-64
+  dependencies:
+    libbrotlidec: 1.1.0
+    libbrotlienc: 1.1.0
+    libgcc-ng: '>=12'
+  url: https://conda.anaconda.org/conda-forge/linux-64/brotli-bin-1.1.0-hd590300_1.conda
+  hash:
+    md5: 39f910d205726805a958da408ca194ba
+    sha256: a641abfbaec54f454c8434061fffa7fdaa9c695e8a5a400ed96b4f07c0c00677
   category: main
   optional: false
 - name: brotli-python
@@ -896,6 +925,22 @@ package:
     sha256: c6fc314161263f031eb23ac53868e0d9b0242efe669e176901effdac4bd87376
   category: main
   optional: false
+- name: contourpy
+  version: 1.2.0
+  manager: conda
+  platform: linux-64
+  dependencies:
+    libgcc-ng: '>=12'
+    libstdcxx-ng: '>=12'
+    numpy: '>=1.20,<2'
+    python: '>=3.11,<3.12.0a0'
+    python_abi: 3.11.*
+  url: https://conda.anaconda.org/conda-forge/linux-64/contourpy-1.2.0-py311h9547e67_0.conda
+  hash:
+    md5: 40828c5b36ef52433e21f89943e09f33
+    sha256: 2c76e2a970b74eef92ef9460aa705dbdc506dd59b7382bfbedce39d9c189d7f4
+  category: main
+  optional: false
 - name: crashtest
   version: 0.4.1
   manager: conda
@@ -1021,6 +1066,18 @@ package:
   hash:
     md5: 5a698ce42f4de08f1c074df4232993e7
     sha256: 0cd17a35182f3d35b6f7813a345f430814113fdf23417c37bdff4c310a4ce03b
+  category: main
+  optional: false
+- name: cycler
+  version: 0.12.1
+  manager: conda
+  platform: linux-64
+  dependencies:
+    python: '>=3.8'
+  url: https://conda.anaconda.org/conda-forge/noarch/cycler-0.12.1-pyhd8ed1ab_0.conda
+  hash:
+    md5: 5cd86562580f274031ede6aa6aa24441
+    sha256: f221233f21b1d06971792d491445fd548224641af9443739b4b7b6d5d72954a8
   category: main
   optional: false
 - name: dask-core
@@ -1441,6 +1498,22 @@ package:
   hash:
     md5: f766549260d6815b0c52253f1fb1bb29
     sha256: 53f23a3319466053818540bcdf2091f253cbdbab1e0e9ae7b9e509dcaa2a5e38
+  category: main
+  optional: false
+- name: fonttools
+  version: 4.46.0
+  manager: conda
+  platform: linux-64
+  dependencies:
+    brotli: ''
+    libgcc-ng: '>=12'
+    munkres: ''
+    python: '>=3.11,<3.12.0a0'
+    python_abi: 3.11.*
+  url: https://conda.anaconda.org/conda-forge/linux-64/fonttools-4.46.0-py311h459d7ec_0.conda
+  hash:
+    md5: a14114f70e23f7fd5ab9941fec45b095
+    sha256: a40f8415d9ceaf5f217034814b984d13017e4dab577085a83a2d0cc39b9d7239
   category: main
   optional: false
 - name: fqdn
@@ -2374,6 +2447,21 @@ package:
   hash:
     md5: 30186d27e2c9fa62b45fb1476b7200e3
     sha256: 150c05a6e538610ca7c43beb3a40d65c90537497a4f6a5f4d15ec0451b6f5ebb
+  category: main
+  optional: false
+- name: kiwisolver
+  version: 1.4.5
+  manager: conda
+  platform: linux-64
+  dependencies:
+    libgcc-ng: '>=12'
+    libstdcxx-ng: '>=12'
+    python: '>=3.11,<3.12.0a0'
+    python_abi: 3.11.*
+  url: https://conda.anaconda.org/conda-forge/linux-64/kiwisolver-1.4.5-py311h9547e67_1.conda
+  hash:
+    md5: 2c65bdf442b0d37aad080c8a4e0d452f
+    sha256: 723b0894d2d2b05a38f9c5a285d5a0a5baa27235ceab6531dbf262ba7c6955c1
   category: main
   optional: false
 - name: krb5
@@ -3688,6 +3776,33 @@ package:
     sha256: e1a9930f35e39bf65bc293e24160b83ebf9f800f02749f65358e1c04882ee6b0
   category: main
   optional: false
+- name: matplotlib-base
+  version: 3.8.2
+  manager: conda
+  platform: linux-64
+  dependencies:
+    certifi: '>=2020.06.20'
+    contourpy: '>=1.0.1'
+    cycler: '>=0.10'
+    fonttools: '>=4.22.0'
+    freetype: '>=2.12.1,<3.0a0'
+    kiwisolver: '>=1.3.1'
+    libgcc-ng: '>=12'
+    libstdcxx-ng: '>=12'
+    numpy: '>=1.23.5,<2.0a0'
+    packaging: '>=20.0'
+    pillow: '>=8'
+    pyparsing: '>=2.3.1'
+    python: '>=3.11,<3.12.0a0'
+    python-dateutil: '>=2.7'
+    python_abi: 3.11.*
+    tk: '>=8.6.13,<8.7.0a0'
+  url: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-base-3.8.2-py311h54ef318_0.conda
+  hash:
+    md5: 9f80753bc008bfc9b95f39d9ff9f1694
+    sha256: 69319da0e6bad1711cac1573710370f31e9630fe6c972ff7eac95649e0c04114
+  category: main
+  optional: false
 - name: matplotlib-inline
   version: 0.1.6
   manager: conda
@@ -3851,6 +3966,18 @@ package:
   hash:
     md5: cebd02a02b199549a57e0d70aed7e2dc
     sha256: eca27e6fb5fb4ee73f04ae030bce29f5daa46fea3d6abdabb91740646f0d188e
+  category: main
+  optional: false
+- name: munkres
+  version: 1.1.4
+  manager: conda
+  platform: linux-64
+  dependencies:
+    python: ''
+  url: https://conda.anaconda.org/conda-forge/noarch/munkres-1.1.4-pyh9f0ad1d_0.tar.bz2
+  hash:
+    md5: 2ba8498c1018c1e9c61eb99b973dfe19
+    sha256: f86fb22b58e93d04b6f25e0d811b56797689d598788b59dcb47f59045b568306
   category: main
   optional: false
 - name: nbclient
