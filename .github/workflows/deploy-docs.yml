@@ -50,10 +50,6 @@ jobs:
             python=3.11
             jupyter-book=0.15.1
 
-      # Show installed pkg information for postmortem diagnostic
-      - name: List installed packages
-        run: mamba list
-
       # Build the Jupyter book
       - name: Build the book
         run: jupyter-book build docs/
