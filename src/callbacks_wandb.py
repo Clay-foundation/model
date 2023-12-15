@@ -37,6 +37,28 @@ except ImportError:
 
 
 # %%
+def get_wandb_logger(trainer: L.Trainer) -> L.pytorch.loggers.WandbLogger:
+    """
+    Safely get Weights & Biases logger from Trainer.
+    """
+
+    if trainer.fast_dev_run:
+        raise Exception(
+            "Cannot use wandb callbacks since pytorch lightning disables "
+            "loggers in `fast_dev_run=true` mode."
+        )
+
+    for logger in trainer.loggers:
+        if isinstance(logger, L.pytorch.loggers.WandbLogger):
+            return logger
+            break
+
+    raise Exception(
+        "You are using wandb related callback, "
+        "but WandbLogger was not found for some reason..."
+    )
+
+
 class LogMAEReconstruction(L.Callback):
     """
     Logs reconstructed RGB images from a Masked Autoencoder's decoder to WandB.
@@ -92,9 +114,7 @@ class LogMAEReconstruction(L.Callback):
         if self.ready and batch_idx == 0:  # only run on first mini-batch
             with torch.inference_mode():
                 # Get WandB logger
-                for logger in trainer.loggers:
-                    if isinstance(logger, L.pytorch.loggers.WandbLogger):
-                        break
+                self.logger = get_wandb_logger(trainer=trainer)
 
                 # Turn raw logits into reconstructed 512x512 images
                 patchified_pixel_values: torch.Tensor = outputs["logits"]
@@ -141,7 +161,7 @@ class LogMAEReconstruction(L.Callback):
                     figures.append(img_reconstruction)
 
                 # Upload figures to WandB
-                logger.experiment.log(data={"Examples": figures})
+                self.logger.experiment.log(data={"Examples": figures})
 
             return figures
 
@@ -149,13 +169,11 @@ class LogMAEReconstruction(L.Callback):
 class LogIntermediatePredictions(L.Callback):
     """Visualize the model results at the end of every epoch."""
 
-    def __init__(self, logger):
-        """Instantiates with wandb-logger.
-        Args:
-            logger : wandb-logger instance.
+    def __init__(self):
+        """
+        Instantiates with wandb-logger.
         """
         super().__init__()
-        self.logger = logger
 
     def on_validation_end(
         self,
@@ -169,6 +187,9 @@ class LogIntermediatePredictions(L.Callback):
         how model evolves over time.
         """
         with torch.no_grad():
+            # Get WandB logger
+            self.logger = get_wandb_logger(trainer=trainer)
+
             # get the first batch from trainer
             batch = next(iter(trainer.val_dataloaders))
             batch = {k: v.to(pl_module.device) for k, v in batch.items()}

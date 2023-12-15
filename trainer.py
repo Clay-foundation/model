@@ -44,7 +44,7 @@ def cli_main(
                 verbose=True,
             ),
             # LearningRateMonitor(logging_interval="step"),
-            # LogIntermediatePredictions(logger=wandb_logger),
+            # LogIntermediatePredictions(),
         ],
         "logger": False,  # WandbLogger(project="CLAY-v0", log_model=False)
         "plugins": [AsyncCheckpointIO()],
