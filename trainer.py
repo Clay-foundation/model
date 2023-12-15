@@ -13,6 +13,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.cli import ArgsType, LightningCLI
 from lightning.pytorch.plugins.io import AsyncCheckpointIO
 
+from src.callbacks_wandb import LogMAEReconstruction  # noqa: F401
 from src.datamodule import GeoTIFFDataPipeModule
 from src.model_vit import ViTLitModule
 
