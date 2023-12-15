@@ -9,15 +9,23 @@ from src.utils import posemb_sincos_1d, posemb_sincos_2d
 
 
 class Patchify(nn.Module):
-    """Patchify the input cube & create embeddings per patch
-
-    Args:
-        in_chans (int): Number of input channels
-        embed_dim (int): Embedding dimension
-        patch_size (int): Patch size
+    """
+    Patchify the input cube & create embeddings per patch
     """
 
     def __init__(self, in_chans, embed_dim, patch_size):
+        """
+        Define layers of patch stem.
+
+        Parameters
+        ----------
+        in_chans : int
+            Number of input channels
+        embed_dim : int
+            Embedding dimension
+        patch_size : int
+            Patch size
+        """
         super().__init__()
         self.proj = nn.Conv2d(
             in_chans, embed_dim, kernel_size=patch_size, stride=patch_size
@@ -32,7 +40,7 @@ class Patchify(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         mask_ratio,
         image_size,
@@ -102,13 +110,20 @@ class Encoder(nn.Module):
         )
 
     def to_patch_embed(self, cube):
-        """Patchify the input cube & create embeddings per patch
+        """
+        Patchify the input cube & create embeddings per patch
 
-        Args:
-            cube (torch.Tensor): A tensor of shape (B, C, H, W) containing the pixels of the datacube
+        Parameters
+        ----------
+        cube : torch.Tensor
+            A tensor of shape (B, C, H, W) containing the pixels of the
+            datacube.
 
-        Returns:
-            patches (torch.Tensor): A tensor of shape (B, G, L, D) containing the embeddings of the patches
+        Returns
+        -------
+        patches : torch.Tensor
+            A tensor of shape (B, G, L, D) containing the embeddings of the
+            patches.
         """
         patches = []
         for name, bands in self.band_groups.items():
@@ -119,13 +134,20 @@ class Encoder(nn.Module):
         return patches  # [B G L D]
 
     def add_encodings(self, patches):
-        """Add position & band encoding to the patches
+        """
+        Add position & band encoding to the patches
 
-        Args:
-            patches (torch.Tensor): A tensor of shape (B, G, L, D) containing the embeddings of the patches
+        Parameters
+        ----------
+        patches : torch.Tensor
+            A tensor of shape (B, G, L, D) containing the embeddings of the
+            patches.
 
-        Returns:
-            patches (torch.Tensor): A tensor of shape (B, G, L, D) containing the embeddings of the patches + position & band encoding
+        Returns
+        -------
+        patches : torch.Tensor
+            A tensor of shape (B, G, L, D) containing the embeddings of the
+            patches + position & band encoding.
         """
         B, G, L, D = patches.shape
 
@@ -148,15 +170,24 @@ class Encoder(nn.Module):
         return patches  # [B G L D]
 
     def embed_metadata(self, patches, latlon, time):
-        """Add timestep & latlon embedding to the patches
+        """
+        Add timestep & latlon embedding to the patches
 
-        Args:
-            patches (torch.Tensor): A tensor of shape (B, GL, D) containing the embeddings of the patches + position & band encoding
-            latlon (torch.Tensor): A tensor of shape (B, 2) containing the latlon of the datacube
-            time (torch.Tensor): A tensor of shape (B, 2) containing the timestep of the datacube
+        Parameters
+        ----------
+        patches : torch.Tensor
+            A tensor of shape (B, GL, D) containing the embeddings of the
+            patches + position & band encoding.
+        latlon : torch.Tensor
+            A tensor of shape (B, 2) containing the latlon of the datacube.
+        time : torch.Tensor
+            A tensor of shape (B, 2) containing the timestep of the datacube.
 
-        Returns:
-            patches (torch.Tensor): A tensor of shape (B, GL, D) containing the embeddings of the patches + position & band encoding + timestep & latlon embedding
+        Returns
+        -------
+        patches : torch.Tensor
+            A tensor of shape (B, GL, D) containing the embeddings of the
+            patches + position & band encoding + timestep & latlon embedding.
         """
         latlon_embedding = rearrange(
             self.latlon_embedding(latlon), "B D -> B 1 D"
@@ -170,16 +201,29 @@ class Encoder(nn.Module):
         return patches  # [B (GL + 2) D]
 
     def mask_out(self, patches):
-        """Mask out patches randomly by shuffling the patches & masking out the first N patches
+        """
+        Mask out patches randomly by shuffling the patches & masking out the
+        first N patches
 
-        Args:
-            patches (torch.Tensor): A tensor of shape (B, GL, D) containing the embeddings of the patches + position & band encoding + timestep & latlon embedding
+        Parameters
+        ----------
+        patches : torch.Tensor
+            A tensor of shape (B, GL, D) containing the embeddings of the
+            patches + position & band encoding + timestep & latlon embedding.
 
-        Returns:
-            unmasked_patches (torch.Tensor): A tensor of shape (B, GL:(1 - mask_ratio), D) containing the embeddings of the unmasked patches
-            unmasked_indices (torch.Tensor): A tensor of shape (B, (1 - mask_ratio)) containing the indices of the unmasked patches
-            masked_indices (torch.Tensor): A tensor of shape (B, mask_ratio) containing the indices of the masked patches
-            masked_matrix (torch.Tensor): A tensor of shape (B, G, L) containing the mask matrix
+        Returns
+        -------
+        unmasked_patches : torch.Tensor
+            A tensor of shape (B, GL:(1 - mask_ratio), D) containing the
+            embeddings of the unmasked patches.
+        unmasked_indices : torch.Tensor
+            A tensor of shape (B, (1 - mask_ratio)) containing the indices of
+            the unmasked patches.
+        masked_indices : torch.Tensor
+            A tensor of shape (B, mask_ratio) containing the indices of the
+            masked patches.
+        masked_matrix : torch.Tensor
+            A tensor of shape (B, G, L) containing the mask matrix.
         """
         B, GL, D = patches.shape
         assert (
@@ -195,7 +239,8 @@ class Encoder(nn.Module):
             random_indices[:, self.num_masked_patches :],  # [B (1 - mask_ratio) * GL]
         )
 
-        # create a mask of shape B G L, where 1 indicates a masked patch & 0 indicates an unmasked patch
+        # create a mask of shape B G L, where 1 indicates a masked patch
+        # and 0 indicates an unmasked patch
         masked_matrix = torch.zeros((B, GL), device=patches.device)  # [B GL] = 0
         masked_matrix[:, : self.num_masked_patches] = 1  # [B mask_ratio * GL] = 1
         masked_matrix = torch.gather(
@@ -272,7 +317,7 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         mask_ratio,
         image_size,
@@ -339,15 +384,27 @@ class Decoder(nn.Module):
     def reconstruct_and_add_encoding(
         self, unmasked_patches, unmasked_indices, masked_indices
     ):
-        """Reconstruct the input patches from the random mask patch & add position & band encoding to them
+        """
+        Reconstruct the input patches from the random mask patch & add position
+        & band encoding to them.
 
-        Args:
-            unmasked_patches (torch.Tensor): A tensor of shape (B, GL:(1 - mask_ratio), D) containing the embeddings of the unmasked patches
-            unmasked_indices (torch.Tensor): A tensor of shape (B, (1 - mask_ratio)) containing the indices of the unmasked patches
-            masked_indices (torch.Tensor): A tensor of shape (B, mask_ratio) containing the indices of the masked patches
+        Parameters
+        ----------
+        unmasked_patches : torch.Tensor
+            A tensor of shape (B, GL:(1 - mask_ratio), D) containing the
+            embeddings of the unmasked patches.
+        unmasked_indices : torch.Tensor
+            A tensor of shape (B, (1 - mask_ratio)) containing the indices of
+            the unmasked patches.
+        masked_indices : torch.Tensor
+            A tensor of shape (B, mask_ratio) containing the indices of the
+            masked patches.
 
-        Returns:
-            decoder_patches (torch.Tensor): A tensor of shape (B, GL, D) containing the embeddings for the decoder part of the model
+        Returns
+        -------
+        decoder_patches : torch.Tensor
+            A tensor of shape (B, GL, D) containing the embeddings for the
+            decoder part of the model.
         """
         B, *_ = unmasked_patches.shape
 
@@ -379,7 +436,8 @@ class Decoder(nn.Module):
             batch_indices, masked_indices, :
         ]  # [B (GL:mask_ratio) D]
 
-        # Reconstruct the masked patches from the random mask patch & add position & band encoding to them
+        # Reconstruct the masked patches from the random mask patch &
+        # add position & band encoding to them
         masked_patches = repeat(
             self.mask_patch, "D -> B GL D", B=B, GL=self.num_masked_patches
         )  # [B GL:mask_ratio D]
@@ -406,13 +464,20 @@ class Decoder(nn.Module):
         return decoder_patches  # [B GL D]
 
     def pixelify(self, patches):
-        """Convert the patches into pixel space to compute the loss
+        """
+        Convert the patches into pixel space to compute the loss
 
-        Args:
-            patches (torch.Tensor): A tensor of shape (B, GL, D) containing the embeddings from the decoder part of the model
+        Parameters
+        ----------
+        patches : torch.Tensor
+            A tensor of shape (B, GL, D) containing the embeddings from the
+            decoder part of the model.
 
-        Returns:
-            pixels (torch.Tensor): A tensor of shape (B, C, L, PP) containing the pixels of the datacube
+        Returns
+        -------
+        pixels : torch.Tensor
+            A tensor of shape (B, C, L, PP) containing the pixels of the
+            datacube.
         """
         patches = rearrange(
             patches, "B (G L) D -> B G L D", G=len(self.band_groups)
@@ -463,7 +528,7 @@ class Decoder(nn.Module):
 
 
 class CLAY(nn.Module):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         mask_ratio,
         image_size,
@@ -537,15 +602,24 @@ class CLAY(nn.Module):
         )
 
     def per_pixel_loss(self, cube, pixels, masked_matrix):
-        """Compute the per pixel loss
+        """
+        Compute the per pixel loss
 
-        Args:
-            cube (torch.Tensor): A tensor of shape (B, C, H, W) containing the pixels of the datacube
-            pixels (torch.Tensor): A tensor of shape (B, C, L, PP) containing the pixels per patch of the datacube
-            masked_matrix (torch.Tensor): A tensor of shape (B, G, L) containing the mask matrix
+        Parameters
+        ----------
+        cube : torch.Tensor
+            A tensor of shape (B, C, H, W) containing the pixels of the
+            datacube.
+        pixels : torch.Tensor
+            A tensor of shape (B, C, L, PP) containing the pixels per patch of
+            the datacube.
+        masked_matrix : torch.Tensor
+            A tensor of shape (B, G, L) containing the mask matrix.
 
-        Returns:
-            loss"""
+        Returns
+        -------
+        loss
+        """
         patches = rearrange(
             cube,
             "B C (h p1) (w p2) -> B C (h w) (p1 p2)",
