@@ -14,8 +14,10 @@ dependencies:
   - pytorch~=2.1.0=*cuda120*
   - python=3.11
   - rioxarray~=0.15.0
+  - scikit-image~=0.22.0
   - stackstac~=0.5.0
   - torchdata~=0.7.1
   - transformers~=4.35.2
   - typeshed-client~=2.4.0
+  - wandb~=0.15.12
   - zarr~=2.16.1
