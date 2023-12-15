@@ -17,6 +17,7 @@ from lightning.pytorch.cli import ArgsType, LightningCLI
 from lightning.pytorch.plugins.io import AsyncCheckpointIO
 
 from src.callbacks import LogIntermediatePredictions  # noqa: F401
+from src.callbacks_wandb import LogMAEReconstruction  # noqa: F401
 from src.datamodule import ClayDataModule, GeoTIFFDataPipeModule  # noqa: F401
 from src.model_clay import CLAYModule
 from src.model_vit import ViTLitModule  # noqa: F401
