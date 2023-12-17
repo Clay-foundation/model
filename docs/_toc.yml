@@ -8,3 +8,9 @@ parts:
   chapters:
     - title: Installation
       file: installation
+- caption: About Clay
+  chapters:
+    - title: GitHub
+      url: https://github.com/Clay-foundation
+    - title: LinkedIn
+      url: https://www.linkedin.com/company/made-with-clay
