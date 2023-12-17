@@ -53,6 +53,9 @@ docs/_build/
 # DotEnv configuration
 .env
 
+# Jupyter Book
+/docs/_build/
+
 # Jupyter Notebook
 .ipynb_checkpoints/
 
