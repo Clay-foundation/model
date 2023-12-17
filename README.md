@@ -1,10 +1,10 @@
-# model
-Where the Clay model lives
+# Clay Foundation Model
 
-The code lives here, and the managment of the code, roadmap, sprints, and other colab aspect are managed with Issues.
+[![Jupyter Book Badge](https://jupyterbook.org/badge.svg)](https://clay-foundation.github.io/model)
+[![Deploy Book Status](https://github.com/Clay-foundation/model/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/Clay-foundation/model/actions/workflows/deploy-docs.yml)
+[![Continuous Integration Tests Status](https://github.com/Clay-foundation/model/actions/workflows/test.yml/badge.svg)](https://github.com/Clay-foundation/model/actions/workflows/test.yml)
 
-
-Note that this repo *is* public.
+An open source AI model and interface for Earth
 
 # Getting started
 
