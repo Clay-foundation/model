@@ -13,7 +13,7 @@ on:
     # folder has been modified.
     paths:
       - '.github/workflows/deploy-book.yml'
-      - 'book/**'
+      - 'docs/**'
 
 # Allow one concurrent deployment
 concurrency:
