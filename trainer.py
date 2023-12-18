@@ -31,12 +31,13 @@ def cli_main(
     save_config_callback=None,
     seed_everything_default=42,
     trainer_defaults: dict = {
-        "accelerator": "auto",
-        "devices": "auto",
+        "accelerator": "gpu",
+        "devices": 4,
+        "strategy": "ddp",
         "precision": "bf16-mixed",
         "log_every_n_steps": 1,
         "max_epochs": 100,
-        "accumulate_grad_batches": 20,
+        "accumulate_grad_batches": 5,
         "callbacks": [
             ModelCheckpoint(
                 dirpath="checkpoints/",
