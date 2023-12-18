@@ -1,0 +1,16 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: intro
+parts:
+- caption: Getting Started
+  chapters:
+    - title: Installation
+      file: installation
+- caption: About Clay
+  chapters:
+    - title: GitHub
+      url: https://github.com/Clay-foundation
+    - title: LinkedIn
+      url: https://www.linkedin.com/company/made-with-clay

@@ -101,7 +101,7 @@ class ViTLitModule(L.LightningModule):
         - https://github.com/huggingface/transformers/blob/v4.35.2/src/transformers/models/vit_mae/modeling_vit_mae.py#L948-L1010
         """
         x: torch.Tensor = batch["image"]
-        # x: torch.Tensor = torch.randn(32, 13, 256, 256)  # BCHW
+        # x: torch.Tensor = torch.randn(32, 13, 512, 512)  # BCHW
 
         # Forward encoder
         outputs_encoder: dict = self(x)
@@ -127,7 +127,7 @@ class ViTLitModule(L.LightningModule):
             on_step=True,
             on_epoch=True,
             prog_bar=True,
-            # logger=True,
+            batch_size=self.B,
         )
 
         return loss
@@ -138,7 +138,37 @@ class ViTLitModule(L.LightningModule):
         """
         Logic for the neural network's validation loop.
         """
-        pass
+        x: torch.Tensor = batch["image"]
+        # x: torch.Tensor = torch.randn(32, 13, 512, 512)  # BCHW
+
+        # Forward encoder
+        outputs_encoder: dict = self(x)
+        assert outputs_encoder.last_hidden_state.shape == torch.Size([self.B, 17, 768])
+        assert outputs_encoder.ids_restore.shape == torch.Size([self.B, 64])
+        assert outputs_encoder.mask.shape == torch.Size([self.B, 64])
+
+        # Forward decoder
+        outputs_decoder: dict = self.vit.decoder.forward(
+            hidden_states=outputs_encoder.last_hidden_state,
+            ids_restore=outputs_encoder.ids_restore,
+        )
+        # output shape (batch_size, num_patches, patch_size*patch_size*num_channels)
+        assert outputs_decoder.logits.shape == torch.Size([self.B, 64, 53248])
+
+        # Log training loss and metrics
+        loss: torch.Tensor = self.vit.forward_loss(
+            pixel_values=x, pred=outputs_decoder.logits, mask=outputs_encoder.mask
+        )
+        self.log(
+            name="val/loss",
+            value=loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=self.B,
+        )
+
+        return {"loss": loss, "logits": outputs_decoder.logits}
 
     def predict_step(
         self, batch: dict[str, torch.Tensor | list[str]], batch_idx: int
