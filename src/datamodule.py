@@ -86,7 +86,10 @@ class ClayDataset(Dataset):
         cube["date"] = str(cube["date"])
         cube["latlon"] = torch.as_tensor(data=cube["latlon"])
         cube["timestep"] = torch.as_tensor(data=cube["timestep"])
-        cube["source_url"] = str(getattr(chip_path, "absolute", chip_path))
+        try:
+            cube["source_url"] = str(chip_path.absolute())
+        except AttributeError:
+            cube["source_url"] = chip_path
 
         if self.transform:
             # convert to float16 and normalize
