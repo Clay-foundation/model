@@ -300,7 +300,7 @@ class ViTLitModule(L.LightningModule):
         else:
             print(
                 "No embeddings generated, "
-                f"possibly no GeoTIFF files in {self.trainer.datamodule.data_path}"
+                f"possibly no GeoTIFF files in {self.trainer.datamodule.data_dir}"
             )
             return
 
