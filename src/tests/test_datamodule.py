@@ -65,6 +65,7 @@ def test_geotiffdatapipemodule(geotiff_folder, stage, dataloader):
     bbox = batch["bbox"]
     epsg = batch["epsg"]
     date = batch["date"]
+    source_url = batch["source_url"]
 
     assert image.shape == torch.Size([2, 3, 256, 256])
     assert image.dtype == torch.float16
@@ -80,6 +81,10 @@ def test_geotiffdatapipemodule(geotiff_folder, stage, dataloader):
         actual=epsg, expected=torch.tensor(data=[32646, 32646], dtype=torch.int32)
     )
     assert date == ["2022-12-31", "2023-12-31"]
+    assert source_url == [
+        f"{geotiff_folder}/claytile-12ABC-2022-12-31-01-1.tif",
+        f"{geotiff_folder}/claytile-12ABC-2023-12-31-01-2.tif",
+    ]
 
 
 def test_geotiffdatapipemodule_list_from_s3_bucket(monkeypatch):
