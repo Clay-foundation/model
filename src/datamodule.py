@@ -3,6 +3,7 @@ LightningDataModule to load Earth Observation data from GeoTIFF files using
 rasterio.
 """
 import math
+import os
 import random
 from pathlib import Path
 from typing import List, Literal
@@ -14,6 +15,9 @@ import torch
 import torchdata
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
+
+os.environ["GDAL_DISABLE_READDIR_ON_OPEN"] = "EMPTY_DIR"
+os.environ["GDAL_HTTP_MERGE_CONSECUTIVE_RANGES"] = "YES"
 
 
 # %%
