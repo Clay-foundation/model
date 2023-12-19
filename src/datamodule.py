@@ -163,6 +163,9 @@ class ClayDataModule(L.LightningDataModule):
             self.trn_ds = ClayDataset(chips_path=chips_path[:split], transform=self.tfm)
             self.val_ds = ClayDataset(chips_path=chips_path[split:], transform=self.tfm)
 
+        elif stage == "predict":
+            self.prd_ds = ClayDataset(chips_path=chips_path, transform=self.tfm)
+
     def train_dataloader(self):
         return DataLoader(
             self.trn_ds,
@@ -179,6 +182,14 @@ class ClayDataModule(L.LightningDataModule):
             num_workers=self.num_workers,
             shuffle=False,
             pin_memory=True,
+        )
+
+    def predict_dataloader(self):
+        return DataLoader(
+            dataset=self.prd_ds,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
         )
 
 
