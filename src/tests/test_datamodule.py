@@ -1,5 +1,5 @@
 """
-Tests for GeoTIFFDataPipeModule.
+Tests for LightningDataModules.
 
 Integration test for the entire data pipeline from loading the data and
 pre-processing steps, up to the DataLoader producing mini-batches.
@@ -44,14 +44,14 @@ def fixture_geotiff_folder():
 
 
 # %%
-@pytest.mark.parametrize("datamodule", [GeoTIFFDataPipeModule, ClayDataModule])
+@pytest.mark.parametrize("datamodule", [ClayDataModule, GeoTIFFDataPipeModule])
 @pytest.mark.parametrize(
     "stage,dataloader", [("fit", "train_dataloader"), ("predict", "predict_dataloader")]
 )
 def test_datapipemodule(datamodule, geotiff_folder, stage, dataloader):
     """
-    Ensure that GeoTIFFDataPipeModule works to load data from a GeoTIFF file
-    into torch.Tensor objects.
+    Ensure that ClayDataModule and GeoTIFFDataPipeModule works to load data
+    from a GeoTIFF file into torch.Tensor objects.
     """
     datamodule: L.LightningDataModule = datamodule(
         data_dir=geotiff_folder, batch_size=2, num_workers=1
