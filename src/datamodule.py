@@ -12,7 +12,6 @@ import numpy as np
 import rasterio
 import torch
 import torchdata
-from pyproj import Transformer as ProjTransformer
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
 
@@ -60,17 +59,16 @@ class ClayDataset(Dataset):
         year, month, day = self.normalize_timestamp(date)
 
         # read lat,lon from UTM to WGS84 & normalize
-        bounds = chip.bounds
-        crs = chip.crs
-        cx = (bounds.left + bounds.right) / 2
-        cy = (bounds.top + bounds.bottom) / 2
-        tfmer = ProjTransformer.from_crs(crs, "epsg:4326", always_xy=True)
-        lon, lat = tfmer.transform(cx, cy)
+        bounds = chip.bounds  # xmin, ymin, xmax, ymax
+        epsg = chip.crs.to_epsg()  # e.g. 32632
+        lon, lat = chip.lnglat()  # longitude, latitude
         lon, lat = self.normalize_latlon(lon, lat)
 
         return {
             "pixels": chip.read(),
             # Raw values
+            "bbox": bounds,
+            "epsg": epsg,
             "date": date,
             # Normalized values
             "latlon": (lat, lon),
@@ -83,6 +81,8 @@ class ClayDataset(Dataset):
 
         # remove nans and convert to tensor
         cube["pixels"] = torch.nan_to_num(torch.as_tensor(data=cube["pixels"]), nan=0.0)
+        cube["bbox"] = torch.as_tensor(data=cube["bbox"], dtype=torch.float64)
+        cube["epsg"] = torch.as_tensor(data=cube["epsg"], dtype=torch.int32)
         cube["date"] = str(cube["date"])
         cube["latlon"] = torch.as_tensor(data=cube["latlon"])
         cube["timestep"] = torch.as_tensor(data=cube["timestep"])
