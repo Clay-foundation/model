@@ -143,10 +143,16 @@ class ClayDataModule(L.LightningDataModule):
         self.num_workers = num_workers
         self.tfm = v2.Compose([v2.Normalize(mean=self.MEAN, std=self.STD)])
 
-    def setup(self, stage: str | None = None) -> None:
-        if stage == "fit":
+    def setup(self, stage: Literal["fit", "predict"] | None = None) -> None:
+        # Get list of GeoTIFF filepaths from s3 bucket or data/ folder
+        if self.data_dir.startswith("s3://"):
+            dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_dir])
+            chips_path = list(dp.list_files_by_s3(masks="*.tif"))
+        else:  # if self.data_dir is a local data path
             chips_path = list(Path(self.data_dir).glob("**/*.tif"))
-            print(f"Total number of chips: {len(chips_path)}")
+        print(f"Total number of chips: {len(chips_path)}")
+
+        if stage == "fit":
             random.shuffle(chips_path)
             split_ratio = 0.8
             split = int(len(chips_path) * split_ratio)
