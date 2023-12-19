@@ -80,7 +80,7 @@ class ClayDataset(Dataset):
         cube = self.read_chip(chip_path)
 
         # remove nans and convert to tensor
-        cube["pixels"] = torch.nan_to_num(torch.as_tensor(data=cube["pixels"]), nan=0.0)
+        cube["pixels"] = torch.as_tensor(data=cube["pixels"], dtype=torch.float16)
         cube["bbox"] = torch.as_tensor(data=cube["bbox"], dtype=torch.float64)
         cube["epsg"] = torch.as_tensor(data=cube["epsg"], dtype=torch.int32)
         cube["date"] = str(cube["date"])
@@ -144,6 +144,7 @@ class ClayDataModule(L.LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.split_ratio = 0.8
         self.tfm = v2.Compose([v2.Normalize(mean=self.MEAN, std=self.STD)])
 
     def setup(self, stage: Literal["fit", "predict"] | None = None) -> None:
@@ -157,8 +158,7 @@ class ClayDataModule(L.LightningDataModule):
 
         if stage == "fit":
             random.shuffle(chips_path)
-            split_ratio = 0.8
-            split = int(len(chips_path) * split_ratio)
+            split = int(len(chips_path) * self.split_ratio)
 
             self.trn_ds = ClayDataset(chips_path=chips_path[:split], transform=self.tfm)
             self.val_ds = ClayDataset(chips_path=chips_path[split:], transform=self.tfm)
