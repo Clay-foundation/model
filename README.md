@@ -95,7 +95,7 @@ To generate embeddings from the pretrained model's encoder on 1024 images
 
     python trainer.py predict --ckpt_path=checkpoints/last.ckpt \
                               --data.batch_size=1024 \
-                              --data.data_path=s3://clay-tiles-02 \
+                              --data.data_dir=s3://clay-tiles-02 \
                               --trainer.limit_predict_batches=1
 
 More options can be found using `python trainer.py fit --help`, or at the

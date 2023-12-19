@@ -12,7 +12,6 @@ import numpy as np
 import rasterio
 import torch
 import torchdata
-from pyproj import Transformer as ProjTransformer
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
 
@@ -53,25 +52,27 @@ class ClayDataset(Dataset):
         return lon, lat
 
     def read_chip(self, chip_path):
-        # read timestep & normalize
-        ts = chip_path.parent.name
-        year, month, day = self.normalize_timestamp(ts)
-
         chip = rasterio.open(chip_path)
 
+        # read timestep & normalize
+        date = chip.tags()["date"]  # YYYY-MM-DD
+        year, month, day = self.normalize_timestamp(date)
+
         # read lat,lon from UTM to WGS84 & normalize
-        bounds = chip.bounds
-        crs = chip.crs
-        cx = (bounds.left + bounds.right) / 2
-        cy = (bounds.top + bounds.bottom) / 2
-        tfmer = ProjTransformer.from_crs(crs, "epsg:4326", always_xy=True)
-        lon, lat = tfmer.transform(cx, cy)
+        bounds = chip.bounds  # xmin, ymin, xmax, ymax
+        epsg = chip.crs.to_epsg()  # e.g. 32632
+        lon, lat = chip.lnglat()  # longitude, latitude
         lon, lat = self.normalize_latlon(lon, lat)
 
         return {
             "pixels": chip.read(),
-            "timestep": (year, month, day),
+            # Raw values
+            "bbox": bounds,
+            "epsg": epsg,
+            "date": date,
+            # Normalized values
             "latlon": (lat, lon),
+            "timestep": (year, month, day),
         }
 
     def __getitem__(self, idx):
@@ -80,6 +81,9 @@ class ClayDataset(Dataset):
 
         # remove nans and convert to tensor
         cube["pixels"] = torch.nan_to_num(torch.as_tensor(data=cube["pixels"]), nan=0.0)
+        cube["bbox"] = torch.as_tensor(data=cube["bbox"], dtype=torch.float64)
+        cube["epsg"] = torch.as_tensor(data=cube["epsg"], dtype=torch.int32)
+        cube["date"] = str(cube["date"])
         cube["latlon"] = torch.as_tensor(data=cube["latlon"])
         cube["timestep"] = torch.as_tensor(data=cube["timestep"])
         cube["path"] = str(chip_path.absolute())
@@ -129,7 +133,7 @@ class ClayDataModule(L.LightningDataModule):
 
     def __init__(
         self,
-        data_dir: Path = Path("data/"),
+        data_dir: str = "data",
         batch_size: int = 4,
         num_workers: int = 8,
     ):
@@ -140,14 +144,15 @@ class ClayDataModule(L.LightningDataModule):
         self.tfm = v2.Compose([v2.Normalize(mean=self.MEAN, std=self.STD)])
 
     def setup(self, stage: str | None = None) -> None:
-        chips_path = list(self.data_dir.glob("**/*.tif"))
-        print(len(chips_path))
-        random.shuffle(chips_path)
-        split_ratio = 0.8
-        split = int(len(chips_path) * split_ratio)
+        if stage == "fit":
+            chips_path = list(Path(self.data_dir).glob("**/*.tif"))
+            print(f"Total number of chips: {len(chips_path)}")
+            random.shuffle(chips_path)
+            split_ratio = 0.8
+            split = int(len(chips_path) * split_ratio)
 
-        self.trn_ds = ClayDataset(chips_path[:split], transform=self.tfm)
-        self.val_ds = ClayDataset(chips_path[split:], transform=self.tfm)
+            self.trn_ds = ClayDataset(chips_path=chips_path[:split], transform=self.tfm)
+            self.val_ds = ClayDataset(chips_path=chips_path[split:], transform=self.tfm)
 
     def train_dataloader(self):
         return DataLoader(
@@ -224,7 +229,7 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
 
     def __init__(
         self,
-        data_path: str = "data/",
+        data_dir: str = "data/",
         batch_size: int = 32,
         num_workers: int = 8,
     ):
@@ -233,7 +238,7 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
 
         Parameters
         ----------
-        data_path : str
+        data_dir : str
             Path to the data folder where the GeoTIFF files are stored. Default
             is 'data/'.
         batch_size : int
@@ -248,7 +253,7 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
             A torch DataPipe that can be passed into a torch DataLoader.
         """
         super().__init__()
-        self.data_path: str = data_path
+        self.data_dir: str = data_dir
         self.batch_size: int = batch_size
         self.num_workers: int = num_workers
 
@@ -264,12 +269,12 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
             the prediction loop. Choose from either 'fit' or 'predict'.
         """
         # Step 1 - Get list of GeoTIFF filepaths from s3 bucket or data/ folder
-        if self.data_path.startswith("s3://"):
-            dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_path])
+        if self.data_dir.startswith("s3://"):
+            dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_dir])
             self.dp_paths = dp.list_files_by_s3(masks="*.tif")
-        else:  # if self.data_path is a local data path
+        else:  # if self.data_dir is a local data path
             self.dp_paths = torchdata.datapipes.iter.FileLister(
-                root=self.data_path, masks="*.tif", recursive=True
+                root=self.data_dir, masks="*.tif", recursive=True
             )
 
         if stage == "fit":  # training/validation loop
