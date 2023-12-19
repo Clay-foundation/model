@@ -3,6 +3,7 @@ LightningDataModule to load Earth Observation data from GeoTIFF files using
 rasterio.
 """
 import math
+import os
 import random
 from pathlib import Path
 from typing import List, Literal
@@ -14,6 +15,9 @@ import torch
 import torchdata
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
+
+os.environ["GDAL_DISABLE_READDIR_ON_OPEN"] = "EMPTY_DIR"
+os.environ["GDAL_HTTP_MERGE_CONSECUTIVE_RANGES"] = "YES"
 
 
 # %%
@@ -80,13 +84,16 @@ class ClayDataset(Dataset):
         cube = self.read_chip(chip_path)
 
         # remove nans and convert to tensor
-        cube["pixels"] = torch.nan_to_num(torch.as_tensor(data=cube["pixels"]), nan=0.0)
+        cube["pixels"] = torch.as_tensor(data=cube["pixels"], dtype=torch.float16)
         cube["bbox"] = torch.as_tensor(data=cube["bbox"], dtype=torch.float64)
         cube["epsg"] = torch.as_tensor(data=cube["epsg"], dtype=torch.int32)
         cube["date"] = str(cube["date"])
         cube["latlon"] = torch.as_tensor(data=cube["latlon"])
         cube["timestep"] = torch.as_tensor(data=cube["timestep"])
-        cube["path"] = str(chip_path.absolute())
+        try:
+            cube["source_url"] = str(chip_path.absolute())
+        except AttributeError:
+            cube["source_url"] = chip_path
 
         if self.transform:
             # convert to float16 and normalize
@@ -141,18 +148,27 @@ class ClayDataModule(L.LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.split_ratio = 0.8
         self.tfm = v2.Compose([v2.Normalize(mean=self.MEAN, std=self.STD)])
 
-    def setup(self, stage: str | None = None) -> None:
-        if stage == "fit":
+    def setup(self, stage: Literal["fit", "predict"] | None = None) -> None:
+        # Get list of GeoTIFF filepaths from s3 bucket or data/ folder
+        if self.data_dir.startswith("s3://"):
+            dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_dir])
+            chips_path = list(dp.list_files_by_s3(masks="*.tif"))
+        else:  # if self.data_dir is a local data path
             chips_path = list(Path(self.data_dir).glob("**/*.tif"))
-            print(f"Total number of chips: {len(chips_path)}")
+        print(f"Total number of chips: {len(chips_path)}")
+
+        if stage == "fit":
             random.shuffle(chips_path)
-            split_ratio = 0.8
-            split = int(len(chips_path) * split_ratio)
+            split = int(len(chips_path) * self.split_ratio)
 
             self.trn_ds = ClayDataset(chips_path=chips_path[:split], transform=self.tfm)
             self.val_ds = ClayDataset(chips_path=chips_path[split:], transform=self.tfm)
+
+        elif stage == "predict":
+            self.prd_ds = ClayDataset(chips_path=chips_path, transform=self.tfm)
 
     def train_dataloader(self):
         return DataLoader(
@@ -170,6 +186,14 @@ class ClayDataModule(L.LightningDataModule):
             num_workers=self.num_workers,
             shuffle=False,
             pin_memory=True,
+        )
+
+    def predict_dataloader(self):
+        return DataLoader(
+            dataset=self.prd_ds,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
         )
 
 
