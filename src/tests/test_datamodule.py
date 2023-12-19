@@ -53,7 +53,7 @@ def test_geotiffdatapipemodule(geotiff_folder, stage, dataloader):
     into torch.Tensor objects.
     """
     datamodule: L.LightningDataModule = GeoTIFFDataPipeModule(
-        data_path=geotiff_folder, batch_size=2, num_workers=1
+        data_dir=geotiff_folder, batch_size=2, num_workers=1
     )
 
     # Train/validation/predict stage
@@ -95,7 +95,7 @@ def test_geotiffdatapipemodule_list_from_s3_bucket(monkeypatch):
     monkeypatch.setenv("AWS_DEFAULT_REGION", "eu-central-1")
 
     datamodule: L.LightningDataModule = GeoTIFFDataPipeModule(
-        data_path="s3://copernicus-dem-30m/Copernicus_DSM_COG_10_N00_00_E006_00_DEM/",
+        data_dir="s3://copernicus-dem-30m/Copernicus_DSM_COG_10_N00_00_E006_00_DEM/",
         batch_size=1,
     )
     datamodule.setup()
