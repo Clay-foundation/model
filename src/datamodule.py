@@ -189,6 +189,7 @@ def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
         - bbox: torch.Tensor - spatial bounding box as (xmin, ymin, xmax, ymax)
         - epsg: torch.Tensor - coordinate reference system as an EPSG code
         - date: str - the date the image was acquired in YYYY-MM-DD format
+        - source_url: str - the URL or path to the source GeoTIFF file
     """
     # GeoTIFF - Rasterio
     with rasterio.open(fp=filepath) as dataset:
@@ -205,7 +206,13 @@ def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
         # Get date
         date: str = dataset.tags()["date"]  # YYYY-MM-DD format
 
-    return {"image": tensor, "bbox": bbox, "epsg": epsg, "date": date}
+    return {
+        "image": tensor,  # shape (13, 512, 512)
+        "bbox": bbox,  # bounds [xmin, ymin, xmax, ymax]
+        "epsg": epsg,  # e.g. 32632
+        "date": date,  # e.g. 2020-12-31
+        "source_url": filepath,  # e.g. s3://.../claytile_12ABC_20201231_v0_0200.tif
+    }
 
 
 class GeoTIFFDataPipeModule(L.LightningDataModule):
