@@ -56,8 +56,8 @@ class ClayDataset(Dataset):
         chip = rasterio.open(chip_path)
 
         # read timestep & normalize
-        ts = chip_path.parent.name
-        year, month, day = self.normalize_timestamp(ts)
+        date = chip.tags()["date"]  # YYYY-MM-DD
+        year, month, day = self.normalize_timestamp(date)
 
         # read lat,lon from UTM to WGS84 & normalize
         bounds = chip.bounds
@@ -70,8 +70,11 @@ class ClayDataset(Dataset):
 
         return {
             "pixels": chip.read(),
-            "timestep": (year, month, day),
+            # Raw values
+            "date": date,
+            # Normalized values
             "latlon": (lat, lon),
+            "timestep": (year, month, day),
         }
 
     def __getitem__(self, idx):
@@ -80,6 +83,7 @@ class ClayDataset(Dataset):
 
         # remove nans and convert to tensor
         cube["pixels"] = torch.nan_to_num(torch.as_tensor(data=cube["pixels"]), nan=0.0)
+        cube["date"] = str(cube["date"])
         cube["latlon"] = torch.as_tensor(data=cube["latlon"])
         cube["timestep"] = torch.as_tensor(data=cube["timestep"])
         cube["path"] = str(chip_path.absolute())
