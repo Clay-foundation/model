@@ -1,3 +1,6 @@
+import os
+import re
+
 import geopandas as gpd
 import lightning as L
 import numpy as np
@@ -896,5 +899,58 @@ class CLAYModule(L.LightningModule):
             crs=f"EPSG:{epsg}",
         )
         gdf = gdf.to_crs(crs="OGC:CRS84")  # reproject from UTM to lonlat coordinates
+
+        return gdf
+
+    def on_predict_epoch_end(self) -> gpd.GeoDataFrame:
+        """
+        Logic to gather all the results from one epoch in a prediction loop.
+        """
+        # Combine list of geopandas.GeoDataFrame objects
+        results: list[gpd.GeoDataFrame] = self.trainer.predict_loop.predictions
+        if results:
+            gdf: gpd.GeoDataFrame = pd.concat(
+                objs=results, axis="index", ignore_index=True
+            )
+        else:
+            print(
+                "No embeddings generated, "
+                f"possibly no GeoTIFF files in {self.trainer.datamodule.data_dir}"
+            )
+            return
+
+        # Save embeddings in GeoParquet format, one file for each MGRS code
+        outfolder: str = f"{self.trainer.default_root_dir}/data/embeddings"
+        os.makedirs(name=outfolder, exist_ok=True)
+
+        # Find unique MGRS names (e.g. '12ABC'), e.g.
+        # from 's3://.../.../claytile_12ABC_20201231_v02_0001.tif', get 12ABC
+        mgrs_codes = gdf.source_url.str.split("/").str[-1].str.split("_").str[1]
+        unique_mgrs_codes = mgrs_codes.unique()
+        for mgrs_code in unique_mgrs_codes:
+            if re.match(pattern=r"(\d{2}[A-Z]{3})", string=mgrs_code) is None:
+                raise ValueError(
+                    "MGRS code should have 2 numbers and 3 letters (e.g. 12ABC), "
+                    f"but got {mgrs_code} instead"
+                )
+
+            # Subset GeoDataFrame to a single MGRS code
+            _gdf: gpd.GeoDataFrame = gdf.loc[mgrs_codes == mgrs_code]
+
+            # Get min/max date from GeoDataFrame
+            minmax_date: pd.Series = _gdf.date.agg(func=["min", "max"])
+            min_date: str = minmax_date["min"].strftime("%Y%m%d")
+            max_date: str = minmax_date["max"].strftime("%Y%m%d")
+
+            # Output to a GeoParquet filename like
+            # {MGRS:5}_{MINDATE:8}_{MAXDATE:8}_v{VERSION:3}.gpq
+            outpath = f"{outfolder}/{mgrs_code}_{min_date}_{max_date}_v001.gpq"
+            _gdf.to_parquet(
+                path=outpath, index=False, compression="ZSTD", schema_version="1.0.0"
+            )
+            print(
+                f"Saved {len(_gdf)} rows of embeddings of "
+                f"shape {gdf.embeddings.iloc[0].shape} to {outpath}"
+            )
 
         return gdf
