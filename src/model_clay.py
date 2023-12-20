@@ -1,4 +1,9 @@
+import geopandas as gpd
 import lightning as L
+import numpy as np
+import pandas as pd
+import pyarrow as pa
+import shapely
 import torch
 import torch.nn.functional as F
 from einops import rearrange, reduce, repeat
@@ -8,6 +13,7 @@ from vit_pytorch.vit import Transformer
 from src.utils import posemb_sincos_1d, posemb_sincos_2d
 
 
+# %%
 class Patchify(nn.Module):
     """
     Patchify the input cube & create embeddings per patch
@@ -152,7 +158,7 @@ class Encoder(nn.Module):
             A tensor of shape (B, G, L, D) containing the embeddings of the
             patches + position & band encoding.
         """
-        B, G, L, D = patches.shape
+        self.B, G, L, D = patches.shape
 
         # Align position & band embeddings across patches
         pos_encoding = repeat(
@@ -824,3 +830,71 @@ class CLAYModule(L.LightningModule):
 
     def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int):
         return self.shared_step(batch, batch_idx, phase="val")
+
+    def predict_step(
+        self, batch: dict[str, torch.Tensor | list[str]], batch_idx: int
+    ) -> gpd.GeoDataFrame:
+        """
+        Logic for the neural network's prediction loop.
+        """
+        # Get image, bounding box, EPSG code, and date inputs
+        # x: torch.Tensor = batch["pixels"]  # image of shape (1, 13, 512, 512) # BCHW
+        bboxes: np.ndarray = batch["bbox"].cpu().__array__()  # bounding boxes
+        epsgs: torch.Tensor = batch["epsg"]  # coordinate reference systems as EPSG code
+        dates: list[str] = batch["date"]  # dates, e.g. ['2022-12-12', '2022-12-12']
+        source_urls: list[str] = batch[  # URLs, e.g. ['s3://1.tif', 's3://2.tif']
+            "source_url"
+        ]
+
+        # Forward encoder
+        self.model.encoder.mask_ratio = 0.0  # disable masking
+        outputs_encoder: dict = self.model.encoder(
+            datacube=batch  # input (pixels, timestep, latlon)
+        )
+
+        # Get embeddings generated from encoder
+        # (encoded_unmasked_patches, _, _, _) = outputs_encoder
+        embeddings_raw: torch.Tensor = outputs_encoder[0]
+        assert embeddings_raw.shape == torch.Size(
+            [self.model.encoder.B, 1538, 768]  # (batch_size, seq_length, hidden_size)
+        )
+        assert not torch.isnan(embeddings_raw).any()  # ensure no NaNs in embedding
+
+        # Take the mean of the embeddings along the sequence_length dimension
+        # excluding the last two latlon_ and time_ embeddings, i.e. compute
+        # mean over patch embeddings only
+        embeddings_mean: torch.Tensor = embeddings_raw[:, :-2, :].mean(dim=1)
+        assert embeddings_mean.shape == torch.Size(
+            [self.model.encoder.B, 768]  # (batch_size, hidden_size)
+        )
+
+        # Create table to store the embeddings with spatiotemporal metadata
+        unique_epsg_codes = set(int(epsg) for epsg in epsgs)
+        if len(unique_epsg_codes) == 1:  # check that there's only 1 unique EPSG
+            epsg: int = batch["epsg"][0]
+        else:
+            raise NotImplementedError(
+                f"More than 1 EPSG code detected: {unique_epsg_codes}"
+            )
+
+        gdf = gpd.GeoDataFrame(
+            data={
+                "source_url": pd.Series(data=source_urls, dtype="string[pyarrow]"),
+                "date": pd.to_datetime(arg=dates, format="%Y-%m-%d").astype(
+                    dtype="date32[day][pyarrow]"
+                ),
+                "embeddings": pa.FixedShapeTensorArray.from_numpy_ndarray(
+                    embeddings_mean.cpu().detach().__array__()
+                ),
+            },
+            geometry=shapely.box(
+                xmin=bboxes[:, 0],
+                ymin=bboxes[:, 1],
+                xmax=bboxes[:, 2],
+                ymax=bboxes[:, 3],
+            ),
+            crs=f"EPSG:{epsg}",
+        )
+        gdf = gdf.to_crs(crs="OGC:CRS84")  # reproject from UTM to lonlat coordinates
+
+        return gdf
