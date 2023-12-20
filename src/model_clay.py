@@ -82,12 +82,20 @@ class Encoder(nn.Module):
         )
 
         # Fix the position & band embedding to sine & cosine functions
-        self.pos_encoding = posemb_sincos_2d(
-            h=image_size // patch_size, w=image_size // patch_size, dim=pos_dim
-        )  # [L D/2]
-        self.band_encoding = posemb_sincos_1d(
-            length=self.num_group_patches, dim=band_dim
-        )  # [G D/2]
+        self.register_buffer(
+            name="pos_encoding",
+            tensor=posemb_sincos_2d(
+                h=image_size // patch_size, w=image_size // patch_size, dim=pos_dim
+            ),  # [L D/2]
+            persistent=False,
+        )
+        self.register_buffer(
+            name="band_encoding",
+            tensor=posemb_sincos_1d(
+                length=self.num_group_patches, dim=band_dim
+            ),  # [G D/2]
+            persistent=False,
+        )
 
         # Freeze the weights of position & band encoding
         self.pos_encoding = self.pos_encoding.requires_grad_(False)
@@ -279,9 +287,6 @@ class Encoder(nn.Module):
             cube
         )  # [B G L D] - patchify & create embeddings per patch
 
-        # Move position & band encoding to the device
-        self.pos_encoding = self.pos_encoding.to(patches.device)
-        self.band_encoding = self.band_encoding.to(patches.device)
         patches = self.add_encodings(
             patches
         )  # [B G L D] - add position & band encoding to the embeddings
@@ -361,12 +366,20 @@ class Decoder(nn.Module):
         pos_dim = band_dim = dim // 2
 
         # Fix the position & band embedding to sine & cosine functions
-        self.pos_encoding = posemb_sincos_2d(
-            h=image_size // patch_size, w=image_size // patch_size, dim=pos_dim
-        )  # [L D/2]
-        self.band_encoding = posemb_sincos_1d(
-            length=self.num_group_patches, dim=band_dim
-        )  # [G D/2]
+        self.register_buffer(
+            name="pos_encoding",
+            tensor=posemb_sincos_2d(
+                h=image_size // patch_size, w=image_size // patch_size, dim=pos_dim
+            ),  # [L D/2]
+            persistent=False,
+        )
+        self.register_buffer(
+            name="band_encoding",
+            tensor=posemb_sincos_1d(
+                length=self.num_group_patches, dim=band_dim
+            ),  # [G D/2]
+            persistent=False,
+        )
 
         # Freeze the weights of position & band encoding
         self.pos_encoding = self.pos_encoding.requires_grad_(False)
@@ -504,10 +517,6 @@ class Decoder(nn.Module):
             encoded_unmasked_patches[:, :-2, :],
             encoded_unmasked_patches[:, -2:, :],
         )  # [B (GL:(1 - mask_ratio)) D], [B 2 D]
-
-        # move position & band encoding to the device
-        self.pos_encoding = self.pos_encoding.to(encoded_unmasked_patches.device)
-        self.band_encoding = self.band_encoding.to(encoded_unmasked_patches.device)
 
         # Reconstruct the patches to feed into the decoder transformer
         decoder_patches = self.reconstruct_and_add_encoding(
