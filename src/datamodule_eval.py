@@ -150,22 +150,78 @@ class ClayDataset(Dataset):
                     label_array_values.append(pair)
         return image_array_values, label_array_values, flood_events, positions, dates, bounds_, centroids, epsgs, filenames
     
-    def get_benchmark_data(self, chips_path, chips_label_path):
+    def get_image_granules(self, chips_path, chips_label_path, idx):
+        """
+        Get granules of N-dim datacube and label images from an S3 bucket.
+
+        Args:
+        - bucket_name (str): The name of the S3 bucket.
+        - prefix (str): The prefix (directory path) in the S3 bucket.
+
+        Returns:
+        - tuple: None.
+        """
+        
+        s3 = boto3.client("s3")
+
+        chips_path = chips_path[0][idx]
+        chips_label_path = chips_label_path[0][idx]
+
+        position = "_".join(chips_path.split("/")[-1].split("_")[-3:-1])
+        date = "_".join(chips_path.split("/")[-1].split("_"))
+        date = chips_path.split("/")[-1].split("_")[-4][:8]
+        date = f"{date[:4]}-{date[4:6]}-{date[6:8]}"
+        flood_event = chips_path.split("/")[-2]
+        # Load the image file from S3 directly into memory using rasterio
+        obj = s3.get_object(Bucket=self.bucket_name, Key=chips_path)
+        with rasterio.io.MemoryFile(obj["Body"].read()) as memfile:
+            with memfile.open() as dataset:
+                data_array = rioxarray.open_rasterio(dataset)
+                # print(data_array.values)
+                filename = "_".join(chips_path.split("/")[-1].split("_"))[:-4]
+                pair = [chips_path, data_array.values]
+                image_array_values = data_array
+                # Get bounds
+                bounds = data_array.rio.bounds()
+                # Get centroid
+                # Calculate centroid
+                xmin, ymin, xmax, ymax = bounds
+                centroid_x = (xmin + xmax) / 2.0
+                centroid_y = (ymin + ymax) / 2.0
+                centroid = (centroid_x, centroid_y)
+                # Get EPSG
+                epsg = data_array.rio.crs.to_epsg()
+        # Load the image file from S3 directly into memory using rasterio
+        obj = s3.get_object(Bucket=self.bucket_name, Key=chips_label_path)
+        with rasterio.io.MemoryFile(obj["Body"].read()) as memfile:
+            with memfile.open() as dataset:
+                data_array = rioxarray.open_rasterio(dataset)
+                # print(data_array.values)
+                #pair = [chips_label_path, data_array.values]
+                label_array_values = data_array
+        return image_array_values, label_array_values, flood_event, position, date, bounds, centroid, epsg, filename
+    
+    def get_benchmark_data(self, chips_path, chips_label_path, idx):
         image_array_values, label_array_values, flood_events, positions, dates, bounds_, centroids, epsgs, filenames  = \
-        self.get_image_granules(chips_path, chips_label_path)
+        self.get_image_granules(chips_path, chips_label_path, idx)
         return image_array_values, label_array_values, flood_events, positions, dates, bounds_, centroids, epsgs, filenames
 
     def __getitem__(self, idx):
-        image_array_values, label_array_values, flood_events, positions, dates, bounds_, centroids, epsgs, filenames = \
-            self.get_benchmark_data(self.chips_path, self.chips_label_path)
-        chip_path = image_array_values[idx]
-        chip_label_path = label_array_values[idx]
-        date = dates[idx]
-        bounds = bounds_[idx]
-        centroid = centroids[idx]
-        epsg = epsgs[idx]
-        filename = filenames[idx]
+        #image_array_values, label_array_values, flood_events, positions, dates, bounds_, centroids, epsgs, filenames = \
+        #    self.get_benchmark_data(self.chips_path, self.chips_label_path)
+        image_array_values, label_array_values, flood_event, position, date, bounds, centroid, epsg, filename = \
+            self.get_benchmark_data(self.chips_path, self.chips_label_path, idx)
+        #chip_path = image_array_values[idx]
+        #chip_label_path = label_array_values[idx]
+        #date = dates[idx]
+        #bounds = bounds_[idx]
+        #centroid = centroids[idx]
+        #epsg = epsgs[idx]
+        #filename = filenames[idx]
+        chip_path = image_array_values
+        chip_label_path = label_array_values
         label, cube = self.read_chip(chip_path, chip_label_path, date, bounds, centroid, epsg)
+        print("Loaded chip_path and chip_label_path: ", chip_path, chip_label_path)
 
         # remove nans and convert to tensor
         label = torch.as_tensor(data=label, dtype=torch.float32)
