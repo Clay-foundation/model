@@ -54,7 +54,6 @@ class Encoder(nn.Module):
         band_groups,
         dropout,
         emb_dropout,
-        device,
     ):
         super().__init__()
         assert (
@@ -66,7 +65,6 @@ class Encoder(nn.Module):
         self.dim = dim
         self.bands = bands
         self.band_groups = band_groups
-        self.device = device
         self.num_spatial_patches = (image_size // patch_size) ** 2
         self.num_group_patches = len(band_groups)
         self.num_patches = self.num_spatial_patches * self.num_group_patches
@@ -95,8 +93,8 @@ class Encoder(nn.Module):
         )  # [G D/2]
 
         # Freeze the weights of position & band encoding
-        self.pos_encoding = self.pos_encoding.to(self.device).requires_grad_(False)
-        self.band_encoding = self.band_encoding.to(self.device).requires_grad_(False)
+        self.pos_encoding = self.pos_encoding.requires_grad_(False)
+        self.band_encoding = self.band_encoding.requires_grad_(False)
 
         self.dropout = nn.Dropout(emb_dropout)
 
@@ -281,6 +279,9 @@ class Encoder(nn.Module):
             cube
         )  # [B G L D] - patchify & create embeddings per patch
 
+        # Move position & band encoding to the device
+        self.pos_encoding = self.pos_encoding.to(patches.device)
+        self.band_encoding = self.band_encoding.to(patches.device)
         patches = self.add_encodings(
             patches
         )  # [B G L D] - add position & band encoding to the embeddings
@@ -331,7 +332,6 @@ class Decoder(nn.Module):
         bands,
         band_groups,
         dropout,
-        device,
     ):
         super().__init__()
         self.mask_ratio = mask_ratio
@@ -340,7 +340,6 @@ class Decoder(nn.Module):
         self.encoder_dim = encoder_dim
         self.dim = dim
         self.band_groups = band_groups
-        self.device = device
         self.num_spatial_patches = (image_size // patch_size) ** 2
         self.num_group_patches = len(band_groups)
         self.num_patches = self.num_spatial_patches * self.num_group_patches
@@ -371,8 +370,8 @@ class Decoder(nn.Module):
         )  # [G D/2]
 
         # Freeze the weights of position & band encoding
-        self.pos_encoding = self.pos_encoding.to(self.device).requires_grad_(False)
-        self.band_encoding = self.band_encoding.to(self.device).requires_grad_(False)
+        self.pos_encoding = self.pos_encoding.requires_grad_(False)
+        self.band_encoding = self.band_encoding.requires_grad_(False)
 
         self.embed_to_pixels = nn.ModuleDict(
             {
@@ -506,6 +505,10 @@ class Decoder(nn.Module):
             encoded_unmasked_patches[:, -2:, :],
         )  # [B (GL:(1 - mask_ratio)) D], [B 2 D]
 
+        # move position & band encoding to the device
+        self.pos_encoding = self.pos_encoding.to(encoded_unmasked_patches.device)
+        self.band_encoding = self.band_encoding.to(encoded_unmasked_patches.device)
+
         # Reconstruct the patches to feed into the decoder transformer
         decoder_patches = self.reconstruct_and_add_encoding(
             encoded_unmasked_patches, unmasked_indices, masked_indices
@@ -566,8 +569,6 @@ class CLAY(nn.Module):
         self.patch_size = patch_size
         self.bands = bands
         self.band_groups = band_groups
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print("Device", device)
 
         self.encoder = Encoder(
             mask_ratio=mask_ratio,
@@ -582,7 +583,6 @@ class CLAY(nn.Module):
             band_groups=band_groups,
             dropout=dropout,
             emb_dropout=emb_dropout,
-            device=device,
         )
 
         self.decoder = Decoder(
@@ -598,7 +598,6 @@ class CLAY(nn.Module):
             bands=bands,
             band_groups=band_groups,
             dropout=decoder_dropout,
-            device=device,
         )
 
     def per_pixel_loss(self, cube, pixels, masked_matrix):
@@ -786,7 +785,7 @@ class CLAYModule(L.LightningModule):
             betas=(self.hparams.b1, self.hparams.b2),
         )
         scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer, T_0=200, T_mult=2, eta_min=self.hparams.lr * 10, last_epoch=-1
+            optimizer, T_0=1000, T_mult=2, eta_min=self.hparams.lr * 10, last_epoch=-1
         )
 
         return {
@@ -807,6 +806,7 @@ class CLAYModule(L.LightningModule):
             on_epoch=True,
             prog_bar=True,
             logger=True,
+            sync_dist=True,
         )
         return loss
 
