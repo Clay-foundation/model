@@ -68,9 +68,6 @@ class Encoder(nn.Module):
         self.num_spatial_patches = (image_size // patch_size) ** 2
         self.num_group_patches = len(band_groups)
         self.num_patches = self.num_spatial_patches * self.num_group_patches
-        self.num_masked_patches = int(
-            self.mask_ratio * self.num_patches
-        )  # Number of patches to be masked out
 
         # Split the embedding dimensions between spatial & band patches equally
         pos_dim = band_dim = dim // 2
@@ -232,15 +229,18 @@ class Encoder(nn.Module):
         random_indices = torch.argsort(noise, dim=-1)  # [B GL]
         reverse_indices = torch.argsort(random_indices, dim=-1)  # [B GL]
 
+        num_masked_patches = int(
+            self.mask_ratio * self.num_patches
+        )  # Number of patches to be masked out
         masked_indices, unmasked_indices = (
-            random_indices[:, : self.num_masked_patches],  # [B mask_ratio * GL]
-            random_indices[:, self.num_masked_patches :],  # [B (1 - mask_ratio) * GL]
+            random_indices[:, :num_masked_patches],  # [B mask_ratio * GL]
+            random_indices[:, num_masked_patches:],  # [B (1 - mask_ratio) * GL]
         )
 
         # create a mask of shape B G L, where 1 indicates a masked patch
         # and 0 indicates an unmasked patch
         masked_matrix = torch.zeros((B, GL), device=patches.device)  # [B GL] = 0
-        masked_matrix[:, : self.num_masked_patches] = 1  # [B mask_ratio * GL] = 1
+        masked_matrix[:, :num_masked_patches] = 1  # [B mask_ratio * GL] = 1
         masked_matrix = torch.gather(
             masked_matrix, dim=1, index=reverse_indices
         )  # [B GL] -> [B GL] - reorder the patches
@@ -343,7 +343,6 @@ class Decoder(nn.Module):
         self.num_spatial_patches = (image_size // patch_size) ** 2
         self.num_group_patches = len(band_groups)
         self.num_patches = self.num_spatial_patches * self.num_group_patches
-        self.num_masked_patches = int(self.mask_ratio * self.num_patches)
 
         self.enc_to_dec = (
             nn.Linear(encoder_dim, dim) if encoder_dim != dim else nn.Identity()
@@ -437,8 +436,9 @@ class Decoder(nn.Module):
 
         # Reconstruct the masked patches from the random mask patch &
         # add position & band encoding to them
+        num_masked_patches = int(self.mask_ratio * self.num_patches)
         masked_patches = repeat(
-            self.mask_patch, "D -> B GL D", B=B, GL=self.num_masked_patches
+            self.mask_patch, "D -> B GL D", B=B, GL=num_masked_patches
         )  # [B GL:mask_ratio D]
         masked_patches = (
             masked_patches + masked_pos_band_encoding
