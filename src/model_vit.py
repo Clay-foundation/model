@@ -320,7 +320,7 @@ class ViTLitModule(L.LightningModule):
                 )
 
             # Subset GeoDataFrame to a single MGRS code
-            _gdf: gpd.GeoDataFrame = gdf.loc[mgrs_codes == mgrs_code]
+            _gdf: gpd.GeoDataFrame = gdf.loc[mgrs_codes == mgrs_code].reset_index()
 
             # Get min/max date from GeoDataFrame
             minmax_date: pd.Series = _gdf.date.agg(func=["min", "max"])
@@ -330,9 +330,7 @@ class ViTLitModule(L.LightningModule):
             # Output to a GeoParquet filename like
             # {MGRS:5}_{MINDATE:8}_{MAXDATE:8}_v{VERSION:3}.gpq
             outpath = f"{outfolder}/{mgrs_code}_{min_date}_{max_date}_v001.gpq"
-            _gdf.to_parquet(
-                path=outpath, index=False, compression="ZSTD", schema_version="1.0.0"
-            )
+            _gdf.to_parquet(path=outpath, compression="ZSTD", schema_version="1.0.0")
             print(
                 f"Saved {len(_gdf)} rows of embeddings of "
                 f"shape {gdf.embeddings.iloc[0].shape} to {outpath}"
