@@ -35,7 +35,7 @@ def fixture_datapipe() -> torchdata.datapipes.iter.IterDataPipe:
                         [561415.0, 3397465.0, 563975.0, 3400025.0],
                     ]
                 ),
-                "date": ["2020-01-01", "2020-12-31", "2020-12-31"],
+                "date": ["2020-01-01", "2021-06-15", "2022-12-31"],
                 "epsg": torch.tensor(data=[32760, 32760, 32760]),
                 "source_url": [
                     "s3://claytile_60HTE_1.tif",
@@ -76,8 +76,12 @@ def test_model_vit(datapipe):
         assert (
             len(os.listdir(path=f"{tmpdirname}/data/embeddings")) == 2  # noqa: PLR2004
         )
-        assert os.path.exists(path := f"{tmpdirname}/data/embeddings/60HTE_v01.gpq")
-        assert os.path.exists(path := f"{tmpdirname}/data/embeddings/60GUV_v01.gpq")
+        assert os.path.exists(
+            path := f"{tmpdirname}/data/embeddings/60HTE_20200101_20200101_v001.gpq"
+        )
+        assert os.path.exists(
+            path := f"{tmpdirname}/data/embeddings/60GUV_20210615_20221231_v001.gpq"
+        )
         geodataframe: gpd.GeoDataFrame = gpd.read_parquet(path=path)
 
         assert geodataframe.shape == (2, 4)  # 2 rows, 4 columns
