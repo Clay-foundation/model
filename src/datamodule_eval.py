@@ -24,7 +24,7 @@ os.environ["GDAL_HTTP_MERGE_CONSECUTIVE_RANGES"] = "YES"
 class ClayDataset(Dataset):
     def __init__(self, chips_path, chips_label_path, transform=None):
         super().__init__()
-        self.chips_path = chips_path,
+        self.chips_path = chips_path
         self.chips_label_path = chips_label_path
         self.transform = transform
 
@@ -83,7 +83,6 @@ class ClayDataset(Dataset):
 
         chip_path = chips_path[idx]
         chip_label_path = chips_label_path[idx]
-        chip_path = chip_path[0]
 
         position = "_".join(chip_path.split("/")[-1].split("_")[-3:-1])
         date = "_".join(chip_path.split("/")[-1].split("_"))
@@ -145,35 +144,35 @@ class ClayDataset(Dataset):
 
 class ClayDataModule(L.LightningDataModule):
     MEAN = [
-        518.393981,
-        670.384338,
-        583.347534,
-        961.506958,
-        1903.755737,
-        2138.707519,
-        2238.332031,
-        2273.117919,
-        1413.791137,
-        808.279968,
-        0.033653,
-        0.135196,
-        536.390136,
+        1369.03,
+        1597.68,
+        1741.10,
+        2053.58,
+        2569.82,
+        2763.01,
+        2858.43,
+        2893.86,
+        2303.00,
+        1807.79,
+        0.026,
+        0.118,
+        499.46,
     ]
 
     STD = [
-        876.523559,
-        918.090148,
-        981.493835,
-        1001.560729,
-        1256.656372,
-        1346.299072,
-        1414.495483,
-        1392.251342,
-        918.297912,
-        605.479919,
-        0.048188,
-        0.380075,
-        630.602233,
+        2026.96,
+        2011.88,
+        2146.35,
+        2138.96,
+        2003.27,
+        1962.45,
+        2016.38,
+        1917.12,
+        1679.88,
+        1568.06,
+        0.118,
+        0.873,
+        880.35,
     ]
 
     def __init__(
@@ -204,7 +203,7 @@ class ClayDataModule(L.LightningDataModule):
         if stage == "fit":
             #random.shuffle(chips_path)
             split = int(len(chips_path) * self.split_ratio)
-            #print(chips_path[:split], chips_label_path[:split])
+            #print("Splits: ", chips_path[:split], chips_label_path[:split])
 
             self.trn_ds = ClayDataset(chips_path=chips_path[:split], chips_label_path=chips_label_path[:split], transform=self.tfm)
             self.val_ds = ClayDataset(chips_path=chips_path[split:], chips_label_path=chips_label_path[:split], transform=self.tfm)
