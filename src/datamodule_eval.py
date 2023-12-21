@@ -8,7 +8,7 @@ import random
 from pathlib import Path
 from typing import List, Literal
 
-import boto3
+import glob
 import lightning as L
 import numpy as np
 import rasterio
@@ -22,12 +22,10 @@ os.environ["GDAL_DISABLE_READDIR_ON_OPEN"] = "EMPTY_DIR"
 os.environ["GDAL_HTTP_MERGE_CONSECUTIVE_RANGES"] = "YES"
 
 class ClayDataset(Dataset):
-    def __init__(self, chips_path, chips_label_path, bucket_name, transform=None):
+    def __init__(self, chips_path, chips_label_path, transform=None):
         super().__init__()
         self.chips_path = chips_path,
         self.chips_label_path = chips_label_path
-        self.bucket_name = bucket_name
-        #self.s3 = s3
         self.transform = transform
 
     def normalize_timestamp(self, ts):
@@ -62,16 +60,14 @@ class ClayDataset(Dataset):
         chip_label = chip_path_label # rasterio.open(chip_path_label)
 
         # read timestep & normalize
-        date = chip.tags()["date"]  # YYYY-MM-DD
         year, month, day = self.normalize_timestamp(date)
 
         # read lat,lon from UTM to WGS84 & normalize
-        bounds = bounds #chip.bounds  # xmin, ymin, xmax, ymax
-        epsg = epsg #chip.crs.to_epsg()  # e.g. 32632
-        lon, lat = centroid[0], centroid[1], #chip.lnglat()  # longitude, latitude
+        lon, lat = centroid[0], centroid[1],  # longitude, latitude
         lon, lat = self.normalize_latlon(lon, lat)
 
-        return chip_label, {
+        return {
+            "labels": chip_label,
             "pixels": chip, #chip.read(),
             # Raw values
             "bbox": bounds,
@@ -82,123 +78,34 @@ class ClayDataset(Dataset):
             "timestep": (year, month, day),
         }
     
-    def get_image_granules(self, chips_path, chips_label_path):
-        """
-        Get granules of N-dim datacube and label images from an S3 bucket.
-
-        Args:
-        - bucket_name (str): The name of the S3 bucket.
-        - prefix (str): The prefix (directory path) in the S3 bucket.
-
-        Returns:
-        - tuple: None.
-        """
-
-
-        filenames = []
-        image_array_values = []
-        label_array_values = []
-        flood_events = []
-        positions = []
-        dates = []
-        bounds_ = []
-        centroids = []
-        epsgs = []
-        
-        s3 = boto3.client("s3")
-
-        for i in chips_path[0]:
-            position = "_".join(i.split("/")[-1].split("_")[-3:-1])
-            date = "_".join(i.split("/")[-1].split("_"))
-            date = i.split("/")[-1].split("_")[-4][:8]
-            date = f"{date[:4]}-{date[4:6]}-{date[6:8]}"
-            dates.append(date)
-            positions.append(position)
-            flood_event = i.split("/")[-2]
-            flood_events.append(flood_event)
-            # Load the image file from S3 directly into memory using rasterio
-            obj = s3.get_object(Bucket=self.bucket_name, Key=i)
-            with rasterio.io.MemoryFile(obj["Body"].read()) as memfile:
-                with memfile.open() as dataset:
-                    data_array = rioxarray.open_rasterio(dataset)
-                    # print(data_array.values)
-                    fn = "_".join(i.split("/")[-1].split("_"))[:-4]
-                    filenames.append(fn)
-                    pair = [i, data_array.values]
-                    image_array_values.append(pair)
-                    # Get bounds
-                    bounds = data_array.rio.bounds()
-                    bounds_.append(bounds)
-                    # Get centroid
-                    # Calculate centroid
-                    xmin, ymin, xmax, ymax = bounds
-                    centroid_x = (xmin + xmax) / 2.0
-                    centroid_y = (ymin + ymax) / 2.0
-                    centroid = (centroid_x, centroid_y)
-                    centroids.append(centroid)
-                    # Get EPSG
-                    epsg = data_array.rio.crs.to_epsg()
-                    epsgs.append(epsg)
-        for i in chips_label_path[0]:
-            # Load the image file from S3 directly into memory using rasterio
-            obj = s3.get_object(Bucket=self.bucket_name, Key=i)
-            with rasterio.io.MemoryFile(obj["Body"].read()) as memfile:
-                with memfile.open() as dataset:
-                    data_array = rioxarray.open_rasterio(dataset)
-                    # print(data_array.values)
-                    pair = [i, data_array.values]
-                    label_array_values.append(pair)
-        return image_array_values, label_array_values, flood_events, positions, dates, bounds_, centroids, epsgs, filenames
     
     def get_image_granules(self, chips_path, chips_label_path, idx):
-        """
-        Get granules of N-dim datacube and label images from an S3 bucket.
 
-        Args:
-        - bucket_name (str): The name of the S3 bucket.
-        - prefix (str): The prefix (directory path) in the S3 bucket.
+        chip_path = chips_path[idx]
+        chip_label_path = chips_label_path[idx]
+        chip_path = chip_path[0]
 
-        Returns:
-        - tuple: None.
-        """
-        
-        s3 = boto3.client("s3")
-
-        chips_path = chips_path[0][idx]
-        chips_label_path = chips_label_path[0][idx]
-
-        position = "_".join(chips_path.split("/")[-1].split("_")[-3:-1])
-        date = "_".join(chips_path.split("/")[-1].split("_"))
-        date = chips_path.split("/")[-1].split("_")[-4][:8]
+        position = "_".join(chip_path.split("/")[-1].split("_")[-3:-1])
+        date = "_".join(chip_path.split("/")[-1].split("_"))
+        date = chip_path.split("/")[-1].split("_")[-4][:8]
         date = f"{date[:4]}-{date[4:6]}-{date[6:8]}"
-        flood_event = chips_path.split("/")[-2]
-        # Load the image file from S3 directly into memory using rasterio
-        obj = s3.get_object(Bucket=self.bucket_name, Key=chips_path)
-        with rasterio.io.MemoryFile(obj["Body"].read()) as memfile:
-            with memfile.open() as dataset:
-                data_array = rioxarray.open_rasterio(dataset)
-                # print(data_array.values)
-                filename = "_".join(chips_path.split("/")[-1].split("_"))[:-4]
-                pair = [chips_path, data_array.values]
-                image_array_values = data_array
-                # Get bounds
-                bounds = data_array.rio.bounds()
-                # Get centroid
-                # Calculate centroid
-                xmin, ymin, xmax, ymax = bounds
-                centroid_x = (xmin + xmax) / 2.0
-                centroid_y = (ymin + ymax) / 2.0
-                centroid = (centroid_x, centroid_y)
-                # Get EPSG
-                epsg = data_array.rio.crs.to_epsg()
-        # Load the image file from S3 directly into memory using rasterio
-        obj = s3.get_object(Bucket=self.bucket_name, Key=chips_label_path)
-        with rasterio.io.MemoryFile(obj["Body"].read()) as memfile:
-            with memfile.open() as dataset:
-                data_array = rioxarray.open_rasterio(dataset)
-                # print(data_array.values)
-                #pair = [chips_label_path, data_array.values]
-                label_array_values = data_array
+        flood_event = chip_path.split("/")[-2]
+
+        chip_data_array = rasterio.open(chip_path)
+        filename = "_".join(chip_path.split("/")[-1].split("_"))[:-4]
+        image_array_values = chip_data_array.read()
+        # Get bounds
+        bounds = chip_data_array.bounds
+        # Get centroid
+        # Calculate centroid
+        xmin, ymin, xmax, ymax = bounds
+        centroid_x = (xmin + xmax) / 2.0
+        centroid_y = (ymin + ymax) / 2.0
+        centroid = (centroid_x, centroid_y)
+        # Get EPSG
+        epsg = chip_data_array.crs.to_epsg()
+        chip_label_path_data_array = rasterio.open(chip_label_path)
+        label_array_values = chip_label_path_data_array.read()
         return image_array_values, label_array_values, flood_event, position, date, bounds, centroid, epsg, filename
     
     def get_benchmark_data(self, chips_path, chips_label_path, idx):
@@ -211,20 +118,10 @@ class ClayDataset(Dataset):
         #    self.get_benchmark_data(self.chips_path, self.chips_label_path)
         image_array_values, label_array_values, flood_event, position, date, bounds, centroid, epsg, filename = \
             self.get_benchmark_data(self.chips_path, self.chips_label_path, idx)
-        #chip_path = image_array_values[idx]
-        #chip_label_path = label_array_values[idx]
-        #date = dates[idx]
-        #bounds = bounds_[idx]
-        #centroid = centroids[idx]
-        #epsg = epsgs[idx]
-        #filename = filenames[idx]
-        chip_path = image_array_values
-        chip_label_path = label_array_values
-        label, cube = self.read_chip(chip_path, chip_label_path, date, bounds, centroid, epsg)
-        print("Loaded chip_path and chip_label_path: ", chip_path, chip_label_path)
+        cube = self.read_chip(image_array_values, label_array_values, date, bounds, centroid, epsg)
 
         # remove nans and convert to tensor
-        label = torch.as_tensor(data=label, dtype=torch.float32)
+        cube["labels"] = torch.as_tensor(data=cube["labels"], dtype=torch.float32)
         cube["pixels"] = torch.as_tensor(data=cube["pixels"], dtype=torch.float32)
         cube["bbox"] = torch.as_tensor(data=cube["bbox"], dtype=torch.float64)
         cube["epsg"] = torch.as_tensor(data=cube["epsg"], dtype=torch.int32)
@@ -232,15 +129,15 @@ class ClayDataset(Dataset):
         cube["latlon"] = torch.as_tensor(data=cube["latlon"])
         cube["timestep"] = torch.as_tensor(data=cube["timestep"])
         try:
-            cube["source_url"] = str(chip_path.absolute())
+            cube["source_url"] = str(self.chip_path.absolute())
         except AttributeError:
             cube["source_url"] = filename #chip_path
 
         if self.transform:
             # convert to float16 and normalize
-            cube["pixels"] = self.transform(cube) #["pixels"])
+            cube["pixels"] = self.transform(cube["pixels"])
 
-        return cube, label
+        return cube
 
     def __len__(self):
         return len(self.chips_path)
@@ -281,45 +178,16 @@ class ClayDataModule(L.LightningDataModule):
 
     def __init__(
         self,
-        #data_dir: str = "data",
-        bucket_name: str = "bucket_name",
-        prefix: str = "prefix",
-        #s3: None = None,
+        data_dir: str = "data",
         batch_size: int = 4,
         num_workers: int = 8,
     ):
         super().__init__()
-        #self.data_dir = data_dir
-        self.bucket_name = bucket_name
-        self.prefix = prefix
-        #self.s3 = s3
+        self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.split_ratio = 0.8
         self.tfm = v2.Compose([v2.Normalize(mean=self.MEAN, std=self.STD)])
-    
-    def list_objects_recursive(self, client, bucket_name, prefix=""):
-        """
-        List all objects (file keys) in an S3 bucket recursively under a specified prefix.
-
-        Args:
-        - client (boto3.client): An initialized Boto3 S3 client.
-        - bucket_name (str): The name of the S3 bucket.
-        - prefix (str): The prefix (directory path) within the bucket to search for objects (optional).
-
-        Returns:
-        - list: A list of file keys (object keys) found under the specified prefix.
-        """
-        paginator = client.get_paginator("list_objects_v2")
-
-        page_iterator = paginator.paginate(Bucket=bucket_name, Prefix=prefix)
-
-        file_keys = []
-        for page in page_iterator:
-            if "Contents" in page:
-                file_keys.extend([obj["Key"] for obj in page["Contents"]])
-
-        return file_keys
 
     def setup(self, stage='fit'):
         # Get list of GeoTIFF filepaths from s3 bucket or data/ folder
@@ -328,29 +196,18 @@ class ClayDataModule(L.LightningDataModule):
         #    chips_path = list(dp.list_files_by_s3(masks="*.tif"))
         #else:  # if self.data_dir is a local data path
 
-
-        # Initialize Boto3 S3 client
-        #self.s3 = boto3.client("s3")
-
-        #self.s3 = Boto3_client()
-
-        # List objects in the specified prefix (directory) in the bucket
-        files_in_s3 = self.list_objects_recursive(boto3.client("s3"), self.bucket_name, self.prefix)
-
-        # Filter S2 and S1 images
-        S1_labels = [i for i in files_in_s3 if "LabelWater.tif" in i]
-        datacube_images = [f"{i[:-15]}.tif" for i in S1_labels]
-
-        chips_path = datacube_images #list(Path(self.data_dir).glob("**/*_rtc.tif"))
-        chips_label_path = S1_labels #list(Path(self.data_dir).glob("**/*_LabelWater.tif"))
+        chips_path = glob.glob(f"{self.data_dir}/**/*_rtc.tif") #list(Path(self.data_dir).glob("**/*_rtc.tif"))
+        chips_label_path = glob.glob(f"{self.data_dir}/**/*_LabelWater.tif")#list(Path(self.data_dir).glob("**/*_LabelWater.tif"))
         print(f"Total number of chips: {len(chips_path)}")
+        #print(f"All chips: {chips_path}")
 
         if stage == "fit":
             #random.shuffle(chips_path)
             split = int(len(chips_path) * self.split_ratio)
+            #print(chips_path[:split], chips_label_path[:split])
 
-            self.trn_ds = ClayDataset(chips_path=chips_path[:split], chips_label_path=chips_label_path[:split], bucket_name=self.bucket_name, transform=self.tfm)
-            self.val_ds = ClayDataset(chips_path=chips_path[split:], chips_label_path=chips_label_path[:split], bucket_name=self.bucket_name, transform=self.tfm)
+            self.trn_ds = ClayDataset(chips_path=chips_path[:split], chips_label_path=chips_label_path[:split], transform=self.tfm)
+            self.val_ds = ClayDataset(chips_path=chips_path[split:], chips_label_path=chips_label_path[:split], transform=self.tfm)
 
         elif stage == "predict":
             self.prd_ds = ClayDataset(chips_path=chips_path, transform=self.tfm)
