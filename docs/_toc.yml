@@ -8,6 +8,10 @@ parts:
   chapters:
     - title: Installation
       file: installation
+- caption: Data Preparation
+  chapters:
+    - title: Creating datacubes
+      file: data_datacube
 - caption: About Clay
   chapters:
     - title: GitHub
