@@ -92,7 +92,7 @@ in a downstream decoder network.
 That decoder network is the core of the downstream task. In a forward pass, it
 ingests the embeddings, runs them through those layers and computes a loss
 value with respect to the labels. The loss is back-propagated and the decoder
-gradually finetunes itself to the downstream dataset. Here's a peak at the
+gradually finetunes itself to the downstream dataset. Here's a peek at the
 decoder layers:
 
 ```
