@@ -49,5 +49,22 @@ Step by step instructions to create embeddings for a single MGRS tile location
 
    This should output a GeoParquet file containing the embeddings for MGRS tile
    27WXN (recall that each 10000x10000 pixel MGRS tile contains hundreds of
-   smaller 512x512 chips). See the next sub-section for details about the
-   embedding file.
+   smaller 512x512 chips), saved to the `data/embeddings/` folder. See the next
+   sub-section for details about the embeddings file.
+
+   ```{note}
+   For those interested in how the embeddings were computed, the predict step
+   above does the following:
+
+   1. Pass the 13-band GeoTIFF input into the Vision Transformer's encoder, to
+      produce raw embeddings of shape (B, 1538, 768), where B is the batch_size,
+      1538 is the patch dimension and 768 is the embedding length. The patch
+      dimension itself is a concatenation of 1536 (6 band groups x 16x16
+      spatial patches of size 32x32 pixels each in a 512x512 image) + 2 (latlon
+      embedding and time embedding) = 1538.
+   2. The mean or average is taken across the 1536 patch dimension, yielding an
+      output embedding of shape (B, 768).
+
+   More details of how this is implemented can be found by inspecting the
+   `predict_step` method in the `model_clay.py` file.
+   ```
