@@ -12,6 +12,8 @@ parts:
   chapters:
     - title: Generating embeddings
       file: model_embeddings
+    - title: Finetuning
+      file: model_finetuning
 - caption: About Clay
   chapters:
     - title: GitHub
