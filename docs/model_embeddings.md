@@ -70,7 +70,7 @@ Step by step instructions to create embeddings for a single MGRS tile location
    ```
 
 
-## Format of the embedding file
+## Format of the embeddings file
 
 The vector embeddings are stored in a single column within a
 [GeoParquet](https://geoparquet.org) file (*.gpq), with other columns
