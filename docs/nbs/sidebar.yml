@@ -1,0 +1,13 @@
+website:
+  sidebar:
+    contents:
+      - index.ipynb
+      - 00_model.ipynb
+      - 01_embeddings.ipynb
+      - 02_finetunning.ipynb
+      - 03_generative.ipynb
+      - 04_benchmarks.ipynb
+      - section: Clay Model releases
+        contents:
+          - Clay Model releases/Clay roadmap.ipynb
+          - Clay Model releases/Clay v0 release.ipynb

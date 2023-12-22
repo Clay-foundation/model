@@ -1,0 +1,63 @@
+name: 'build-docs'
+description: 'Create docs with nbdev'
+inputs:
+  pre:
+    description: 'Install prerelease nbdev/execnb from master?'
+    required: false
+    default: ''
+  version:
+    description: 'Version of python to set up'
+    required: false
+    default: '3.9'
+  ghtoken:
+    description: 'GitHub token'
+    default: ${{ github.token }}
+    required: false
+  torch_cpu:
+    description: "Install PyTorch CPU instead of PyTorch Cuda.  Has no effect if PyTorch isn't a requirement.  Enabled by defaut."
+    required: false
+    default: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.version }}
+        cache: "pip"
+        cache-dependency-path: settings.ini
+    - name: Install Dependencies
+      env:
+        USE_PRE: ${{ inputs.pre }}
+        TORCH_CPU: "${{ inputs.torch_cpu }}"
+      shell: bash
+      run: |
+        set -ux
+        python -m pip install --upgrade pip
+        if [ $USE_PRE ]; then
+          pip install -Uq git+https://github.com/fastai/ghapi.git
+          pip install -Uq git+https://github.com/fastai/fastcore.git
+          pip install -Uq git+https://github.com/fastai/execnb.git
+          pip install -Uq git+https://github.com/fastai/nbdev.git
+          wget -q $(curl https://latest.fast.ai/pre/quarto-dev/quarto-cli/linux-amd64.deb)
+          sudo dpkg -i quarto*.deb
+        else
+          pip install -Uq nbdev
+        fi
+        if [ $TORCH_CPU ]; then
+          test -f setup.py && pip install -e ".[dev]" --extra-index-url https://download.pytorch.org/whl/cpu
+        else
+          test -f setup.py && pip install -e ".[dev]"
+        fi
+        cd docs && nbdev_docs
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ inputs.ghtoken }}
+        force_orphan: true
+        publish_dir: docs/_docs
+        # The following lines assign commit authorship to the official GH-Actions bot for deploys to `gh-pages` branch.
+        # You can swap them out with your own user credentials.
+        user_name: github-actions[bot]
+        user_email: 41898282+github-actions[bot]@users.noreply.github.com

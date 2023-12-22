@@ -1,5 +1,0 @@
-# Installation
-
-## Basic
-
-## Advanced

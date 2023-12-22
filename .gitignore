@@ -62,3 +62,6 @@ docs/_build/
 # Mac OS-specific storage files
 .DS_Store
 datadisk/
+localsync.sh
+docs/_docs/
+docs/_proc/

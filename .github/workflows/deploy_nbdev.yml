@@ -1,0 +1,12 @@
+name: Deploy to GitHub Pages
+on:
+  push:
+    branches: [master, nbdev]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: quarto-ghp
+        uses: ./.github/actions/quarto-ghp

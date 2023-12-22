@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "clay"
+  site-url: "https://Clay-foundation.github.io/model"
+  description: "Documentation for the The Clay Foundation Model (in development)"
+  repo-branch: main
+  repo-url: "https://github.com/Clay-foundation/model"
