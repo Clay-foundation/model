@@ -5,22 +5,23 @@ is further trained on a specific dataset to adapt its parameters to a
 downstream task characterized by a relevent domain. It's distinct from training
 a model from scratch using the downstream task dataset exclusively.
 
-Related to finetuning in the field of training foundation models is linear
+Related to finetuning in the field of training Foundation models is linear
 probing, which refers to a technique used to analyze or explore the
-representations learned by a pre-text model as it trains. When a large-scale
+representations learned by a Foundation model as it trains. When a large-scale
 model (like a vision transformer model) is pre-trained on a vast corpus of
 data, it learns rich and complex representations of patterns within the data.
 Linear probing involves examining or probing these learned representations by
-periodically (e.g. every few epochs of the pre-text model's training cycle)
+periodically (e.g. every few epochs of the Foundation model's training cycle)
 finetuning a small downstream task on top of the pre-trained model's layers or
 embeddings.
 
 We use full finetuning and linear probing in Clay to evaluate the usefulness of
-the pre-text model both during its pre-training and afterwards.
+the Foundation model both during its pre-training and afterwards.
 
-Let's take a look at how we are finetuning on the datacube-adapted Cloud to
-Street - Microsoft flood benchmark dataset. As a reminder, that is a downstream
-segmentation task for identifiyting water pixels in recorded flood events. It's
+Let's take a look at how we are finetuning on the benchmark datacube-adapted
+[Cloud to Street - Microsoft Flood Dataset](https://beta.source.coop/repositories/c2sms/c2smsfloods).
+As a reminder, that is a downstream
+segmentation task for identifiying water pixels in recorded flood events. It's
 a binary segmentation problem, specifically.
 
 We process the datacubes into batches formatted in the way the pretrained Clay
@@ -84,14 +85,15 @@ and labels:
 
 These embeddings are reshaped from shape
 `batch size * (band groups length * number of patches) * embedding size` to
-`batch size * (band groups length * embedding size) patch height * patch width`
+`batch size * (band groups length * embedding size) * patch height * patch width`
 before being passed to a series of 2D convolutional transpose and ReLU layers
 in a downstream decoder network.
 
 That decoder network is the core of the downstream task. In a forward pass, it
-ingests the embeddings, runs them through those layers and computes loss with
-respect to the labels. The loss is back-propagated and the decoder gradually
-finetunes to the downstream dataset. Here's a peak at the decoder layers:
+ingests the embeddings, runs them through those layers and computes a loss
+value with respect to the labels. The loss is back-propagated and the decoder
+gradually finetunes itself to the downstream dataset. Here's a peak at the
+decoder layers:
 
 ```
 Model(
@@ -156,4 +158,4 @@ score, precision and recall.
 
 For linear probing, we implement the finetuned architecture in a
 [PyTorch callback](https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html)
-that will execute every `n` epochs during the pre-text model's training.
+that will execute every `n` epochs during the Foundation model's training.
