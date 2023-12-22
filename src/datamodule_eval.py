@@ -22,11 +22,12 @@ os.environ["GDAL_DISABLE_READDIR_ON_OPEN"] = "EMPTY_DIR"
 os.environ["GDAL_HTTP_MERGE_CONSECUTIVE_RANGES"] = "YES"
 
 class ClayDataset(Dataset):
-    def __init__(self, chips_path, chips_label_path, transform=None):
+    def __init__(self, chips_path, chips_label_path, data_dir, transform=None):
         super().__init__()
         self.chips_path = chips_path
         self.chips_label_path = chips_label_path
         self.transform = transform
+        self.data_dir = data_dir
 
     def normalize_timestamp(self, ts):
         year, month, day = map(np.float16, ts.split("-"))
@@ -83,6 +84,8 @@ class ClayDataset(Dataset):
 
         chip_path = chips_path[idx]
         chip_label_path = chips_label_path[idx]
+        #print("CHECK: ", chip_path, chip_label_path, " BREAK - ")
+        
 
         position = "_".join(chip_path.split("/")[-1].split("_")[-3:-1])
         date = "_".join(chip_path.split("/")[-1].split("_"))
@@ -103,7 +106,7 @@ class ClayDataset(Dataset):
         centroid = (centroid_x, centroid_y)
         # Get EPSG
         epsg = chip_data_array.crs.to_epsg()
-        chip_label_path_data_array = rasterio.open(chip_label_path)
+        chip_label_path_data_array = rasterio.open(f"{self.data_dir}/{flood_event}/{filename}_LabelWater.tif") #chip_label_path)
         label_array_values = chip_label_path_data_array.read()
         return image_array_values, label_array_values, flood_event, position, date, bounds, centroid, epsg, filename
     
@@ -143,6 +146,7 @@ class ClayDataset(Dataset):
 
 
 class ClayDataModule(L.LightningDataModule):
+    
     MEAN = [
         1369.03,
         1597.68,
@@ -174,6 +178,39 @@ class ClayDataModule(L.LightningDataModule):
         0.873,
         880.35,
     ]
+    """
+    MEAN = [
+        518.393981,
+        670.384338,
+        583.347534,
+        961.506958,
+        1903.755737,
+        2138.707519,
+        2238.332031,
+        2273.117919,
+        1413.791137,
+        808.279968,
+        0.033653,
+        0.135196,
+        536.390136,
+    ]
+
+    STD = [
+        876.523559,
+        918.090148,
+        981.493835,
+        1001.560729,
+        1256.656372,
+        1346.299072,
+        1414.495483,
+        1392.251342,
+        918.297912,
+        605.479919,
+        0.048188,
+        0.380075,
+        630.602233,
+    ]
+    """
 
     def __init__(
         self,
@@ -199,14 +236,16 @@ class ClayDataModule(L.LightningDataModule):
         chips_label_path = glob.glob(f"{self.data_dir}/**/*_LabelWater.tif")#list(Path(self.data_dir).glob("**/*_LabelWater.tif"))
         print(f"Total number of chips: {len(chips_path)}")
         #print(f"All chips: {chips_path}")
+        sorted(chips_path)
+        sorted(chips_label_path)
 
         if stage == "fit":
             #random.shuffle(chips_path)
             split = int(len(chips_path) * self.split_ratio)
             #print("Splits: ", chips_path[:split], chips_label_path[:split])
 
-            self.trn_ds = ClayDataset(chips_path=chips_path[:split], chips_label_path=chips_label_path[:split], transform=self.tfm)
-            self.val_ds = ClayDataset(chips_path=chips_path[split:], chips_label_path=chips_label_path[:split], transform=self.tfm)
+            self.trn_ds = ClayDataset(chips_path=chips_path[:split], chips_label_path=chips_label_path[:split], data_dir=self.data_dir, transform=self.tfm)
+            self.val_ds = ClayDataset(chips_path=chips_path[split:], chips_label_path=chips_label_path[:split], data_dir=self.data_dir, transform=self.tfm)
 
         elif stage == "predict":
             self.prd_ds = ClayDataset(chips_path=chips_path, transform=self.tfm)
