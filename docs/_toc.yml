@@ -8,6 +8,10 @@ parts:
   chapters:
     - title: Installation
       file: installation
+- caption: Data Preparation
+  chapters:
+    - title: Benchmark dataset labels
+      file: data_labels
 - caption: Running the model
   chapters:
     - title: Generating embeddings
