@@ -8,6 +8,10 @@ parts:
   chapters:
     - title: Installation
       file: installation
+- caption: Running the model
+  chapters:
+    - title: Generating embeddings
+      file: model_embeddings
 - caption: About Clay
   chapters:
     - title: GitHub
