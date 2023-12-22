@@ -4,7 +4,7 @@ name: deploy-book
 # Only run this when the main branch changes
 on:
   # Uncomment the 'pull_request' line below to manually re-build Jupyter Book
-  # pull_request:
+  pull_request:
   push:
     branches:
       - main
