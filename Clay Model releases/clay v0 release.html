@@ -449,22 +449,22 @@ Done!
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> copy</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>left_peak_range <span class="op">=</span> [<span class="fl">2.6</span>,<span class="fl">2.7</span>]</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>right_peak_range <span class="op">=</span> [<span class="fl">2.95</span>,<span class="fl">3.1</span>]</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>left_peak_range <span class="op">=</span> [<span class="fl">2.6</span>, <span class="fl">2.7</span>]</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>right_peak_range <span class="op">=</span> [<span class="fl">2.95</span>, <span class="fl">3.1</span>]</span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"embeddings: </span><span class="sc">{</span><span class="bu">len</span>(embeddings.gdf)<span class="sc">}</span><span class="ss">"</span>)</span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>left_tails <span class="op">=</span> copy.deepcopy(embeddings)</span>
 <span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>left_tails.gdf <span class="op">=</span> embeddings.gdf[</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&gt;</span> left_peak_range[<span class="dv">0</span>]) <span class="op">&amp;</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&lt;</span> left_peak_range[<span class="dv">1</span>])</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&gt;</span> left_peak_range[<span class="dv">0</span>])</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span> (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&lt;</span> left_peak_range[<span class="dv">1</span>])</span>
 <span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>].copy()</span>
 <span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>right_tails <span class="op">=</span> copy.deepcopy(embeddings)</span>
 <span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>right_tails.gdf <span class="op">=</span> embeddings.gdf[</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&gt;</span> right_peak_range[<span class="dv">0</span>]) <span class="op">&amp;</span></span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&lt;</span> right_peak_range[<span class="dv">1</span>])</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&gt;</span> right_peak_range[<span class="dv">0</span>])</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span> (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&lt;</span> right_peak_range[<span class="dv">1</span>])</span>
 <span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>].copy()</span>
 <span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"left_tails: </span><span class="sc">{</span><span class="bu">len</span>(left_tails.gdf)<span class="sc">}</span><span class="ss">"</span>)</span>
