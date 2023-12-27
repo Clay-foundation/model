@@ -101,12 +101,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta property="og:description" content="Working with semantic embeddings of Earth">
 <meta property="og:image" content="https://Clay-foundation.github.io/model/01_embeddings_files/figure-html/cell-7-output-1.png">
 <meta property="og:site-name" content="clay">
-<meta property="og:image:height" content="356">
+<meta property="og:image:height" content="279">
 <meta property="og:image:width" content="794">
 <meta name="twitter:title" content="clay - Embeddings">
 <meta name="twitter:description" content="Working with semantic embeddings of Earth">
 <meta name="twitter:image" content="https://Clay-foundation.github.io/model/01_embeddings_files/figure-html/cell-7-output-1.png">
-<meta name="twitter:image-height" content="356">
+<meta name="twitter:image-height" content="279">
 <meta name="twitter:image-width" content="794">
 <meta name="twitter:card" content="summary_large_image">
 </head>
@@ -226,8 +226,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#working-with-embeddings" id="toc-working-with-embeddings" class="nav-link" data-scroll-target="#working-with-embeddings">Working with embeddings</a>
   <ul class="collapse">
   <li><a href="#embeddingshandler" id="toc-embeddingshandler" class="nav-link" data-scroll-target="#embeddingshandler">EmbeddingsHandler</a></li>
-  <li><a href="#embeddingshandler.read_embeddings_file" id="toc-embeddingshandler.read_embeddings_file" class="nav-link" data-scroll-target="#embeddingshandler.read_embeddings_file">EmbeddingsHandler.read_embeddings_file</a></li>
-  <li><a href="#embeddingshandler.plot" id="toc-embeddingshandler.plot" class="nav-link" data-scroll-target="#embeddingshandler.plot">EmbeddingsHandler.plot</a></li>
+  <li><a href="#embeddingshandler.read_geoparquet_file" id="toc-embeddingshandler.read_geoparquet_file" class="nav-link" data-scroll-target="#embeddingshandler.read_geoparquet_file">EmbeddingsHandler.read_geoparquet_file</a></li>
+  <li><a href="#embeddingshandler.plot_locations" id="toc-embeddingshandler.plot_locations" class="nav-link" data-scroll-target="#embeddingshandler.plot_locations">EmbeddingsHandler.plot_locations</a></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/Clay-foundation/model/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
@@ -470,36 +470,56 @@ More details of how this is implemented can be found by inspecting the
 <p>This is how you can load embeddings from a file or folder with files, including limiting the number of embeddings to load:</p>
 <hr>
 </section>
-<section id="embeddingshandler.read_embeddings_file" class="level3">
-<h3 class="anchored" data-anchor-id="embeddingshandler.read_embeddings_file">EmbeddingsHandler.read_embeddings_file</h3>
+<section id="embeddingshandler.read_geoparquet_file" class="level3">
+<h3 class="anchored" data-anchor-id="embeddingshandler.read_geoparquet_file">EmbeddingsHandler.read_geoparquet_file</h3>
 <blockquote class="blockquote">
-<pre><code> EmbeddingsHandler.read_embeddings_file (file:pathlib.Path)</code></pre>
+<pre><code> EmbeddingsHandler.read_geoparquet_file (file:pathlib.Path)</code></pre>
 </blockquote>
+<p>Reads a geoparquet file and returns a dataframe with the embeddings.</p>
+<table class="table">
+<thead>
+<tr class="header">
+<th></th>
+<th><strong>Type</strong></th>
+<th><strong>Details</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>file</td>
+<td>Path</td>
+<td>Path to the geoparquet file</td>
+</tr>
+</tbody>
+</table>
 <p>For example, this is how to read 10 random files from a folder:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>embeddings_path <span class="op">=</span> Path(<span class="st">"/home/brunosan/data/Clay/clay-vector-embeddings-v001"</span>)</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>embeddings <span class="op">=</span> EmbeddingsHandler(embeddings_path, max_files<span class="op">=</span><span class="dv">10</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>embeddings.load_data()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>embeddings <span class="op">=</span> EmbeddingsHandler(embeddings_path, max_files<span class="op">=</span><span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>100%|██████████| 10/10 [00:00&lt;00:00, 132.35it/s]</code></pre>
+<pre><code>100%|██████████| 10/10 [00:00&lt;00:00, 113.63it/s]</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Total rows: 7779
+<pre><code>Total rows: 9896
  Merging dataframes...
 Done!
- Total rows:  7779</code></pre>
+ Total rows:  9896</code></pre>
 </div>
 </div>
 <p>Then you can plot the embeddings:</p>
 <hr>
 </section>
-<section id="embeddingshandler.plot" class="level3">
-<h3 class="anchored" data-anchor-id="embeddingshandler.plot">EmbeddingsHandler.plot</h3>
+<section id="embeddingshandler.plot_locations" class="level3">
+<h3 class="anchored" data-anchor-id="embeddingshandler.plot_locations">EmbeddingsHandler.plot_locations</h3>
 <blockquote class="blockquote">
-<pre><code> EmbeddingsHandler.plot (figsize:[&lt;class'int'&gt;,&lt;class'int'&gt;]=(10, 10),
-                         alpha:float=0.2, edgecolor:str='k',
-                         max_rows:[&lt;class'int'&gt;,None]=10000, bounds=None)</code></pre>
+<pre><code> EmbeddingsHandler.plot_locations
+                                   (figsize:[&lt;class'int'&gt;,&lt;class'int'&gt;]=(1
+                                   0, 10), alpha:float=0.2,
+                                   edgecolor:str='k',
+                                   max_rows:[&lt;class'int'&gt;,None]=10000,
+                                   bounds=None)</code></pre>
 </blockquote>
+<p>Plots the dataframe on a map with an OSM underlay.</p>
 <table class="table">
 <colgroup>
 <col style="width: 6%">
@@ -549,7 +569,7 @@ Done!
 </tbody>
 </table>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>embeddings.plot()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>embeddings.plot_locations()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <p><img src="01_embeddings_files/figure-html/cell-7-output-1.png" class="img-fluid"></p>
 </div>
@@ -564,7 +584,7 @@ Done!
 <span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>xmin, ymin, xmax, ymax <span class="op">=</span> <span class="bu">buffer</span>.bounds</span>
 <span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Call the plot method with the bounds</span></span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>embeddings.plot(bounds<span class="op">=</span>[xmin, xmax, ymin, ymax])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>embeddings.plot_locations(bounds<span class="op">=</span>[xmin, xmax, ymin, ymax])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <p><img src="01_embeddings_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
 </div>
@@ -579,6 +599,33 @@ Done!
 </div>
 <div class="cell-output cell-output-display">
 <p><img src="01_embeddings_files/figure-html/cell-9-output-2.png" class="img-fluid"></p>
+</div>
+</div>
+<p>To retrieve the RGB image for a given embedding, you can use the <code>rgb_imgs</code> method. the first time it will use the <code>S3</code> url location to pull only the RGB bands, then save it locally for faster later retrieval.</p>
+<p>You must specify the rows you want to retrieve, and if the first time, the output folder where to save the images, if it can’t reuse an existing local folder.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs(</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    [<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>], local_folder<span class="op">=</span>Path(<span class="st">"/home/brunosan/data/Clay/rgbs/"</span>)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="01_embeddings_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p>You can skip the <code>local_folder</code> argument if you already have other local rgb saved.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs([<span class="dv">2</span>], local_folder<span class="op">=</span>Path(<span class="st">"/home/brunosan/data/Clay/rgbs/"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading local image for row 0</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="01_embeddings_files/figure-html/cell-11-output-2.png" class="img-fluid"></p>
+</div>
+</div>
+<p>If needed you can <code>force_fetch</code> from the <code>S3</code> location again.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs([<span class="dv">2</span>], force_fetch<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="01_embeddings_files/figure-html/cell-12-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 
