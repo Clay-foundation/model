@@ -1,0 +1,184 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Clay documentation",
+    "section": "",
+    "text": "Clay is a foundational model of Earth using Earth Observation data. As the AI Deep Learning architecture, it uses an expanded visual transformer upgraded to understant geospatial and temporal relations on Earth data, from any instrument/spectral data. The AI self-supervised fundational task is a Masked Autoencoder (MAE) approach for training.\nThe Clay model primarily functions in two ways: first, by directly generating semantic embeddings for tasks like similarity searches, and second, through fine-tuning its outputs with additional data labels. This fine-tuning supports various tasks, including classification (e.g. flood detection and deforestation monitoring), regression (e.g. estimating carbon stock or crop yields), and generative tasks such as creating RGB imagery from SAR data. Moreover, users can further enhance model performance by incorporating higher-resolution data.\nThis documentation uses nbdev, which combines documentation, code samples and an SDK. This means that every page is also a python notebook anyone can use, with practical code examples for each functionality, and use case. Moreover, you can install pip install clay and use the same functions.\nClay is open source, open data and open for business."
+  },
+  {
+    "objectID": "index.html#overview",
+    "href": "index.html#overview",
+    "title": "Clay documentation",
+    "section": "",
+    "text": "Clay is a foundational model of Earth using Earth Observation data. As the AI Deep Learning architecture, it uses an expanded visual transformer upgraded to understant geospatial and temporal relations on Earth data, from any instrument/spectral data. The AI self-supervised fundational task is a Masked Autoencoder (MAE) approach for training.\nThe Clay model primarily functions in two ways: first, by directly generating semantic embeddings for tasks like similarity searches, and second, through fine-tuning its outputs with additional data labels. This fine-tuning supports various tasks, including classification (e.g. flood detection and deforestation monitoring), regression (e.g. estimating carbon stock or crop yields), and generative tasks such as creating RGB imagery from SAR data. Moreover, users can further enhance model performance by incorporating higher-resolution data.\nThis documentation uses nbdev, which combines documentation, code samples and an SDK. This means that every page is also a python notebook anyone can use, with practical code examples for each functionality, and use case. Moreover, you can install pip install clay and use the same functions.\nClay is open source, open data and open for business."
+  },
+  {
+    "objectID": "index.html#where-is-what",
+    "href": "index.html#where-is-what",
+    "title": "Clay documentation",
+    "section": "Where is what",
+    "text": "Where is what\n\nThe Clay model code lives on Github. License: Apache.\nThe Clay model weights live on Huggin Face. License: OpenRAIL-M.\nThe Clay documentation lives on here. License: CC-BY.\nThe Clay SDK lives on PyPi. License: Apache.\nWe maintain a set of embeddings on Source Cooperative. License: ODC-BY."
+  },
+  {
+    "objectID": "index.html#how-to-use-clay",
+    "href": "index.html#how-to-use-clay",
+    "title": "Clay documentation",
+    "section": "How to use Clay",
+    "text": "How to use Clay\nThe model can be used in two main ways:\n\nDirectly, use it to make inference. See Model\n\nCheck and run Benchmarks on the model. See Benchmarks\n\nGenerating semantic embeddings. E.g. for Similarity search. See Embeddings.\nFine-tunning the model for other tasks, or for other input data. E.g. flood detection, crop yields, … See Fine-tunning.\nGenerative tasks: E.g. Estimate RGB imagery wihtout clouds or from Synthetic Aperture Radar (SAR) data. See Generative.\n\n–\nClay is a fiscally sponsored project of Radiant Earth, a USA registered 501(c)3 non-profit."
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html",
+    "href": "Clay Model releases/clay v0 release.html",
+    "title": "Clay Model v0 release",
+    "section": "",
+    "text": "This document outlines the v0 release of our deep learning model designed for Earth Observation (EO), leveraging Sentinel satellite data. The model aims to provide advanced insights and analysis for various EO applications.\n\n\nWe follow the Model Card Toolkit. It provides a summary of the model’s purpose and behavior, as well as information on the dataset it was trained on and the people and organizations involved in its creation. The model card is intended to help enable responsible use of AI systems by documenting their use cases and limitations.\n\n\n\n\nName: Clay Model\nVersion: 0.1\nType: Geospatial Visual Transformer trained with a MAE objective.\nTraining Data: ~1M spatiotemporal locations statistically sampled to contain a variety of land cover types. For each location, the bundle has: 10 Sentinel-2 bands, 2 Sentinel-1 bands and a DEM.\nDomain: Earth Observation\nAuthor: Clay.foundation\nContact: info@madewithclay.org\nRelease Date: 2023-12-31\nLicense: For the code, Apache 2.0. For the trained model OPEN RAIL-M\n\n\n\n\nThis model is intended as a foundational EO model. It can directly be used to create semantic embeddings, or be finetuned for classification or regression tasks. It can also be finetuned with other input data.\nIt is inteded to be used by non-profits, researchers, journalists, developers and data scientists. It is also intended to be used by commercial entities. Hence it is released with an open data and only trained with fully open data."
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#model-card",
+    "href": "Clay Model releases/clay v0 release.html#model-card",
+    "title": "Clay Model v0 release",
+    "section": "",
+    "text": "We follow the Model Card Toolkit. It provides a summary of the model’s purpose and behavior, as well as information on the dataset it was trained on and the people and organizations involved in its creation. The model card is intended to help enable responsible use of AI systems by documenting their use cases and limitations."
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#model-details",
+    "href": "Clay Model releases/clay v0 release.html#model-details",
+    "title": "Clay Model v0 release",
+    "section": "",
+    "text": "Name: Clay Model\nVersion: 0.1\nType: Geospatial Visual Transformer trained with a MAE objective.\nTraining Data: ~1M spatiotemporal locations statistically sampled to contain a variety of land cover types. For each location, the bundle has: 10 Sentinel-2 bands, 2 Sentinel-1 bands and a DEM.\nDomain: Earth Observation\nAuthor: Clay.foundation\nContact: info@madewithclay.org\nRelease Date: 2023-12-31\nLicense: For the code, Apache 2.0. For the trained model OPEN RAIL-M"
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#intended-use",
+    "href": "Clay Model releases/clay v0 release.html#intended-use",
+    "title": "Clay Model v0 release",
+    "section": "",
+    "text": "This model is intended as a foundational EO model. It can directly be used to create semantic embeddings, or be finetuned for classification or regression tasks. It can also be finetuned with other input data.\nIt is inteded to be used by non-profits, researchers, journalists, developers and data scientists. It is also intended to be used by commercial entities. Hence it is released with an open data and only trained with fully open data."
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#training-information",
+    "href": "Clay Model releases/clay v0 release.html#training-information",
+    "title": "Clay Model v0 release",
+    "section": "Training Information",
+    "text": "Training Information\nThe trainning Objective is a Masked Autoencoder. We mask up to 70% of the input pixels across all bands (same location across bands) and train the model to predict the masked pixels.\n\nHyperparameters:\n\nEffective Batch Size is 200. (Batch per GPU - 10, and 4 GPUs. Gradient accumulation every 5 batches, so 4* 10 * 5 =&gt; 200.\nLearning rate: Cosine Decay with Warm Restarts as our LR scheduler.\nWeight decay: TBD\nNumber of epochs: 20 TBD\nOptimizer: AdamW ? TBD\n\n\nWe do not use Data Augmentation. With learnable location and time embeddgins we cannot use data augmentation. We do not use any other regularization techniques. We not use MixUp or CutMix, as it would need a complex tweak to carry over the metadata (location and time) to the mixed up images."
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#performance-metrics",
+    "href": "Clay Model releases/clay v0 release.html#performance-metrics",
+    "title": "Clay Model v0 release",
+    "section": "Performance Metrics",
+    "text": "Performance Metrics\nThe model shows the following performance characteristics: - Accuracy: [Value] - Precision: [Value] - Recall: [Value]"
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#known-limitations",
+    "href": "Clay Model releases/clay v0 release.html#known-limitations",
+    "title": "Clay Model v0 release",
+    "section": "Known Limitations",
+    "text": "Known Limitations\n\nThe model is trained on Sentinel data only.\nSentinel data only covers land and coastal waters.\nWe only train on a ver small sample of the Sentinel archives, both in terms of spatial coverage and time.\nWe do not train on the poles, and we do not train on open ocean, nor ocean nor atmospheric data.\nWe do not train on night time data.\nWe do not explicitly include extreme events in the training data.\nFor v0 we only train at most 3 different times per location.\n\n\nClouds and other source of “noise”:\nIn most EO applications clouds, cloud shadows, smog, atmospheric scattering, mid-air planes and other non-ground registrations are considered noise. We explicitly filter our clouds on our chips, but small clouds and their shadows might be present. As we increase the number of observations per location, and bands, we expect the model to learn to ignore single events but register patterns (places that are often cloudy or with smog)."
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#known-biases",
+    "href": "Clay Model releases/clay v0 release.html#known-biases",
+    "title": "Clay Model v0 release",
+    "section": "Known Biases:",
+    "text": "Known Biases:\n[Discuss any biases]"
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#ethical-considerations",
+    "href": "Clay Model releases/clay v0 release.html#ethical-considerations",
+    "title": "Clay Model v0 release",
+    "section": "Ethical Considerations",
+    "text": "Ethical Considerations\nOur goal is to lower the barrier to use EO data for biodiversity and climate change mitigation and adaptation.\nWe focus on the undifferentiated baseline compute for most EO applications with a fully permissive license. This way we can encourage downstream users, both non-profit and for-profit to leapfrog their AI4EO services made with Clay, our independent, benchmarked, operational, open model. We aim thus to reducing the overall carbon footprint of EO applications, while providing state of the art baseline models for everyone."
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#training-process",
+    "href": "Clay Model releases/clay v0 release.html#training-process",
+    "title": "Clay Model v0 release",
+    "section": "Training Process",
+    "text": "Training Process\n\n1. Data Factory\nWe use Microsoft Planetary Computer to pull all the data. Code\nFor v0 we used ESA’s Worldcover 2021 to create a statistically representative sample of the Earth’s land cover. Code.\nOur sampling function aims to select ~1000 MGRS tiles, with 200 samples from the 2000 most land-cover diverse tiles, 50 samples from the 1000 single lanc cover class for all categories except water ( urban, wetland, mangroves, moss, cropland, trees, shrubland, grassland, bare, snow). For coastal data we select 100 samples from all tiles with between 30% an 70% water.\nFor each selected MGRS tile, we split it into 512x512 chips. We filter out chips with more than 30% clouds or bad pixels.\nWe save each band into a different .tif file following the schema claytile_{mgrs}_{date}_v{version}_{counter}.tif where mgrs is the MGRS tile, date is the date of the observation, version is the version of the sampling strategy and counter is the counter of the chip in the tile [from left to right, from top to bottom].\nFinally we save that into S3 under the version of the sampling strategy folder.\nClay model v0 uses v2 sampling strategy, and corresponds to 1,045,224 chips (each a .tif file with 13 bands) and 6.4 TB.\nThe exact list of files used for v0 is here [5Mb zipped, 88Mb .txt list], generated using:\naws s3 ls s3://clay-tiles-02/ --recursive --human-readable --no-paginate --summarize &gt; s3_listing_data_v2_model_v0.txt\n\n\n2. Training Loop\nTBD\n\n\n3. Embeddings creation.\nAs standard practice, and since we already have all the data prepared, we create embeddings for all the trainning data. We use the same model, but we remove the masking.\nWe use the same trainning data source:\npython trainer.py predict --ckpt_path=checkpoints/last.ckpt \\\n                          --data.batch_size=1024 \\\n                          --data.data_dir=s3://clay-tiles-02 \\\n                          --trainer.limit_predict_batches=1"
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#computational-resources",
+    "href": "Clay Model releases/clay v0 release.html#computational-resources",
+    "title": "Clay Model v0 release",
+    "section": "Computational Resources",
+    "text": "Computational Resources\n\nCompute: Trained on AWS g5.12xlarge instance, which has 4 A10G GPUs (24 GB VRAM in each).\nTraining Time: Each epoch takes ~12 hour. The model was trained for 20 [CONFIRM] epochs."
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#data-splits",
+    "href": "Clay Model releases/clay v0 release.html#data-splits",
+    "title": "Clay Model v0 release",
+    "section": "Data Splits",
+    "text": "Data Splits\n\nTraining Data: [Percentage]\nValidation Data: [Percentage]\nTest Data: [Percentage]"
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#validation-methods",
+    "href": "Clay Model releases/clay v0 release.html#validation-methods",
+    "title": "Clay Model v0 release",
+    "section": "Validation Methods",
+    "text": "Validation Methods\nDescription of the validation process and results achieved. Model Exploration"
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#model-exploration",
+    "href": "Clay Model releases/clay v0 release.html#model-exploration",
+    "title": "Clay Model v0 release",
+    "section": "Model Exploration",
+    "text": "Model Exploration\nTBD"
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#embeddings-exploration",
+    "href": "Clay Model releases/clay v0 release.html#embeddings-exploration",
+    "title": "Clay Model v0 release",
+    "section": "Embeddings Exploration",
+    "text": "Embeddings Exploration\n\nembeddings_path=Path('/home/brunosan/data/Clay/clay-vector-embeddings-v001')\nembeddings = clay.embeddings.EmbeddingsHandler(embeddings_path)\nembeddings.load_data()\nembeddings.plot(max_rows=None)\n\n100%|██████████| 1088/1088 [00:04&lt;00:00, 236.65it/s]\n\n\nTotal rows: 947019\n Merging dataframes...\nDone!\n Total rows:  947019\n\n\n\n\n\nTo evaluate the embeddgins, we can first see their “length” using L2norm.\n\nembeddings.gdf['l2norm'] = embeddings.gdf['embeddings'].apply(lambda x: np.linalg.norm(x, ord=2))\n\n\n#2 figures side by side\nimport matplotlib.pyplot as plt\nfig, ax = plt.subplots(1, 2, figsize=(10, 5))\nax[0].set_title('L2 norm histogram')\nax[0].set_xlabel('L2 norm')\nax[0].set_ylabel('Count')\nax[0].hist(embeddings.gdf['l2norm'], bins=100)\nax[1].set_title('L2 norm cumulative histogram')\nax[1].set_xlabel('L2 norm')\nax[1].set_ylabel('Cumulative count')\nax[1].hist(embeddings.gdf['l2norm'], bins=100, density=True, cumulative=True);\n\n\n\n\nWe can see that ~80% of the embeddings are between 2.7 and 2.9, with two peaks on the edges. We can explore samples from the tails to see what is going on.\n\nimport copy\n\nprint(f'embeddings: {len(embeddings.gdf)}')\n\nleft_tails = copy.deepcopy(embeddings)\nleft_tails.gdf = embeddings.gdf[(embeddings.gdf['l2norm'] &gt; 2.6) & (embeddings.gdf['l2norm'] &lt; 2.7)].copy()\n\nright_tails = copy.deepcopy(embeddings)\nright_tails.gdf = embeddings.gdf[(embeddings.gdf['l2norm'] &gt; 2.95) & (embeddings.gdf['l2norm'] &lt; 3.1)].copy()\n\nprint(f'left_tails: {len(left_tails.gdf)}')\nprint(f'right_tails: {len(right_tails.gdf)}')\n\nembeddings: 947019\nleft_tails: 60581\nright_tails: 94057"
+  },
+  {
+    "objectID": "Clay Model releases/clay v0 release.html#benchmarking",
+    "href": "Clay Model releases/clay v0 release.html#benchmarking",
+    "title": "Clay Model v0 release",
+    "section": "Benchmarking",
+    "text": "Benchmarking"
+  },
+  {
+    "objectID": "model.html",
+    "href": "model.html",
+    "title": "Model",
+    "section": "",
+    "text": "model\n\n model ()"
+  },
+  {
+    "objectID": "embeddings.html",
+    "href": "embeddings.html",
+    "title": "Embeddings",
+    "section": "",
+    "text": "Embeddings in the context of Earth Observation (EO) and machine learning are dense, low-dimensional representations of high-dimensional data. In simple terms, they are numerical vectors that capture the essence of complex data, such as satellite imagery or temporal sequences from Earth observation instruments. These vectors are generated by models like Clay through a process of learning, where the model identifies and encodes the most important features and patterns within the data."
+  },
+  {
+    "objectID": "embeddings.html#generating-embeddings",
+    "href": "embeddings.html#generating-embeddings",
+    "title": "Embeddings",
+    "section": "Generating Embeddings",
+    "text": "Generating Embeddings\nOnce you have a pretrained model, it is now possible to pass some input images into the encoder part of the Vision Transformer, and produce vector embeddings which contain a semantic representation of the image.\n\nProducing embeddings from the pretrained model\nStep by step instructions to create embeddings for a single MGRS tile location (e.g. 27WXN).\n\nEnsure that you can access the 13-band GeoTIFF data files.\naws s3 ls s3://clay-tiles-02/02/27WXN/\nThis should report a list of filepaths if you have the correct permissions, otherwise, please set up authentication before continuing.\nDownload the pretrained model weights, and put them in the checkpoints/ folder.\naws s3 cp s3://clay-model-ckpt/v0/clay-small-70MT-1100T-10E.ckpt checkpoints/\nFor running model inference on a large scale (hundreds or thousands of MGRS\ntiles), it is recommended to have a cloud VM instance with:\n\n1. A high bandwidth network (&gt;25Gbps) to speed up data transfer from the S3\n   bucket to the compute device.\n2. An NVIDIA Ampere generation GPU (e.g. A10G) or newer, which would allow\n   for efficient bfloat16 dtype calculations.\n\nFor example, an AWS g5.4xlarge instance would be a cost effective option.\nRun model inference to generate the embeddings.\npython trainer.py predict --ckpt_path=checkpoints/clay-small-70MT-1100T-10E.ckpt \\\n                          --trainer.precision=bf16-mixed \\\n                          --data.data_dir=s3://clay-tiles-02/02/27WXN \\\n                          --data.batch_size=32 \\\n                          --data.num_workers=16\nThis should output a GeoParquet file containing the embeddings for MGRS tile 27WXN (recall that each 10000x10000 pixel MGRS tile contains hundreds of smaller 512x512 chips), saved to the data/embeddings/ folder. See the next sub-section for details about the embeddings file.\nFor those interested in how the embeddings were computed, the predict step\nabove does the following:\n\n1. Pass the 13-band GeoTIFF input into the Vision Transformer's encoder, to\n   produce raw embeddings of shape (B, 1538, 768), where B is the batch_size,\n   1538 is the patch dimension and 768 is the embedding length. The patch\n   dimension itself is a concatenation of 1536 (6 band groups x 16x16\n   spatial patches of size 32x32 pixels each in a 512x512 image) + 2 (latlon\n   embedding and time embedding) = 1538.\n2. The mean or average is taken across the 1536 patch dimension, yielding an\n   output embedding of shape (B, 768).\n\nMore details of how this is implemented can be found by inspecting the\n`predict_step` method in the `model_clay.py` file.\n\n\n\nFormat of the embeddings file\nThe vector embeddings are stored in a single column within a GeoParquet file (*.gpq), with other columns containing spatiotemporal metadata. This file format is built on top of the popular Apache Parquet columnar storage format designed for fast analytics, and it is highly interoperable across different tools like QGIS, GeoPandas (Python), sfarrow (R), and more.\n\nFilename convention\nThe embeddings file utilizes the following naming convention:\n{MGRS:5}_{MINDATE:8}_{MAXDATE:8}_v{VERSION:3}.gpq\nExample: 27WXN_20200101_20231231_v001.gpq\n\n\n\nVariable\nDescription\n\n\n\n\nMGRS\nThe spatial location of the file’s contents in the Military Grid Reference System (MGRS), given as a 5-character string\n\n\nMINDATE\nThe minimum acquisition date of the Sentinel-2 images used to generate the embeddings, given in YYYYMMDD format\n\n\nMINDATE\nThe maximum acquisition date of the Sentinel-2 images used to generate the embeddings, given in YYYYMMDD format\n\n\nVERSION\nVersion of the generated embeddings, given as a 3-digit number\n\n\n\n\n\nTable schema\nEach row within the GeoParquet table is generated from a 512x512 pixel image, and contains a record of the embeddings, spatiotemporal metadata, and a link to the GeoTIFF file used as the source image for the embedding. The table looks something like this:\n\n\n\n\n\n\n\n\n\nsource_url\ndate\nembeddings\ngeometry\n\n\n\n\ns3://…/…/claytile_*.tif\n2021-01-01\n[0.1, 0.4, … x768]\nPOLYGON(…)\n\n\ns3://…/…/claytile_*.tif\n2021-06-30\n[0.2, 0.5, … x768]\nPOLYGON(…)\n\n\ns3://…/…/claytile_*.tif\n2021-12-31\n[0.3, 0.6, … x768]\nPOLYGON(…)\n\n\n\nDetails of each column are as follows:\n\nsource_url (string) - The full URL to the 13-band GeoTIFF image the embeddings were derived from.\ndate (date32) - Acquisition date of the Sentinel-2 image used to generate the embeddings, in YYYY-MM-DD format.\nembeddings (FixedShapeTensorArray) - The vector embeddings given as a 1-D tensor or list with a length of 768.\ngeometry (binary) - The spatial bounding box of where the 13-band image, provided in a WKB Polygon representation.\n\nAdditional technical details of the GeoParquet file:\n- GeoParquet specification [v1.0.0](https://geoparquet.org/releases/v1.0.0)\n- Coordinate reference system of geometries are in `OGC:CRS84`.\n\n\n\nEmbeddings Factory\nIf you don’t have embeddings, you’ll need to use the “Embeddings Factory”. It uses a given location and time, and a Clay model, to generate the embeddgins for each input data bundle.\n\n\n\nEmbeddingsFactory\n\n EmbeddingsFactory (model, output_directory)\n\nInitializes the Embeddings Factory with a model and an output directory."
+  },
+  {
+    "objectID": "embeddings.html#working-with-embeddings",
+    "href": "embeddings.html#working-with-embeddings",
+    "title": "Embeddings",
+    "section": "Working with embeddings",
+    "text": "Working with embeddings\nA Clay embedding filename will look like this 33PWP_20181021_20200114_v001.gpq which is a concatenation of the following:\n\n33PWP - the location of the input data it comes from, in MGRS format.\n20181021 - the earliest date for any band of the input data it comes from\n20200114 - the latest date for any band of the input data it comes from\nv001 - the embedding version number.\n.gpq - the file extension, geoparquet.\n\nInside each file there will be as many rows as chips the MGRS tile was split into. as and each row will have a column for each of the embedding dimensions. The number of dimensions will depend on the Clay model used to generate the embeddings.\n\n\nEmbeddingsHandler\n\n EmbeddingsHandler (path:pathlib.Path, max_files:[None,&lt;class'int'&gt;]=None)\n\nInitialize self. See help(type(self)) for accurate signature.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\npath\nPath\n\nPath to the file or folder with files\n\n\nmax_files\n[None, &lt;class ‘int’&gt;]\nNone\nMax number of files to load, randomly chosen\n\n\n\nEmbeddingsHandler has several methods to help you work with embeddings.\nThis is how you can load embeddings from a file or folder with files, including limiting the number of embeddings to load:\n\n\n\nEmbeddingsHandler.read_embeddings_file\n\n EmbeddingsHandler.read_embeddings_file (file:pathlib.Path)\n\nFor example, this is how to read 10 random files from a folder:\n\nembeddings_path=Path('/home/brunosan/data/Clay/clay-vector-embeddings-v001')\nembeddings = EmbeddingsHandler(embeddings_path,max_files=10)\nembeddings.load_data()\n\n100%|██████████| 10/10 [00:00&lt;00:00, 132.35it/s]\n\n\nTotal rows: 7779\n Merging dataframes...\nDone!\n Total rows:  7779\n\n\nThen you can plot the embeddings:\n\n\n\nEmbeddingsHandler.plot\n\n EmbeddingsHandler.plot (figsize:[&lt;class'int'&gt;,&lt;class'int'&gt;]=(10, 10),\n                         alpha:float=0.2, edgecolor:str='k',\n                         max_rows:[&lt;class'int'&gt;,None]=10000, bounds=None)\n\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nfigsize\n[&lt;class ‘int’&gt;, &lt;class ‘int’&gt;]\n(10, 10)\nSize of the plot\n\n\nalpha\nfloat\n0.2\nTransparency of the points\n\n\nedgecolor\nstr\nk\nColor of the edges of the points\n\n\nmax_rows\n[&lt;class ‘int’&gt;, None]\n10000\nMax number of rows to plot\n\n\nbounds\nNoneType\nNone\nBounds of the plot\n\n\n\n\nembeddings.plot()\n\n\n\n\nIf the total areas is too big, you can visualize the embeddings areas on detail zoomin in around one:\n\n# Get the coordinates of one geometry\nfirst_geometry = embeddings.gdf.iloc[50].geometry\n# Create a 1km buffer around the first geometry\nbuffer = first_geometry.buffer(100*1000)  # 10km\n\nxmin, ymin, xmax, ymax = buffer.bounds\n\n# Call the plot method with the bounds\nembeddings.plot(bounds=[xmin, xmax, ymin, ymax])\n\n\n\n\nNote that we are using a transparency alpha=0.2. Darker areas are where there are several embeddings stacked on top of each other, from different times.\nWe can plot the times.\n\n#plot the histogram of the time range\nembeddings.gdf.start_date.hist(bins=10)\n\n&lt;Axes: &gt;"
+  },
+  {
+    "objectID": "finetunning.html",
+    "href": "finetunning.html",
+    "title": "Finetuning",
+    "section": "",
+    "text": "Finetuning\nFine-tuning refers to a process in machine learning where a pre-trained model is further trained on a specific dataset to adapt its parameters to a downstream task characterized by a relevent domain. It’s distinct from training a model from scratch using the downstream task dataset exclusively.\nRelated to finetuning in the field of training Foundation models is linear probing, which refers to a technique used to analyze or explore the representations learned by a Foundation model as it trains. When a large-scale model (like a vision transformer model) is pre-trained on a vast corpus of data, it learns rich and complex representations of patterns within the data. Linear probing involves examining or probing these learned representations by periodically (e.g. every few epochs of the Foundation model’s training cycle) finetuning a small downstream task on top of the pre-trained model’s layers or embeddings.\nWe use full finetuning and linear probing in Clay to evaluate the usefulness of the Foundation model both during its pre-training and afterwards.\nLet’s take a look at how we are finetuning on the benchmark datacube-adapted Cloud to Street - Microsoft Flood Dataset. As a reminder, that is a downstream segmentation task for identifiying water pixels in recorded flood events. It’s a binary segmentation problem, specifically.\nWe process the datacubes into batches formatted in the way the pretrained Clay model expects, with the addition of information for label images as well. Here’s an example subset of a batch dictionary:\n{'labels': tensor([[[[0., 0., 0.,  ..., 0., 0., 0.],\n           [0., 0., 0.,  ..., 0., 0., 0.],\n           [0., 0., 0.,  ..., 0., 0., 0.],\n           ...,\n           [0., 0., 0.,  ..., 0., 0., 0.],\n           [0., 0., 0.,  ..., 0., 0., 0.],\n           [0., 0., 0.,  ..., 0., 0., 0.]]]),\n 'pixels': tensor([[[[-0.5994, -0.6108, -0.6034,  ..., -0.5610, -0.5590, -0.5614],\n           [-0.5767, -0.5950, -0.6004,  ..., -0.5619, -0.5536, -0.5610],\n           [-0.5841, -0.5762, -0.5930,  ..., -0.5491, -0.5304, -0.5373],\n           ...,\n           [-0.5087, -0.5447, -0.4351,  ..., -0.6162, -0.6083, -0.6044],\n           [-0.4184, -0.5432, -0.5003,  ..., -0.6108, -0.6128, -0.6073],\n           [-0.2496, -0.5348, -0.5225,  ..., -0.6137, -0.6167, -0.6128]],\n\n          [[-0.6371, -0.6435, -0.6425,  ..., -0.5834, -0.5898, -0.5923],\n           [-0.6296, -0.6410, -0.6385,  ..., -0.5794, -0.5983, -0.5958],\n           [-0.6167, -0.6177, -0.6182,  ..., -0.5545, -0.5913, -0.5834],\n           ...,\n           [-0.4800, -0.5153, -0.4308,  ..., -0.6525, -0.6410, -0.6331],\n           [-0.4104, -0.5034, -0.4318,  ..., -0.6331, -0.6226, -0.6087],\n           [-0.2404, -0.5222, -0.4522,  ..., -0.6231, -0.6241, -0.6177]],\n\n          [[-0.7068, -0.7217, -0.7101,  ..., -0.6118, -0.6178, -0.6290],\n           [-0.7087, -0.7022, -0.6924,  ..., -0.6141, -0.6146, -0.6234],\n           [-0.7017, -0.6998, -0.6831,  ..., -0.5927, -0.6085, -0.6104],\n           ...,\n           [-0.5563, -0.5480, -0.4571,  ..., -0.7106, -0.7045, -0.6933],\n           [-0.4725, -0.5526, -0.4781,  ..., -0.6975, -0.6789, -0.6807],\n           [-0.3117, -0.4995, -0.5000,  ..., -0.6952, -0.6835, -0.6845]],\n\n          ...,\n          ]),\n 'bbox': tensor([[ 661415., 5369305.,  666535., 5374425.]], dtype=torch.float64),\n 'epsg': tensor([32633], dtype=torch.int32),\n 'date': ['2020-10-20'],\n 'latlon': tensor([[-0.8192, -0.7854]]),\n 'timestep': tensor([[-1.2217,  2.7132, -2.4086]]),\n 'source_url': ['S2A_L2A_20201022T100051_N0209_R122_T33UXP_20201022T111023_06144-02560_S1B_IW_GRDH_1SDV_20201020T164222_20201020T164247_023899_02D6C4_rtc']}\nBatches of dictionaries like this run through the Clay model’s encoder to generate embeddings, such as this:\n\n\n\nembedding_ex\n\n\nfrom batches with image bands such as:\n\n\n\nband_red_ex\n\n\nand labels:\n\n\n\nlabels_ex\n\n\nThese embeddings are reshaped from shape batch size * (band groups length * number of patches) * embedding size to batch size * (band groups length * embedding size) * patch height * patch width before being passed to a series of 2D convolutional transpose and ReLU layers in a downstream decoder network.\nThat decoder network is the core of the downstream task. In a forward pass, it ingests the embeddings, runs them through those layers and computes a loss value with respect to the labels. The loss is back-propagated and the decoder gradually finetunes itself to the downstream dataset. Here’s a peek at the decoder layers:\nModel(\n  (decoder): Sequential(\n    (0): Conv2d(4608, 64, kernel_size=(1, 1), stride=(1, 1))\n    (1): Upsample(scale_factor=2.0, mode='nearest')\n    (2): ConvTranspose2d(64, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))\n    (3): ReLU(inplace=True)\n    (4): Upsample(scale_factor=2.0, mode='nearest')\n    (5): ConvTranspose2d(32, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))\n    (6): ReLU(inplace=True)\n    (7): Upsample(scale_factor=2.0, mode='nearest')\n    (8): ConvTranspose2d(16, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))\n    (9): ReLU(inplace=True)\n    (10): Upsample(scale_factor=2.0, mode='nearest')\n    (11): ConvTranspose2d(8, 1, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))\n    (12): Upsample(scale_factor=2.0, mode='nearest')\n  )\n)\nNote the absence of an encoder. That is important as this is a finetuning architecture in which the encoder is replaced by the embeddings from the pre-trained Clay model.\nIn comparison, the network we are using to train the downstream task from scratch looks notably different:\nModel(\n  (encoder): Sequential(\n    (0): Conv2d(13, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))\n    (1): ReLU(inplace=True)\n    (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))\n    (3): ReLU(inplace=True)\n    (4): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)\n  )\n  (decoder): Sequential(\n    (0): ConvTranspose2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))\n    (1): ReLU(inplace=True)\n    (2): ConvTranspose2d(128, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))\n    (3): ReLU(inplace=True)\n    (4): Upsample(scale_factor=2.0, mode='nearest')\n    (5): Conv2d(512, 1, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))\n  )\n)\nIn this architecture, there is a defined encoder since the embeddings aren’t doing the purpose of encoding latent information.\nFor both the finetuning and “from scratch” architectures, we use a binary_cross_entropy_with_logits loss function as this is a binary segmentation problem, and on the predictions, we run sigmoid and max functions to obtain final segmentation results.\nThe way we measure relative performance between the finetuned and “from scratch” model variants happens through calculation of evalution metrics common for segmentation, such as Dice coefficient, Intersection over Union, F1 score, precision and recall.\n\nLinear probing\nFor linear probing, we implement the finetuned architecture in a PyTorch callback that will execute every n epochs during the Foundation model’s training."
+  },
+  {
+    "objectID": "Clay Model releases/clay roadmap.html",
+    "href": "Clay Model releases/clay roadmap.html",
+    "title": "Clay Model roadmap",
+    "section": "",
+    "text": "–\nClay Model v0 was released in Dec’23.\n–\nClay Model v1 is expected to be released in Q1 2024. High-level goals include:\n\nMore trainning time on more spatial and temporal coverage of Earth EO archives.\nMore robust handling of data, go beyond [Sentinel-2, Sentinel-1, DEM]\nMore emphasis on semantic anchors or Earth.\nBetter QA, testing and benchmarking.\nBetter finetune documentation."
+  }
+]

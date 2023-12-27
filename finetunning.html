@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="How to leverage a pretrained model.">
+
+<title>clay - Finetuning</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="clay - Finetuning">
+<meta property="og:description" content="How to leverage a pretrained model.">
+<meta property="og:image" content="https://github.com/Clay-foundation/model/assets/23487320/375c9e83-d539-4730-b923-3b0b61ea689c.png">
+<meta property="og:site-name" content="clay">
+<meta name="twitter:title" content="clay - Finetuning">
+<meta name="twitter:description" content="How to leverage a pretrained model.">
+<meta name="twitter:image" content="https://github.com/Clay-foundation/model/assets/23487320/375c9e83-d539-4730-b923-3b0b61ea689c.png">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">clay</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools ms-auto">
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./finetunning.html">Finetuning</a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Clay documentation</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Model</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./embeddings.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Embeddings</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./finetunning.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Finetuning</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generative.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Generative</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./benchmarks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Benchmarks</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Clay Model releases</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Clay Model releases/clay roadmap.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Clay Model roadmap</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Clay Model releases/clay v0 release.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Clay Model v0 release</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#finetuning" id="toc-finetuning" class="nav-link active" data-scroll-target="#finetuning">Finetuning</a>
+  <ul class="collapse">
+  <li><a href="#linear-probing" id="toc-linear-probing" class="nav-link" data-scroll-target="#linear-probing">Linear probing</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/Clay-foundation/model/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Finetuning</h1>
+</div>
+
+<div>
+  <div class="description">
+    How to leverage a pretrained model.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<section id="finetuning" class="level1">
+<h1>Finetuning</h1>
+<p>Fine-tuning refers to a process in machine learning where a pre-trained model is further trained on a specific dataset to adapt its parameters to a downstream task characterized by a relevent domain. It’s distinct from training a model from scratch using the downstream task dataset exclusively.</p>
+<p>Related to finetuning in the field of training Foundation models is linear probing, which refers to a technique used to analyze or explore the representations learned by a Foundation model as it trains. When a large-scale model (like a vision transformer model) is pre-trained on a vast corpus of data, it learns rich and complex representations of patterns within the data. Linear probing involves examining or probing these learned representations by periodically (e.g.&nbsp;every few epochs of the Foundation model’s training cycle) finetuning a small downstream task on top of the pre-trained model’s layers or embeddings.</p>
+<p>We use full finetuning and linear probing in Clay to evaluate the usefulness of the Foundation model both during its pre-training and afterwards.</p>
+<p>Let’s take a look at how we are finetuning on the benchmark datacube-adapted <a href="https://beta.source.coop/repositories/c2sms/c2smsfloods">Cloud to Street - Microsoft Flood Dataset</a>. As a reminder, that is a downstream segmentation task for identifiying water pixels in recorded flood events. It’s a binary segmentation problem, specifically.</p>
+<p>We process the datacubes into batches formatted in the way the pretrained Clay model expects, with the addition of information for label images as well. Here’s an example subset of a batch dictionary:</p>
+<pre><code>{'labels': tensor([[[[0., 0., 0.,  ..., 0., 0., 0.],
+           [0., 0., 0.,  ..., 0., 0., 0.],
+           [0., 0., 0.,  ..., 0., 0., 0.],
+           ...,
+           [0., 0., 0.,  ..., 0., 0., 0.],
+           [0., 0., 0.,  ..., 0., 0., 0.],
+           [0., 0., 0.,  ..., 0., 0., 0.]]]),
+ 'pixels': tensor([[[[-0.5994, -0.6108, -0.6034,  ..., -0.5610, -0.5590, -0.5614],
+           [-0.5767, -0.5950, -0.6004,  ..., -0.5619, -0.5536, -0.5610],
+           [-0.5841, -0.5762, -0.5930,  ..., -0.5491, -0.5304, -0.5373],
+           ...,
+           [-0.5087, -0.5447, -0.4351,  ..., -0.6162, -0.6083, -0.6044],
+           [-0.4184, -0.5432, -0.5003,  ..., -0.6108, -0.6128, -0.6073],
+           [-0.2496, -0.5348, -0.5225,  ..., -0.6137, -0.6167, -0.6128]],
+
+          [[-0.6371, -0.6435, -0.6425,  ..., -0.5834, -0.5898, -0.5923],
+           [-0.6296, -0.6410, -0.6385,  ..., -0.5794, -0.5983, -0.5958],
+           [-0.6167, -0.6177, -0.6182,  ..., -0.5545, -0.5913, -0.5834],
+           ...,
+           [-0.4800, -0.5153, -0.4308,  ..., -0.6525, -0.6410, -0.6331],
+           [-0.4104, -0.5034, -0.4318,  ..., -0.6331, -0.6226, -0.6087],
+           [-0.2404, -0.5222, -0.4522,  ..., -0.6231, -0.6241, -0.6177]],
+
+          [[-0.7068, -0.7217, -0.7101,  ..., -0.6118, -0.6178, -0.6290],
+           [-0.7087, -0.7022, -0.6924,  ..., -0.6141, -0.6146, -0.6234],
+           [-0.7017, -0.6998, -0.6831,  ..., -0.5927, -0.6085, -0.6104],
+           ...,
+           [-0.5563, -0.5480, -0.4571,  ..., -0.7106, -0.7045, -0.6933],
+           [-0.4725, -0.5526, -0.4781,  ..., -0.6975, -0.6789, -0.6807],
+           [-0.3117, -0.4995, -0.5000,  ..., -0.6952, -0.6835, -0.6845]],
+
+          ...,
+          ]),
+ 'bbox': tensor([[ 661415., 5369305.,  666535., 5374425.]], dtype=torch.float64),
+ 'epsg': tensor([32633], dtype=torch.int32),
+ 'date': ['2020-10-20'],
+ 'latlon': tensor([[-0.8192, -0.7854]]),
+ 'timestep': tensor([[-1.2217,  2.7132, -2.4086]]),
+ 'source_url': ['S2A_L2A_20201022T100051_N0209_R122_T33UXP_20201022T111023_06144-02560_S1B_IW_GRDH_1SDV_20201020T164222_20201020T164247_023899_02D6C4_rtc']}</code></pre>
+<p>Batches of dictionaries like this run through the Clay model’s encoder to generate embeddings, such as this:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://github.com/Clay-foundation/model/assets/23487320/375c9e83-d539-4730-b923-3b0b61ea689c.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">embedding_ex</figcaption>
+</figure>
+</div>
+<p>from batches with image bands such as:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://github.com/Clay-foundation/model/assets/23487320/0c254dbf-9589-4fbf-ab32-e3774fbd2f1a.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">band_red_ex</figcaption>
+</figure>
+</div>
+<p>and labels:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://github.com/Clay-foundation/model/assets/23487320/a92eb8e7-9268-46e5-a254-132205cbc498.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">labels_ex</figcaption>
+</figure>
+</div>
+<p>These embeddings are reshaped from shape <code>batch size * (band groups length * number of patches) * embedding size</code> to <code>batch size * (band groups length * embedding size) * patch height * patch width</code> before being passed to a series of 2D convolutional transpose and ReLU layers in a downstream decoder network.</p>
+<p>That decoder network is the core of the downstream task. In a forward pass, it ingests the embeddings, runs them through those layers and computes a loss value with respect to the labels. The loss is back-propagated and the decoder gradually finetunes itself to the downstream dataset. Here’s a peek at the decoder layers:</p>
+<pre><code>Model(
+  (decoder): Sequential(
+    (0): Conv2d(4608, 64, kernel_size=(1, 1), stride=(1, 1))
+    (1): Upsample(scale_factor=2.0, mode='nearest')
+    (2): ConvTranspose2d(64, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (3): ReLU(inplace=True)
+    (4): Upsample(scale_factor=2.0, mode='nearest')
+    (5): ConvTranspose2d(32, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (6): ReLU(inplace=True)
+    (7): Upsample(scale_factor=2.0, mode='nearest')
+    (8): ConvTranspose2d(16, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (9): ReLU(inplace=True)
+    (10): Upsample(scale_factor=2.0, mode='nearest')
+    (11): ConvTranspose2d(8, 1, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (12): Upsample(scale_factor=2.0, mode='nearest')
+  )
+)</code></pre>
+<p>Note the absence of an encoder. That is important as this is a finetuning architecture in which the encoder is replaced by the embeddings from the pre-trained Clay model.</p>
+<p>In comparison, the network we are using to train the downstream task from scratch looks notably different:</p>
+<pre><code>Model(
+  (encoder): Sequential(
+    (0): Conv2d(13, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (1): ReLU(inplace=True)
+    (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (3): ReLU(inplace=True)
+    (4): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+  )
+  (decoder): Sequential(
+    (0): ConvTranspose2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (1): ReLU(inplace=True)
+    (2): ConvTranspose2d(128, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (3): ReLU(inplace=True)
+    (4): Upsample(scale_factor=2.0, mode='nearest')
+    (5): Conv2d(512, 1, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  )
+)</code></pre>
+<p>In this architecture, there is a defined encoder since the embeddings aren’t doing the purpose of encoding latent information.</p>
+<p>For both the finetuning and “from scratch” architectures, we use a <code>binary_cross_entropy_with_logits</code> loss function as this is a binary segmentation problem, and on the predictions, we run sigmoid and max functions to obtain final segmentation results.</p>
+<p>The way we measure relative performance between the finetuned and “from scratch” model variants happens through calculation of evalution metrics common for segmentation, such as Dice coefficient, Intersection over Union, F1 score, precision and recall.</p>
+<section id="linear-probing" class="level3">
+<h3 class="anchored" data-anchor-id="linear-probing">Linear probing</h3>
+<p>For linear probing, we implement the finetuned architecture in a <a href="https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html">PyTorch callback</a> that will execute every <code>n</code> epochs during the Foundation model’s training.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

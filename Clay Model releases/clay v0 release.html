@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Documentation for the Clay Model v0 release.">
+
+<title>clay - Clay Model v0 release</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+<meta property="og:title" content="clay - Clay Model v0 release">
+<meta property="og:description" content="Documentation for the Clay Model v0 release.">
+<meta property="og:image" content="https://Clay-foundation.github.io/model/Clay Model releases/Clay v0 release_files/figure-html/cell-2-output-3.png">
+<meta property="og:site-name" content="clay">
+<meta property="og:image:height" content="389">
+<meta property="og:image:width" content="794">
+<meta name="twitter:title" content="clay - Clay Model v0 release">
+<meta name="twitter:description" content="Documentation for the Clay Model v0 release.">
+<meta name="twitter:image" content="https://Clay-foundation.github.io/model/Clay Model releases/Clay v0 release_files/figure-html/cell-2-output-3.png">
+<meta name="twitter:image-height" content="389">
+<meta name="twitter:image-width" content="794">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">clay</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools ms-auto">
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Clay Model releases/clay roadmap.html">Clay Model releases</a></li><li class="breadcrumb-item"><a href="../Clay Model releases/clay v0 release.html">Clay Model v0 release</a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Clay documentation</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Model</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../embeddings.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Embeddings</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../finetunning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Finetuning</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../generative.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Generative</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../benchmarks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Benchmarks</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Clay Model releases</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Clay Model releases/clay roadmap.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Clay Model roadmap</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Clay Model releases/clay v0 release.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Clay Model v0 release</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#model-overview" id="toc-model-overview" class="nav-link active" data-scroll-target="#model-overview">Model Overview</a>
+  <ul class="collapse">
+  <li><a href="#model-card" id="toc-model-card" class="nav-link" data-scroll-target="#model-card">Model Card</a></li>
+  <li><a href="#model-details" id="toc-model-details" class="nav-link" data-scroll-target="#model-details">Model Details</a></li>
+  <li><a href="#intended-use" id="toc-intended-use" class="nav-link" data-scroll-target="#intended-use">Intended Use</a></li>
+  </ul></li>
+  <li><a href="#trainning-data-description" id="toc-trainning-data-description" class="nav-link" data-scroll-target="#trainning-data-description">Trainning Data Description</a>
+  <ul class="collapse">
+  <li><a href="#training-information" id="toc-training-information" class="nav-link" data-scroll-target="#training-information">Training Information</a></li>
+  <li><a href="#performance-metrics" id="toc-performance-metrics" class="nav-link" data-scroll-target="#performance-metrics">Performance Metrics</a></li>
+  <li><a href="#known-limitations" id="toc-known-limitations" class="nav-link" data-scroll-target="#known-limitations">Known Limitations</a>
+  <ul class="collapse">
+  <li><a href="#clouds-and-other-source-of-noise" id="toc-clouds-and-other-source-of-noise" class="nav-link" data-scroll-target="#clouds-and-other-source-of-noise">Clouds and other source of “noise”:</a></li>
+  </ul></li>
+  <li><a href="#known-biases" id="toc-known-biases" class="nav-link" data-scroll-target="#known-biases">Known Biases:</a></li>
+  <li><a href="#ethical-considerations" id="toc-ethical-considerations" class="nav-link" data-scroll-target="#ethical-considerations">Ethical Considerations</a></li>
+  </ul></li>
+  <li><a href="#training-specifications" id="toc-training-specifications" class="nav-link" data-scroll-target="#training-specifications">Training Specifications</a>
+  <ul class="collapse">
+  <li><a href="#training-process" id="toc-training-process" class="nav-link" data-scroll-target="#training-process">Training Process</a>
+  <ul class="collapse">
+  <li><a href="#data-factory" id="toc-data-factory" class="nav-link" data-scroll-target="#data-factory">1. Data Factory</a></li>
+  <li><a href="#training-loop" id="toc-training-loop" class="nav-link" data-scroll-target="#training-loop">2. Training Loop</a></li>
+  <li><a href="#embeddings-creation." id="toc-embeddings-creation." class="nav-link" data-scroll-target="#embeddings-creation.">3. Embeddings creation.</a></li>
+  </ul></li>
+  <li><a href="#computational-resources" id="toc-computational-resources" class="nav-link" data-scroll-target="#computational-resources">Computational Resources</a></li>
+  <li><a href="#data-splits" id="toc-data-splits" class="nav-link" data-scroll-target="#data-splits">Data Splits</a></li>
+  <li><a href="#validation-methods" id="toc-validation-methods" class="nav-link" data-scroll-target="#validation-methods">Validation Methods</a></li>
+  <li><a href="#model-exploration" id="toc-model-exploration" class="nav-link" data-scroll-target="#model-exploration">Model Exploration</a></li>
+  <li><a href="#embeddings-exploration" id="toc-embeddings-exploration" class="nav-link" data-scroll-target="#embeddings-exploration">Embeddings Exploration</a></li>
+  <li><a href="#benchmarking" id="toc-benchmarking" class="nav-link" data-scroll-target="#benchmarking">Benchmarking</a></li>
+  </ul></li>
+  <li><a href="#benchmark-dataset-labels" id="toc-benchmark-dataset-labels" class="nav-link" data-scroll-target="#benchmark-dataset-labels">Benchmark dataset labels</a></li>
+  </ul>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/Clay-foundation/model/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Clay Model v0 release</h1>
+</div>
+
+<div>
+  <div class="description">
+    Documentation for the Clay Model v0 release.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<section id="model-overview" class="level1">
+<h1>Model Overview</h1>
+<p>This document outlines the v0 release of our deep learning model designed for Earth Observation (EO), leveraging Sentinel satellite data. The model aims to provide advanced insights and analysis for various EO applications.</p>
+<section id="model-card" class="level2">
+<h2 class="anchored" data-anchor-id="model-card">Model Card</h2>
+<p>We follow the <a href="https://modelcards.withgoogle.com/about">Model Card Toolkit</a>. It provides a summary of the model’s purpose and behavior, as well as information on the dataset it was trained on and the people and organizations involved in its creation. The model card is intended to help enable responsible use of AI systems by documenting their use cases and limitations.</p>
+</section>
+<section id="model-details" class="level2">
+<h2 class="anchored" data-anchor-id="model-details">Model Details</h2>
+<ul>
+<li>Name: Clay Model</li>
+<li>Version: 0.1</li>
+<li>Type: Geospatial Visual Transformer trained with a <a href="https://arxiv.org/abs/1905.09272">MAE</a> objective.</li>
+<li>Training Data: ~1M spatiotemporal locations statistically sampled to contain a variety of land cover types. For each location, the bundle has: 10 Sentinel-2 bands, 2 Sentinel-1 bands and a <a href="#">DEM</a>.</li>
+<li>Domain: Earth Observation</li>
+<li>Author: Clay.foundation</li>
+<li>Contact: info@madewithclay.org</li>
+<li>Release Date: 2023-12-31</li>
+<li>License: For the code, <a href="../../LICENSE">Apache 2.0</a>. For the trained model <a href="../../LICENSE-MODEL.md">OPEN RAIL-M</a></li>
+</ul>
+</section>
+<section id="intended-use" class="level2">
+<h2 class="anchored" data-anchor-id="intended-use">Intended Use</h2>
+<p>This model is intended as a foundational EO model. It can directly be used to create semantic embeddings, or be finetuned for classification or regression tasks. It can also be finetuned with other input data.</p>
+<p>It is inteded to be used by non-profits, researchers, journalists, developers and data scientists. It is also intended to be used by commercial entities. Hence it is released with an open data and only trained with fully open data.</p>
+</section>
+</section>
+<section id="trainning-data-description" class="level1">
+<h1>Trainning Data Description</h1>
+<section id="training-information" class="level2">
+<h2 class="anchored" data-anchor-id="training-information">Training Information</h2>
+<p>The trainning Objective is a Masked Autoencoder. We mask up to 70% of the input pixels across all bands (same location across bands) and train the model to predict the masked pixels.</p>
+<ul>
+<li><strong>Hyperparameters</strong>:
+<ul>
+<li>Effective Batch Size is <code>200</code>. (Batch per GPU - <code>10</code>, and <code>4</code> GPUs. Gradient accumulation every <code>5</code> batches, so <code>4* 10 * 5</code> =&gt; <code>200</code>.</li>
+<li>Learning rate: Cosine Decay with Warm Restarts as our LR scheduler.</li>
+<li>Weight decay: TBD</li>
+<li>Number of epochs: <code>20</code> TBD</li>
+<li>Optimizer: AdamW ? TBD</li>
+</ul></li>
+</ul>
+<p><strong>We do not use Data Augmentation</strong>. With learnable location and time embeddgins we cannot use data augmentation. We do not use any other regularization techniques. We not use MixUp or CutMix, as it would need a complex tweak to carry over the metadata (location and time) to the mixed up images.</p>
+</section>
+<section id="performance-metrics" class="level2">
+<h2 class="anchored" data-anchor-id="performance-metrics">Performance Metrics</h2>
+<p>The model shows the following performance characteristics: - Accuracy: [Value] - Precision: [Value] - Recall: [Value]</p>
+</section>
+<section id="known-limitations" class="level2">
+<h2 class="anchored" data-anchor-id="known-limitations">Known Limitations</h2>
+<ul>
+<li>The model is trained on Sentinel data only.</li>
+<li>Sentinel data only covers land and coastal waters.</li>
+<li>We only train on a ver small sample of the Sentinel archives, both in terms of spatial coverage and time.</li>
+<li>We do not train on the poles, and we do not train on open ocean, nor ocean nor atmospheric data.</li>
+<li>We do not train on night time data.</li>
+<li>We do not explicitly include extreme events in the training data.</li>
+<li>For <code>v0</code> we only train at most 3 different times per location.</li>
+</ul>
+<section id="clouds-and-other-source-of-noise" class="level3">
+<h3 class="anchored" data-anchor-id="clouds-and-other-source-of-noise">Clouds and other source of “noise”:</h3>
+<p>In most EO applications clouds, cloud shadows, smog, atmospheric scattering, mid-air planes and other non-ground registrations are considered noise. We explicitly filter our clouds on our chips, but small clouds and their shadows might be present. As we increase the number of observations per location, and bands, we expect the model to learn to ignore single events but register patterns (places that are often cloudy or with smog).</p>
+</section>
+</section>
+<section id="known-biases" class="level2">
+<h2 class="anchored" data-anchor-id="known-biases">Known Biases:</h2>
+<p>[Discuss any biases]</p>
+</section>
+<section id="ethical-considerations" class="level2">
+<h2 class="anchored" data-anchor-id="ethical-considerations">Ethical Considerations</h2>
+<p>Our goal is to lower the barrier to use EO data for biodiversity and climate change mitigation and adaptation.</p>
+<p>We focus on the undifferentiated baseline compute for most EO applications with a fully permissive license. This way we can encourage downstream users, both non-profit and for-profit to leapfrog their AI4EO services <em>made with Clay</em>, our independent, benchmarked, operational, open model. We aim thus to reducing the overall carbon footprint of EO applications, while providing state of the art baseline models for everyone.</p>
+</section>
+</section>
+<section id="training-specifications" class="level1">
+<h1>Training Specifications</h1>
+<section id="training-process" class="level2">
+<h2 class="anchored" data-anchor-id="training-process">Training Process</h2>
+<section id="data-factory" class="level3">
+<h3 class="anchored" data-anchor-id="data-factory">1. Data Factory</h3>
+<p>We use <a href="#">Microsoft Planetary Computer</a> to pull all the data. <a href="https://github.com/Clay-foundation/model/blob/main/scripts/datacube.py">Code</a></p>
+<p>For <code>v0</code> we used <a href="#">ESA’s Worldcover</a> 2021 to create a statistically representative sample of the Earth’s land cover. <a href="https://github.com/Clay-foundation/model/blob/main/scripts/landcover.sh">Code</a>.</p>
+<p>Our <a href="https://github.com/Clay-foundation/model/blob/main/scripts/landcover.py#L149">sampling function</a> aims to select ~1000 MGRS tiles, with <code>200</code> samples from the <code>2000</code> most land-cover diverse tiles, <code>50</code> samples from the <code>1000</code> single lanc cover class for all categories except water ( urban, wetland, mangroves, moss, cropland, trees, shrubland, grassland, bare, snow). For coastal data we select <code>100</code> samples from all tiles with between 30% an 70% water.</p>
+<p>For each selected MGRS tile, we split it into <a href="https://github.com/Clay-foundation/model/blob/main/scripts/tile.py#L21"><code>512x512</code></a> chips. We filter out chips with more than <a href="https://github.com/Clay-foundation/model/blob/main/scripts/tile.py#L23"><code>30%</code></a> clouds or bad pixels.</p>
+<p>We save each band into a different <code>.tif</code> file following the schema <code>claytile_{mgrs}_{date}_v{version}_{counter}.tif</code> where <code>mgrs</code> is the MGRS tile, <code>date</code> is the date of the observation, <code>version</code> is the version of the sampling strategy and <code>counter</code> is the counter of the chip in the tile [from left to right, from top to bottom].</p>
+<p>Finally we save that into <code>S3</code> under the version of the sampling strategy folder.</p>
+<p>Clay model <code>v0</code> uses <code>v2</code> sampling strategy, and corresponds to <code>1,045,224</code> chips (each a <code>.tif</code> file with 13 bands) and <code>6.4 TB</code>.</p>
+<p>The exact list of files used for <code>v0</code> is <a href="https://gist.github.com/brunosan/62247e5dc79684bdaca11cefae679e90">here</a> [5Mb zipped, 88Mb <code>.txt</code> list], generated using:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> s3 ls s3://clay-tiles-02/ <span class="at">--recursive</span> <span class="at">--human-readable</span> <span class="at">--no-paginate</span> <span class="at">--summarize</span> <span class="op">&gt;</span> s3_listing_data_v2_model_v0.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="training-loop" class="level3">
+<h3 class="anchored" data-anchor-id="training-loop">2. Training Loop</h3>
+<p>TBD</p>
+</section>
+<section id="embeddings-creation." class="level3">
+<h3 class="anchored" data-anchor-id="embeddings-creation.">3. Embeddings creation.</h3>
+<p>As standard practice, and since we already have all the data prepared, we create embeddings for all the trainning data. We use the same model, but we remove the masking.</p>
+<p>We use the same trainning data source:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>python trainer.py predict <span class="op">--</span>ckpt_path<span class="op">=</span>checkpoints<span class="op">/</span>last.ckpt <span class="op">\</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                          <span class="op">--</span>data.batch_size<span class="op">=</span><span class="dv">1024</span> <span class="op">\</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                          <span class="op">--</span>data.data_dir<span class="op">=</span>s3:<span class="op">//</span>clay<span class="op">-</span>tiles<span class="op">-</span><span class="dv">0</span><span class="er">2</span> <span class="op">\</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>                          <span class="op">--</span>trainer.limit_predict_batches<span class="op">=</span><span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="computational-resources" class="level2">
+<h2 class="anchored" data-anchor-id="computational-resources">Computational Resources</h2>
+<ul>
+<li><strong>Compute</strong>: Trained on AWS <code>g5.12xlarge</code> instance, which has 4 A10G GPUs (24 GB VRAM in each).</li>
+<li><strong>Training Time</strong>: Each epoch takes ~12 hour. The model was trained for 20 [CONFIRM] epochs.</li>
+</ul>
+</section>
+<section id="data-splits" class="level2">
+<h2 class="anchored" data-anchor-id="data-splits">Data Splits</h2>
+<ul>
+<li>Training Data: [Percentage]</li>
+<li>Validation Data: [Percentage]</li>
+<li>Test Data: [Percentage]</li>
+</ul>
+</section>
+<section id="validation-methods" class="level2">
+<h2 class="anchored" data-anchor-id="validation-methods">Validation Methods</h2>
+<p>Description of the validation process and results achieved. Model Exploration</p>
+</section>
+<section id="model-exploration" class="level2">
+<h2 class="anchored" data-anchor-id="model-exploration">Model Exploration</h2>
+<p>TBD</p>
+</section>
+<section id="embeddings-exploration" class="level2">
+<h2 class="anchored" data-anchor-id="embeddings-exploration">Embeddings Exploration</h2>
+<div class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>embeddings_path<span class="op">=</span>Path(<span class="st">'/home/brunosan/data/Clay/clay-vector-embeddings-v001'</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>embeddings <span class="op">=</span> clay.embeddings.EmbeddingsHandler(embeddings_path)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>embeddings.load_data()</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>embeddings.plot(max_rows<span class="op">=</span><span class="va">None</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 1088/1088 [00:04&lt;00:00, 236.65it/s]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Total rows: 947019
+ Merging dataframes...
+Done!
+ Total rows:  947019</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="Clay v0 release_files/figure-html/cell-2-output-3.png" class="img-fluid"></p>
+</div>
+</div>
+<p>To evaluate the embeddgins, we can first see their “length” using <a href="#">L2norm</a>.</p>
+<div class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>embeddings.gdf[<span class="st">'l2norm'</span>] <span class="op">=</span> embeddings.gdf[<span class="st">'embeddings'</span>].<span class="bu">apply</span>(<span class="kw">lambda</span> x: np.linalg.norm(x, <span class="bu">ord</span><span class="op">=</span><span class="dv">2</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#2 figures side by side</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">5</span>))</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">0</span>].set_title(<span class="st">'L2 norm histogram'</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">0</span>].set_xlabel(<span class="st">'L2 norm'</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">0</span>].set_ylabel(<span class="st">'Count'</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">0</span>].hist(embeddings.gdf[<span class="st">'l2norm'</span>], bins<span class="op">=</span><span class="dv">100</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">1</span>].set_title(<span class="st">'L2 norm cumulative histogram'</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">1</span>].set_xlabel(<span class="st">'L2 norm'</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">1</span>].set_ylabel(<span class="st">'Cumulative count'</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">1</span>].hist(embeddings.gdf[<span class="st">'l2norm'</span>], bins<span class="op">=</span><span class="dv">100</span>, density<span class="op">=</span><span class="va">True</span>, cumulative<span class="op">=</span><span class="va">True</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="Clay v0 release_files/figure-html/cell-4-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p>We can see that ~80% of the embeddings are between <code>2.7</code> and <code>2.9</code>, with two peaks on the edges. We can explore samples from the tails to see what is going on.</p>
+<div class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> copy</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'embeddings: </span><span class="sc">{</span><span class="bu">len</span>(embeddings.gdf)<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>left_tails <span class="op">=</span> copy.deepcopy(embeddings)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>left_tails.gdf <span class="op">=</span> embeddings.gdf[(embeddings.gdf[<span class="st">'l2norm'</span>] <span class="op">&gt;</span> <span class="fl">2.6</span>) <span class="op">&amp;</span> (embeddings.gdf[<span class="st">'l2norm'</span>] <span class="op">&lt;</span> <span class="fl">2.7</span>)].copy()</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>right_tails <span class="op">=</span> copy.deepcopy(embeddings)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>right_tails.gdf <span class="op">=</span> embeddings.gdf[(embeddings.gdf[<span class="st">'l2norm'</span>] <span class="op">&gt;</span> <span class="fl">2.95</span>) <span class="op">&amp;</span> (embeddings.gdf[<span class="st">'l2norm'</span>] <span class="op">&lt;</span> <span class="fl">3.1</span>)].copy()</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'left_tails: </span><span class="sc">{</span><span class="bu">len</span>(left_tails.gdf)<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'right_tails: </span><span class="sc">{</span><span class="bu">len</span>(right_tails.gdf)<span class="sc">}</span><span class="ss">'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>embeddings: 947019
+left_tails: 60581
+right_tails: 94057</code></pre>
+</div>
+</div>
+</section>
+<section id="benchmarking" class="level2">
+<h2 class="anchored" data-anchor-id="benchmarking">Benchmarking</h2>
+</section>
+</section>
+<section id="benchmark-dataset-labels" class="level1">
+<h1>Benchmark dataset labels</h1>
+<p>A benchmark dataset is a collection of data used for evaluating the performance of algorithms, models or systems in a specific field of study. These datasets are crucial in providing a common ground for comparing different approaches, allowing researchers to assess the strengths and weaknesses of various methods. For Clay, we evaluate our model on benchmark datasets with suitable downstream tasks.</p>
+<p>For our initial benchmark dataset, we’ve implemented the <a href="https://beta.source.coop/repositories/c2sms/c2smsfloods/description">Cloud to Street - Microsoft flood dataset</a>. It is what we will use in our initial linear probing experiments and evaluation of finetuning on a downstream task. The task itself is <a href="https://paperswithcode.com/task/semantic-segmentation">segmentation</a> of water pixels associated with recorded flood events.</p>
+<p>The original dataset consists of 2/3 of our Foundation model’s datacube inputs (Sentinel-1 and Sentinel-2) along with raster water mask labels for both sensors. Each image is 512x512 pixels in terms of width and height. The original Sentinel-2 images are L1C, which is Top-of-Atmosphere reflectance. We are training Clay with surface reflectance, however, so we ultimately used the geospatial bounds from the GeoTIFF and image timestamp (from the granule name) to query <a href="https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a">Microsoft Planetary Computer’s STAC API for L2A (Bottom-of-Atmosphere a.k.a. “surface reflectance”) Sentinel-2</a> scenes in the same time and space, with the same channels expected by Clay. We then followed the same <code>datacube</code> creation logic to generate datacubes with Sentinel-1 VV and VH and the Copernicus digital elevation model (DEM). We also ensured that the Sentinel-1 data was within a +/- 3 day interval of each reference Sentinel-2 scene (same method used by the benchmark dataset authors) and that the Sentinel-1 data was indeed already included in the bechmark datasets list of granules. The datacubes generated have all three inputs matching the exact specs of the Foundation model’s training data, at 512x512 pixels.</p>
+<p>Here is an example of a datacube we generated for the dataset:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://github.com/Clay-foundation/model/assets/23487320/94dffcf5-4075-4c17-ac96-01c11bcb299b.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">datacube</figcaption>
+</figure>
+</div>
+<p>The images left to right show a true color representation of the Sentinel-2 scene, the Sentinel-1 VH polarization and the digital elevation model.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://github.com/Clay-foundation/model/assets/23487320/4ac92af7-6931-4249-a920-7d29453b9b31.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">gt</figcaption>
+</figure>
+</div>
+<p>Here we have something similar, but this time just the Sentinel-1 and Sentinel-2 scenes with the Sentinel-1 water mask (ground truth) overlaid.</p>
+<p>Last note on this benchmark dataset that we’ve adapted for Clay, we made sure to preserve the metadata for timestamp and geospatial coordinates in the datacube such that we can embed information in the way that the Clay Foundation model expects. We also preserve the flood event information too, for analysis during finetuning.</p>
+<p>The script for generating these datacubes is at https://github.com/Clay-foundation/model/blob/c2smsfloods_benchmark_datapipeline/scripts/datacube_benchmark.py. You’ll need an AWS account and Microsoft Planetary Computer API Key to run this. The data is queried from Microsoft Planetary Computer STAC APIs, read and processed in memory, and the datacubes are written directly to AWS S3.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

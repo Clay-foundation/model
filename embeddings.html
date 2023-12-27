@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Working with semantic embeddings of Earth">
+
+<title>clay - Embeddings</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="clay - Embeddings">
+<meta property="og:description" content="Working with semantic embeddings of Earth">
+<meta property="og:image" content="https://Clay-foundation.github.io/model/01_embeddings_files/figure-html/cell-7-output-1.png">
+<meta property="og:site-name" content="clay">
+<meta property="og:image:height" content="356">
+<meta property="og:image:width" content="794">
+<meta name="twitter:title" content="clay - Embeddings">
+<meta name="twitter:description" content="Working with semantic embeddings of Earth">
+<meta name="twitter:image" content="https://Clay-foundation.github.io/model/01_embeddings_files/figure-html/cell-7-output-1.png">
+<meta name="twitter:image-height" content="356">
+<meta name="twitter:image-width" content="794">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">clay</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools ms-auto">
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./embeddings.html">Embeddings</a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Clay documentation</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Model</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./embeddings.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Embeddings</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./finetunning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Finetuning</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generative.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Generative</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./benchmarks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Benchmarks</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Clay Model releases</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Clay Model releases/clay roadmap.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Clay Model roadmap</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Clay Model releases/clay v0 release.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Clay Model v0 release</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#what-are-embeddings" id="toc-what-are-embeddings" class="nav-link active" data-scroll-target="#what-are-embeddings">What are Embeddings?</a></li>
+  <li><a href="#importance-in-eo" id="toc-importance-in-eo" class="nav-link" data-scroll-target="#importance-in-eo">Importance in EO</a></li>
+  <li><a href="#how-to-use-embeddings-for-eo" id="toc-how-to-use-embeddings-for-eo" class="nav-link" data-scroll-target="#how-to-use-embeddings-for-eo">How to Use Embeddings for EO</a></li>
+  <li><a href="#generating-embeddings" id="toc-generating-embeddings" class="nav-link" data-scroll-target="#generating-embeddings">Generating Embeddings</a>
+  <ul class="collapse">
+  <li><a href="#producing-embeddings-from-the-pretrained-model" id="toc-producing-embeddings-from-the-pretrained-model" class="nav-link" data-scroll-target="#producing-embeddings-from-the-pretrained-model">Producing embeddings from the pretrained model</a></li>
+  <li><a href="#format-of-the-embeddings-file" id="toc-format-of-the-embeddings-file" class="nav-link" data-scroll-target="#format-of-the-embeddings-file">Format of the embeddings file</a></li>
+  <li><a href="#embeddings-factory" id="toc-embeddings-factory" class="nav-link" data-scroll-target="#embeddings-factory">Embeddings Factory</a></li>
+  <li><a href="#embeddingsfactory" id="toc-embeddingsfactory" class="nav-link" data-scroll-target="#embeddingsfactory">EmbeddingsFactory</a></li>
+  </ul></li>
+  <li><a href="#working-with-embeddings" id="toc-working-with-embeddings" class="nav-link" data-scroll-target="#working-with-embeddings">Working with embeddings</a>
+  <ul class="collapse">
+  <li><a href="#embeddingshandler" id="toc-embeddingshandler" class="nav-link" data-scroll-target="#embeddingshandler">EmbeddingsHandler</a></li>
+  <li><a href="#embeddingshandler.read_embeddings_file" id="toc-embeddingshandler.read_embeddings_file" class="nav-link" data-scroll-target="#embeddingshandler.read_embeddings_file">EmbeddingsHandler.read_embeddings_file</a></li>
+  <li><a href="#embeddingshandler.plot" id="toc-embeddingshandler.plot" class="nav-link" data-scroll-target="#embeddingshandler.plot">EmbeddingsHandler.plot</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/Clay-foundation/model/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Embeddings</h1>
+</div>
+
+<div>
+  <div class="description">
+    Working with semantic embeddings of Earth
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<section id="what-are-embeddings" class="level3">
+<h3 class="anchored" data-anchor-id="what-are-embeddings">What are Embeddings?</h3>
+<p>Embeddings in the context of Earth Observation (EO) and machine learning are dense, low-dimensional representations of high-dimensional data. In simple terms, they are numerical vectors that capture the essence of complex data, such as satellite imagery or temporal sequences from Earth observation instruments. These vectors are generated by models like Clay through a process of learning, where the model identifies and encodes the most important features and patterns within the data.</p>
+</section>
+<section id="importance-in-eo" class="level3">
+<h3 class="anchored" data-anchor-id="importance-in-eo">Importance in EO</h3>
+<ul>
+<li><strong>Data Compression</strong>: Embeddings condense the rich information present in satellite images into a more manageable form, facilitating easier storage and faster processing.</li>
+<li><strong>Pattern Recognition</strong>: They enable the model to recognize and compare patterns across large datasets, which is crucial for tasks like change detection, anomaly identification, or land cover classification.</li>
+<li><strong>Semantic Interpretation</strong>: Embeddings help in understanding the semantic content of EO data, such as differentiating between urban and forested areas, or recognizing the stages of crop growth.</li>
+</ul>
+</section>
+<section id="how-to-use-embeddings-for-eo" class="level3">
+<h3 class="anchored" data-anchor-id="how-to-use-embeddings-for-eo">How to Use Embeddings for EO</h3>
+<ol type="1">
+<li><p><strong>Feature Extraction</strong>: Use Clay to process EO data and extract embeddings. These embeddings represent the key features of the data, capturing aspects like spectral signatures, texture, and temporal changes.</p></li>
+<li><p><strong>Similarity Searches</strong>: Employ embeddings to perform similarity searches across EO datasets. For example, by comparing embeddings, you can find areas with similar land use patterns or detect regions showing similar changes over time.</p></li>
+<li><p><strong>Machine Learning Integration</strong>: Embeddings can be used as input features for various machine learning models. In tasks like classification or regression, these embeddings provide a rich, pre-processed input that can significantly improve model performance.</p></li>
+<li><p><strong>Time-Series Analysis</strong>: For temporal EO data, embeddings can capture the dynamics of changes over time, aiding in monitoring environmental changes, urban development, or agricultural practices.</p></li>
+<li><p><strong>Anomaly Detection</strong>: Compare embeddings from different time periods or regions to identify anomalies or unexpected changes in the environment, such as sudden forest loss or unusual agricultural activity.</p></li>
+</ol>
+<p>In practice, to use embeddings in EO, you would typically process your EO dataset through the Clay model to generate embeddings, and then utilize these embeddings as per your specific application needs, be it for further analysis, integration into other models, or for direct comparisons and searches.</p>
+</section>
+<section id="generating-embeddings" class="level2">
+<h2 class="anchored" data-anchor-id="generating-embeddings">Generating Embeddings</h2>
+<p>Once you have a pretrained model, it is now possible to pass some input images into the encoder part of the Vision Transformer, and produce vector embeddings which contain a semantic representation of the image.</p>
+<section id="producing-embeddings-from-the-pretrained-model" class="level3">
+<h3 class="anchored" data-anchor-id="producing-embeddings-from-the-pretrained-model">Producing embeddings from the pretrained model</h3>
+<p>Step by step instructions to create embeddings for a single MGRS tile location (e.g.&nbsp;27WXN).</p>
+<ol type="1">
+<li><p>Ensure that you can access the 13-band GeoTIFF data files.</p>
+<pre><code>aws s3 ls s3://clay-tiles-02/02/27WXN/</code></pre>
+<p>This should report a list of filepaths if you have the correct permissions, otherwise, please set up authentication before continuing.</p></li>
+<li><p>Download the pretrained model weights, and put them in the <code>checkpoints/</code> folder.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> s3 cp s3://clay-model-ckpt/v0/clay-small-70MT-1100T-10E.ckpt checkpoints/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre class="{tip}"><code>For running model inference on a large scale (hundreds or thousands of MGRS
+tiles), it is recommended to have a cloud VM instance with:
+
+1. A high bandwidth network (&gt;25Gbps) to speed up data transfer from the S3
+   bucket to the compute device.
+2. An NVIDIA Ampere generation GPU (e.g. A10G) or newer, which would allow
+   for efficient bfloat16 dtype calculations.
+
+For example, an AWS g5.4xlarge instance would be a cost effective option.</code></pre></li>
+<li><p>Run model inference to generate the embeddings.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> trainer.py predict <span class="at">--ckpt_path</span><span class="op">=</span>checkpoints/clay-small-70MT-1100T-10E.ckpt <span class="dt">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">--trainer.precision</span><span class="op">=</span>bf16-mixed <span class="dt">\</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">--data.data_dir</span><span class="op">=</span>s3://clay-tiles-02/02/27WXN <span class="dt">\</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                          <span class="at">--data.batch_size</span><span class="op">=</span>32 <span class="dt">\</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">--data.num_workers</span><span class="op">=</span>16</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This should output a GeoParquet file containing the embeddings for MGRS tile 27WXN (recall that each 10000x10000 pixel MGRS tile contains hundreds of smaller 512x512 chips), saved to the <code>data/embeddings/</code> folder. See the next sub-section for details about the embeddings file.</p>
+<pre class="{note}"><code>For those interested in how the embeddings were computed, the predict step
+above does the following:
+
+1. Pass the 13-band GeoTIFF input into the Vision Transformer's encoder, to
+   produce raw embeddings of shape (B, 1538, 768), where B is the batch_size,
+   1538 is the patch dimension and 768 is the embedding length. The patch
+   dimension itself is a concatenation of 1536 (6 band groups x 16x16
+   spatial patches of size 32x32 pixels each in a 512x512 image) + 2 (latlon
+   embedding and time embedding) = 1538.
+2. The mean or average is taken across the 1536 patch dimension, yielding an
+   output embedding of shape (B, 768).
+
+More details of how this is implemented can be found by inspecting the
+`predict_step` method in the `model_clay.py` file.</code></pre></li>
+</ol>
+</section>
+<section id="format-of-the-embeddings-file" class="level3">
+<h3 class="anchored" data-anchor-id="format-of-the-embeddings-file">Format of the embeddings file</h3>
+<p>The vector embeddings are stored in a single column within a <a href="https://geoparquet.org">GeoParquet</a> file (*.gpq), with other columns containing spatiotemporal metadata. This file format is built on top of the popular Apache Parquet columnar storage format designed for fast analytics, and it is highly interoperable across different tools like QGIS, GeoPandas (Python), sfarrow (R), and more.</p>
+<section id="filename-convention" class="level4">
+<h4 class="anchored" data-anchor-id="filename-convention">Filename convention</h4>
+<p>The embeddings file utilizes the following naming convention:</p>
+<pre><code>{MGRS:5}_{MINDATE:8}_{MAXDATE:8}_v{VERSION:3}.gpq</code></pre>
+<p>Example: <code>27WXN_20200101_20231231_v001.gpq</code></p>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>MGRS</td>
+<td>The spatial location of the file’s contents in the <a href="https://en.wikipedia.org/wiki/Military_Grid_Reference_System">Military Grid Reference System (MGRS)</a>, given as a 5-character string</td>
+</tr>
+<tr class="even">
+<td>MINDATE</td>
+<td>The minimum acquisition date of the Sentinel-2 images used to generate the embeddings, given in YYYYMMDD format</td>
+</tr>
+<tr class="odd">
+<td>MINDATE</td>
+<td>The maximum acquisition date of the Sentinel-2 images used to generate the embeddings, given in YYYYMMDD format</td>
+</tr>
+<tr class="even">
+<td>VERSION</td>
+<td>Version of the generated embeddings, given as a 3-digit number</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="table-schema" class="level4">
+<h4 class="anchored" data-anchor-id="table-schema">Table schema</h4>
+<p>Each row within the GeoParquet table is generated from a 512x512 pixel image, and contains a record of the embeddings, spatiotemporal metadata, and a link to the GeoTIFF file used as the source image for the embedding. The table looks something like this:</p>
+<table class="table">
+<colgroup>
+<col style="width: 37%">
+<col style="width: 15%">
+<col style="width: 28%">
+<col style="width: 18%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>source_url</th>
+<th>date</th>
+<th>embeddings</th>
+<th>geometry</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>s3://…/…/claytile_*.tif</td>
+<td>2021-01-01</td>
+<td>[0.1, 0.4, … x768]</td>
+<td>POLYGON(…)</td>
+</tr>
+<tr class="even">
+<td>s3://…/…/claytile_*.tif</td>
+<td>2021-06-30</td>
+<td>[0.2, 0.5, … x768]</td>
+<td>POLYGON(…)</td>
+</tr>
+<tr class="odd">
+<td>s3://…/…/claytile_*.tif</td>
+<td>2021-12-31</td>
+<td>[0.3, 0.6, … x768]</td>
+<td>POLYGON(…)</td>
+</tr>
+</tbody>
+</table>
+<p>Details of each column are as follows:</p>
+<ul>
+<li><code>source_url</code> (<a href="https://arrow.apache.org/docs/python/generated/pyarrow.string.html">string</a>) - The full URL to the 13-band GeoTIFF image the embeddings were derived from.</li>
+<li><code>date</code> (<a href="https://arrow.apache.org/docs/python/generated/pyarrow.date32.html">date32</a>) - Acquisition date of the Sentinel-2 image used to generate the embeddings, in YYYY-MM-DD format.</li>
+<li><code>embeddings</code> (<a href="https://arrow.apache.org/docs/python/generated/pyarrow.FixedShapeTensorArray.html">FixedShapeTensorArray</a>) - The vector embeddings given as a 1-D tensor or list with a length of 768.</li>
+<li><code>geometry</code> (<a href="https://arrow.apache.org/docs/python/generated/pyarrow.binary.html">binary</a>) - The spatial bounding box of where the 13-band image, provided in a <a href="https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry#Well-known_binary">WKB</a> Polygon representation.</li>
+</ul>
+<pre class="{note}"><code>Additional technical details of the GeoParquet file:
+- GeoParquet specification [v1.0.0](https://geoparquet.org/releases/v1.0.0)
+- Coordinate reference system of geometries are in `OGC:CRS84`.</code></pre>
+</section>
+</section>
+<section id="embeddings-factory" class="level3">
+<h3 class="anchored" data-anchor-id="embeddings-factory">Embeddings Factory</h3>
+<p>If you don’t have embeddings, you’ll need to use the “Embeddings Factory”. It uses a given location and time, and a Clay model, to generate the embeddgins for each input data bundle.</p>
+<hr>
+</section>
+<section id="embeddingsfactory" class="level3">
+<h3 class="anchored" data-anchor-id="embeddingsfactory">EmbeddingsFactory</h3>
+<blockquote class="blockquote">
+<pre><code> EmbeddingsFactory (model, output_directory)</code></pre>
+</blockquote>
+<p>Initializes the Embeddings Factory with a model and an output directory.</p>
+</section>
+</section>
+<section id="working-with-embeddings" class="level2">
+<h2 class="anchored" data-anchor-id="working-with-embeddings">Working with embeddings</h2>
+<p>A Clay embedding filename will look like this <code>33PWP_20181021_20200114_v001.gpq</code> which is a concatenation of the following:</p>
+<ul>
+<li><code>33PWP</code> - the location of the input data it comes from, in MGRS format.</li>
+<li><code>20181021</code> - the earliest date for any band of the input data it comes from</li>
+<li><code>20200114</code> - the latest date for any band of the input data it comes from</li>
+<li><code>v001</code> - the embedding version number.</li>
+<li><code>.gpq</code> - the file extension, geoparquet.</li>
+</ul>
+<p>Inside each file there will be as many rows as chips the MGRS tile was split into. as and each row will have a column for each of the embedding dimensions. The number of dimensions will depend on the Clay model used to generate the embeddings.</p>
+<hr>
+<section id="embeddingshandler" class="level3">
+<h3 class="anchored" data-anchor-id="embeddingshandler">EmbeddingsHandler</h3>
+<blockquote class="blockquote">
+<pre><code> EmbeddingsHandler (path:pathlib.Path, max_files:[None,&lt;class'int'&gt;]=None)</code></pre>
+</blockquote>
+<p>Initialize self. See help(type(self)) for accurate signature.</p>
+<table class="table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 25%">
+<col style="width: 34%">
+<col style="width: 34%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th><strong>Type</strong></th>
+<th><strong>Default</strong></th>
+<th><strong>Details</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>path</td>
+<td>Path</td>
+<td></td>
+<td>Path to the file or folder with files</td>
+</tr>
+<tr class="even">
+<td>max_files</td>
+<td>[None, &lt;class ‘int’&gt;]</td>
+<td>None</td>
+<td>Max number of files to load, randomly chosen</td>
+</tr>
+</tbody>
+</table>
+<p><code>EmbeddingsHandler</code> has several methods to help you work with embeddings.</p>
+<p>This is how you can load embeddings from a file or folder with files, including limiting the number of embeddings to load:</p>
+<hr>
+</section>
+<section id="embeddingshandler.read_embeddings_file" class="level3">
+<h3 class="anchored" data-anchor-id="embeddingshandler.read_embeddings_file">EmbeddingsHandler.read_embeddings_file</h3>
+<blockquote class="blockquote">
+<pre><code> EmbeddingsHandler.read_embeddings_file (file:pathlib.Path)</code></pre>
+</blockquote>
+<p>For example, this is how to read 10 random files from a folder:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>embeddings_path<span class="op">=</span>Path(<span class="st">'/home/brunosan/data/Clay/clay-vector-embeddings-v001'</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>embeddings <span class="op">=</span> EmbeddingsHandler(embeddings_path,max_files<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>embeddings.load_data()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>100%|██████████| 10/10 [00:00&lt;00:00, 132.35it/s]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Total rows: 7779
+ Merging dataframes...
+Done!
+ Total rows:  7779</code></pre>
+</div>
+</div>
+<p>Then you can plot the embeddings:</p>
+<hr>
+</section>
+<section id="embeddingshandler.plot" class="level3">
+<h3 class="anchored" data-anchor-id="embeddingshandler.plot">EmbeddingsHandler.plot</h3>
+<blockquote class="blockquote">
+<pre><code> EmbeddingsHandler.plot (figsize:[&lt;class'int'&gt;,&lt;class'int'&gt;]=(10, 10),
+                         alpha:float=0.2, edgecolor:str='k',
+                         max_rows:[&lt;class'int'&gt;,None]=10000, bounds=None)</code></pre>
+</blockquote>
+<table class="table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 25%">
+<col style="width: 34%">
+<col style="width: 34%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th><strong>Type</strong></th>
+<th><strong>Default</strong></th>
+<th><strong>Details</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>figsize</td>
+<td>[&lt;class ‘int’&gt;, &lt;class ‘int’&gt;]</td>
+<td>(10, 10)</td>
+<td>Size of the plot</td>
+</tr>
+<tr class="even">
+<td>alpha</td>
+<td>float</td>
+<td>0.2</td>
+<td>Transparency of the points</td>
+</tr>
+<tr class="odd">
+<td>edgecolor</td>
+<td>str</td>
+<td>k</td>
+<td>Color of the edges of the points</td>
+</tr>
+<tr class="even">
+<td>max_rows</td>
+<td>[&lt;class ‘int’&gt;, None]</td>
+<td>10000</td>
+<td>Max number of rows to plot</td>
+</tr>
+<tr class="odd">
+<td>bounds</td>
+<td>NoneType</td>
+<td>None</td>
+<td>Bounds of the plot</td>
+</tr>
+</tbody>
+</table>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>embeddings.plot()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="01_embeddings_files/figure-html/cell-7-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p>If the total areas is too big, you can visualize the embeddings areas on detail zoomin in around one:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the coordinates of one geometry</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>first_geometry <span class="op">=</span> embeddings.gdf.iloc[<span class="dv">50</span>].geometry</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a 1km buffer around the first geometry</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="bu">buffer</span> <span class="op">=</span> first_geometry.<span class="bu">buffer</span>(<span class="dv">100</span><span class="op">*</span><span class="dv">1000</span>)  <span class="co"># 10km</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>xmin, ymin, xmax, ymax <span class="op">=</span> <span class="bu">buffer</span>.bounds</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Call the plot method with the bounds</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>embeddings.plot(bounds<span class="op">=</span>[xmin, xmax, ymin, ymax])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="01_embeddings_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p>Note that we are using a transparency <code>alpha=0.2</code>. Darker areas are where there are several embeddings stacked on top of each other, from different times.</p>
+<p>We can plot the times.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">#plot the histogram of the time range</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>embeddings.gdf.start_date.hist(bins<span class="op">=</span><span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<pre><code>&lt;Axes: &gt;</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="01_embeddings_files/figure-html/cell-9-output-2.png" class="img-fluid"></p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
