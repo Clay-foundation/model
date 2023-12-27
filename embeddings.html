@@ -101,12 +101,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta property="og:description" content="Working with semantic embeddings of Earth">
 <meta property="og:image" content="https://Clay-foundation.github.io/model/01_embeddings_files/figure-html/cell-7-output-1.png">
 <meta property="og:site-name" content="clay">
-<meta property="og:image:height" content="279">
+<meta property="og:image:height" content="355">
 <meta property="og:image:width" content="794">
 <meta name="twitter:title" content="clay - Embeddings">
 <meta name="twitter:description" content="Working with semantic embeddings of Earth">
 <meta name="twitter:image" content="https://Clay-foundation.github.io/model/01_embeddings_files/figure-html/cell-7-output-1.png">
-<meta name="twitter:image-height" content="279">
+<meta name="twitter:image-height" content="355">
 <meta name="twitter:image-width" content="794">
 <meta name="twitter:card" content="summary_large_image">
 </head>
@@ -497,13 +497,13 @@ More details of how this is implemented can be found by inspecting the
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>embeddings_path <span class="op">=</span> Path(<span class="st">"/home/brunosan/data/Clay/clay-vector-embeddings-v001"</span>)</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>embeddings <span class="op">=</span> EmbeddingsHandler(embeddings_path, max_files<span class="op">=</span><span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>100%|██████████| 10/10 [00:00&lt;00:00, 113.63it/s]</code></pre>
+<pre><code>100%|██████████| 10/10 [00:00&lt;00:00, 116.71it/s]</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Total rows: 9896
+<pre><code>Total rows: 8819
  Merging dataframes...
 Done!
- Total rows:  9896</code></pre>
+ Total rows:  8819</code></pre>
 </div>
 </div>
 <p>Then you can plot the embeddings:</p>
@@ -515,9 +515,9 @@ Done!
 <pre><code> EmbeddingsHandler.plot_locations
                                    (figsize:[&lt;class'int'&gt;,&lt;class'int'&gt;]=(1
                                    0, 10), alpha:float=0.2,
-                                   edgecolor:str='k',
                                    max_rows:[&lt;class'int'&gt;,None]=10000,
-                                   bounds=None)</code></pre>
+                                   bounds:List[int]=None,
+                                   indices:List[int]=None)</code></pre>
 </blockquote>
 <p>Plots the dataframe on a map with an OSM underlay.</p>
 <table class="table">
@@ -549,22 +549,22 @@ Done!
 <td>Transparency of the points</td>
 </tr>
 <tr class="odd">
-<td>edgecolor</td>
-<td>str</td>
-<td>k</td>
-<td>Color of the edges of the points</td>
-</tr>
-<tr class="even">
 <td>max_rows</td>
 <td>[&lt;class ‘int’&gt;, None]</td>
 <td>10000</td>
-<td>Max number of rows to plot</td>
+<td>Random max number of rows to plot</td>
+</tr>
+<tr class="even">
+<td>bounds</td>
+<td>List</td>
+<td>None</td>
+<td>Bounds of the plot [xmin, ymin, xmax, ymax]</td>
 </tr>
 <tr class="odd">
-<td>bounds</td>
-<td>NoneType</td>
+<td>indices</td>
+<td>List</td>
 <td>None</td>
-<td></td>
+<td>Indices of the rows to plot</td>
 </tr>
 </tbody>
 </table>
@@ -574,58 +574,61 @@ Done!
 <p><img src="01_embeddings_files/figure-html/cell-7-output-1.png" class="img-fluid"></p>
 </div>
 </div>
-<p>If the total areas is too big, you can visualize the embeddings areas on detail zoomin in around one:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the coordinates of one geometry</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>first_geometry <span class="op">=</span> embeddings.gdf.iloc[<span class="dv">50</span>].geometry</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a 1km buffer around the first geometry</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="bu">buffer</span> <span class="op">=</span> first_geometry.<span class="bu">buffer</span>(<span class="dv">100</span> <span class="op">*</span> <span class="dv">1000</span>)  <span class="co"># 10km</span></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>xmin, ymin, xmax, ymax <span class="op">=</span> <span class="bu">buffer</span>.bounds</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Call the plot method with the bounds</span></span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>embeddings.plot_locations(bounds<span class="op">=</span>[xmin, xmax, ymin, ymax])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>embeddings.plot_locations(indices<span class="op">=</span>[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>], max_rows<span class="op">=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <p><img src="01_embeddings_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+<p>If the total areas is too big, you can visualize the embeddings areas on detail zoomin in around one:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the coordinates of one geometry</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>first_geometry <span class="op">=</span> embeddings.gdf.loc[<span class="dv">50</span>].geometry</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a 1km buffer around the first geometry</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="bu">buffer</span> <span class="op">=</span> first_geometry.<span class="bu">buffer</span>(<span class="dv">100</span> <span class="op">*</span> <span class="dv">1000</span>)  <span class="co"># 100 x 1km</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>bounds <span class="op">=</span> <span class="bu">buffer</span>.bounds</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Call the plot method with the bounds</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>embeddings.plot_locations(bounds<span class="op">=</span>bounds)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="01_embeddings_files/figure-html/cell-9-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Note that we are using a transparency <code>alpha=0.2</code>. Darker areas are where there are several embeddings stacked on top of each other, from different times.</p>
 <p>We can plot the times.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the histogram of the time range</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>embeddings.gdf.start_date.hist(bins<span class="op">=</span><span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the histogram of the time range</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>embeddings.gdf.start_date.hist(bins<span class="op">=</span><span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <pre><code>&lt;Axes: &gt;</code></pre>
 </div>
 <div class="cell-output cell-output-display">
-<p><img src="01_embeddings_files/figure-html/cell-9-output-2.png" class="img-fluid"></p>
+<p><img src="01_embeddings_files/figure-html/cell-10-output-2.png" class="img-fluid"></p>
 </div>
 </div>
 <p>To retrieve the RGB image for a given embedding, you can use the <code>rgb_imgs</code> method. the first time it will use the <code>S3</code> url location to pull only the RGB bands, then save it locally for faster later retrieval.</p>
 <p>You must specify the rows you want to retrieve, and if the first time, the output folder where to save the images, if it can’t reuse an existing local folder.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs(</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    [<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>], local_folder<span class="op">=</span>Path(<span class="st">"/home/brunosan/data/Clay/rgbs/"</span>)</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs(</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    [<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>], local_folder<span class="op">=</span>Path(<span class="st">"/home/brunosan/data/Clay/rgbs/"</span>)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="01_embeddings_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
+<p><img src="01_embeddings_files/figure-html/cell-11-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>You can skip the <code>local_folder</code> argument if you already have other local rgb saved.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs([<span class="dv">2</span>], local_folder<span class="op">=</span>Path(<span class="st">"/home/brunosan/data/Clay/rgbs/"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Reading local image for row 0</code></pre>
-</div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs(<span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="01_embeddings_files/figure-html/cell-11-output-2.png" class="img-fluid"></p>
+<p><img src="01_embeddings_files/figure-html/cell-12-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>If needed you can <code>force_fetch</code> from the <code>S3</code> location again.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs([<span class="dv">2</span>], force_fetch<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs(<span class="dv">0</span>, force_fetch<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="01_embeddings_files/figure-html/cell-12-output-1.png" class="img-fluid"></p>
+<p><img src="01_embeddings_files/figure-html/cell-13-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 
