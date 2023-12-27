@@ -62,3 +62,6 @@ docs/_build/
 # Mac OS-specific storage files
 .DS_Store
 datadisk/
+docs/_docs/
+docs/clay/
+docs/_proc/
