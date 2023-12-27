@@ -443,12 +443,6 @@ More details of how this is implemented can be found by inspecting the
 </blockquote>
 <p>Initialize self. See help(type(self)) for accurate signature.</p>
 <table class="table">
-<colgroup>
-<col style="width: 6%">
-<col style="width: 25%">
-<col style="width: 34%">
-<col style="width: 34%">
-</colgroup>
 <thead>
 <tr class="header">
 <th></th>
@@ -468,7 +462,7 @@ More details of how this is implemented can be found by inspecting the
 <td>max_files</td>
 <td>[None, &lt;class ‘int’&gt;]</td>
 <td>None</td>
-<td>Max number of files to load, randomly chosen</td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -483,8 +477,8 @@ More details of how this is implemented can be found by inspecting the
 </blockquote>
 <p>For example, this is how to read 10 random files from a folder:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>embeddings_path<span class="op">=</span>Path(<span class="st">'/home/brunosan/data/Clay/clay-vector-embeddings-v001'</span>)</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>embeddings <span class="op">=</span> EmbeddingsHandler(embeddings_path,max_files<span class="op">=</span><span class="dv">10</span>)</span>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>embeddings_path <span class="op">=</span> Path(<span class="st">"/home/brunosan/data/Clay/clay-vector-embeddings-v001"</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>embeddings <span class="op">=</span> EmbeddingsHandler(embeddings_path, max_files<span class="op">=</span><span class="dv">10</span>)</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>embeddings.load_data()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>100%|██████████| 10/10 [00:00&lt;00:00, 132.35it/s]</code></pre>
@@ -550,7 +544,7 @@ Done!
 <td>bounds</td>
 <td>NoneType</td>
 <td>None</td>
-<td>Bounds of the plot</td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -565,7 +559,7 @@ Done!
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the coordinates of one geometry</span></span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>first_geometry <span class="op">=</span> embeddings.gdf.iloc[<span class="dv">50</span>].geometry</span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a 1km buffer around the first geometry</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="bu">buffer</span> <span class="op">=</span> first_geometry.<span class="bu">buffer</span>(<span class="dv">100</span><span class="op">*</span><span class="dv">1000</span>)  <span class="co"># 10km</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="bu">buffer</span> <span class="op">=</span> first_geometry.<span class="bu">buffer</span>(<span class="dv">100</span> <span class="op">*</span> <span class="dv">1000</span>)  <span class="co"># 10km</span></span>
 <span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>xmin, ymin, xmax, ymax <span class="op">=</span> <span class="bu">buffer</span>.bounds</span>
 <span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
@@ -578,7 +572,7 @@ Done!
 <p>Note that we are using a transparency <code>alpha=0.2</code>. Darker areas are where there are several embeddings stacked on top of each other, from different times.</p>
 <p>We can plot the times.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">#plot the histogram of the time range</span></span>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the histogram of the time range</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>embeddings.gdf.start_date.hist(bins<span class="op">=</span><span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <pre><code>&lt;Axes: &gt;</code></pre>
