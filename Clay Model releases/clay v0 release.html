@@ -99,13 +99,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link rel="stylesheet" href="../styles.css">
 <meta property="og:title" content="clay - Clay Model v0 release">
 <meta property="og:description" content="Documentation for the Clay Model v0 release.">
-<meta property="og:image" content="https://Clay-foundation.github.io/model/Clay Model releases/Clay v0 release_files/figure-html/cell-2-output-3.png">
+<meta property="og:image" content="https://Clay-foundation.github.io/model/Clay Model releases/Clay v0 release_files/figure-html/cell-3-output-1.png">
 <meta property="og:site-name" content="clay">
 <meta property="og:image:height" content="389">
 <meta property="og:image:width" content="794">
 <meta name="twitter:title" content="clay - Clay Model v0 release">
 <meta name="twitter:description" content="Documentation for the Clay Model v0 release.">
-<meta name="twitter:image" content="https://Clay-foundation.github.io/model/Clay Model releases/Clay v0 release_files/figure-html/cell-2-output-3.png">
+<meta name="twitter:image" content="https://Clay-foundation.github.io/model/Clay Model releases/Clay v0 release_files/figure-html/cell-3-output-1.png">
 <meta name="twitter:image-height" content="389">
 <meta name="twitter:image-width" content="794">
 <meta name="twitter:card" content="summary_large_image">
@@ -242,7 +242,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#data-splits" id="toc-data-splits" class="nav-link" data-scroll-target="#data-splits">Data Splits</a></li>
   <li><a href="#validation-methods" id="toc-validation-methods" class="nav-link" data-scroll-target="#validation-methods">Validation Methods</a></li>
   <li><a href="#model-exploration" id="toc-model-exploration" class="nav-link" data-scroll-target="#model-exploration">Model Exploration</a></li>
-  <li><a href="#embeddings-exploration" id="toc-embeddings-exploration" class="nav-link" data-scroll-target="#embeddings-exploration">Embeddings Exploration</a></li>
+  <li><a href="#embeddings-exploration" id="toc-embeddings-exploration" class="nav-link" data-scroll-target="#embeddings-exploration">Embeddings Exploration</a>
+  <ul class="collapse">
+  <li><a href="#l2norm-distribution" id="toc-l2norm-distribution" class="nav-link" data-scroll-target="#l2norm-distribution">L2norm distribution</a></li>
+  </ul></li>
   <li><a href="#benchmarking" id="toc-benchmarking" class="nav-link" data-scroll-target="#benchmarking">Benchmarking</a></li>
   </ul></li>
   <li><a href="#benchmark-dataset-labels" id="toc-benchmark-dataset-labels" class="nav-link" data-scroll-target="#benchmark-dataset-labels">Benchmark dataset labels</a></li>
@@ -404,13 +407,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="embeddings-exploration" class="level2">
 <h2 class="anchored" data-anchor-id="embeddings-exploration">Embeddings Exploration</h2>
-<div class="cell" data-execution_count="3">
+<p>The Embeddings in our model are the output of the <code>Transformer</code> encoder. It’s the “semantic” bottleneck betwen the encoder and the decoder. The encoder needs to abstract the semantics of the image into a single vector, so the decoder can reconstruct the image from that vector.</p>
+<p>These embeddings start as random vectors and slowly converge to a meaningful representation of the input data.</p>
+<p>Let’s read all the embeddings from the trainning data and see how they look like.</p>
+<div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>embeddings_path <span class="op">=</span> Path(<span class="st">"/home/brunosan/data/Clay/clay-vector-embeddings-v001"</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>embeddings <span class="op">=</span> clay.embeddings.EmbeddingsHandler(embeddings_path)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>embeddings.load_data()</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>embeddings.plot(max_rows<span class="op">=</span><span class="va">None</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>embeddings.load_data()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>100%|██████████| 1088/1088 [00:04&lt;00:00, 236.65it/s]</code></pre>
+<pre><code>100%|██████████| 1088/1088 [00:04&lt;00:00, 237.36it/s]</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Total rows: 947019
@@ -418,59 +423,68 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 Done!
  Total rows:  947019</code></pre>
 </div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>embeddings.plot(max_rows<span class="op">=</span><span class="va">None</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="Clay v0 release_files/figure-html/cell-2-output-3.png" class="img-fluid"></p>
+<p><img src="Clay v0 release_files/figure-html/cell-3-output-1.png" class="img-fluid"></p>
 </div>
 </div>
-<p>To evaluate the embeddgins, we can first see their “length” using <a href="#">L2norm</a>.</p>
-<div class="cell" data-execution_count="4">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">=</span> embeddings.gdf[<span class="st">"embeddings"</span>].<span class="bu">apply</span>(</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> x: np.linalg.norm(x, <span class="bu">ord</span><span class="op">=</span><span class="dv">2</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>These are some properties we expect from the embeddings:</p>
+<ul>
+<li>The “length” (L2norm) and distribution of lengths is a one proxy for how much informationm and how much range of semantics they might contain.</li>
+<li>We expect the embeddgins to cluster when representing different places with similar semantics. We can use <a href="https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding">tNSE</a> to reduce the dimensionality of the <code>712</code> dimensions manyfold into 2D while trying to keep the clustering.</li>
+<li>If we take visually similar chips, they should have a smaller distance between them than chips that are visually different. We can use <a href="https://en.wikipedia.org/wiki/Cosine_similarity">cosine similarity</a> to measure the distance between two embeddings.</li>
+</ul>
+<section id="l2norm-distribution" class="level3">
+<h3 class="anchored" data-anchor-id="l2norm-distribution">L2norm distribution</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">=</span> embeddings.gdf[<span class="st">"embeddings"</span>].<span class="bu">apply</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> x: np.linalg.norm(x, <span class="bu">ord</span><span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="5">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">5</span>))</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">0</span>].set_title(<span class="st">"L2 norm histogram"</span>)</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">0</span>].set_xlabel(<span class="st">"L2 norm"</span>)</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">0</span>].set_ylabel(<span class="st">"Count"</span>)</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">0</span>].hist(embeddings.gdf[<span class="st">"l2norm"</span>], bins<span class="op">=</span><span class="dv">100</span>)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">1</span>].set_title(<span class="st">"L2 norm cumulative histogram"</span>)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">1</span>].set_xlabel(<span class="st">"L2 norm"</span>)</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">1</span>].set_ylabel(<span class="st">"Cumulative count"</span>)</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">1</span>].hist(embeddings.gdf[<span class="st">"l2norm"</span>], bins<span class="op">=</span><span class="dv">100</span>, density<span class="op">=</span><span class="va">True</span>, cumulative<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">5</span>))</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">0</span>].set_title(<span class="st">"L2 norm histogram"</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">0</span>].set_xlabel(<span class="st">"L2 norm"</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">0</span>].set_ylabel(<span class="st">"Count"</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">0</span>].hist(embeddings.gdf[<span class="st">"l2norm"</span>], bins<span class="op">=</span><span class="dv">100</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">1</span>].set_title(<span class="st">"L2 norm cumulative histogram"</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">1</span>].set_xlabel(<span class="st">"L2 norm"</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">1</span>].set_ylabel(<span class="st">"Cumulative count"</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>ax[<span class="dv">1</span>].hist(embeddings.gdf[<span class="st">"l2norm"</span>], bins<span class="op">=</span><span class="dv">100</span>, density<span class="op">=</span><span class="va">True</span>, cumulative<span class="op">=</span><span class="va">True</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="Clay v0 release_files/figure-html/cell-4-output-1.png" class="img-fluid"></p>
+<p><img src="Clay v0 release_files/figure-html/cell-5-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>We can see that ~80% of the embeddings are between <code>2.7</code> and <code>2.9</code>, with two peaks on the edges. We can explore samples from the tails to see what is going on.</p>
-<div class="cell" data-execution_count="6">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> copy</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>left_peak_range <span class="op">=</span> [<span class="fl">2.6</span>, <span class="fl">2.7</span>]</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>right_peak_range <span class="op">=</span> [<span class="fl">2.95</span>, <span class="fl">3.1</span>]</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"embeddings: </span><span class="sc">{</span><span class="bu">len</span>(embeddings.gdf)<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>left_tails <span class="op">=</span> copy.deepcopy(embeddings)</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>left_tails.gdf <span class="op">=</span> embeddings.gdf[</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&gt;</span> left_peak_range[<span class="dv">0</span>])</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span> (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&lt;</span> left_peak_range[<span class="dv">1</span>])</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>].copy()</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>right_tails <span class="op">=</span> copy.deepcopy(embeddings)</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>right_tails.gdf <span class="op">=</span> embeddings.gdf[</span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&gt;</span> right_peak_range[<span class="dv">0</span>])</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span> (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&lt;</span> right_peak_range[<span class="dv">1</span>])</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>].copy()</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"left_tails: </span><span class="sc">{</span><span class="bu">len</span>(left_tails.gdf)<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"right_tails: </span><span class="sc">{</span><span class="bu">len</span>(right_tails.gdf)<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>left_peak_range <span class="op">=</span> [<span class="fl">2.6</span>, <span class="fl">2.7</span>]</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>right_peak_range <span class="op">=</span> [<span class="fl">2.95</span>, <span class="fl">3.1</span>]</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"embeddings: </span><span class="sc">{</span><span class="bu">len</span>(embeddings.gdf)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>left_tails <span class="op">=</span> copy.deepcopy(embeddings)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>left_tails.gdf <span class="op">=</span> embeddings.gdf[</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&gt;</span> left_peak_range[<span class="dv">0</span>])</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span> (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&lt;</span> left_peak_range[<span class="dv">1</span>])</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>].copy()</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>right_tails <span class="op">=</span> copy.deepcopy(embeddings)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>right_tails.gdf <span class="op">=</span> embeddings.gdf[</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&gt;</span> right_peak_range[<span class="dv">0</span>])</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span> (embeddings.gdf[<span class="st">"l2norm"</span>] <span class="op">&lt;</span> right_peak_range[<span class="dv">1</span>])</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>].copy()</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"left_tails: </span><span class="sc">{</span><span class="bu">len</span>(left_tails.gdf)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"right_tails: </span><span class="sc">{</span><span class="bu">len</span>(right_tails.gdf)<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>embeddings: 947019
 left_tails: 60581
 right_tails: 94057</code></pre>
 </div>
 </div>
+</section>
 </section>
 <section id="benchmarking" class="level2">
 <h2 class="anchored" data-anchor-id="benchmarking">Benchmarking</h2>
