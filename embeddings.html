@@ -575,7 +575,7 @@ Done!
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>embeddings.plot_locations(indices<span class="op">=</span>[<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>], max_rows<span class="op">=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>embeddings.plot_locations(indices<span class="op">=</span>[<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>], max_rows<span class="op">=</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <p><img src="01_embeddings_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
 </div>
@@ -610,9 +610,7 @@ Done!
 <p>To retrieve the RGB image for a given embedding, you can use the <code>rgb_imgs</code> method. the first time it will use the <code>S3</code> url location to pull only the RGB bands, then save it locally for faster later retrieval.</p>
 <p>You must specify the rows you want to retrieve, and if the first time, the output folder where to save the images, if it can’t reuse an existing local folder.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs(</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    [<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>], local_folder<span class="op">=</span>Path(<span class="st">"/home/brunosan/data/Clay/rgbs/"</span>)</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs([<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>], local_folder<span class="op">=</span>Path(<span class="st">"/home/brunosan/data/Clay/rgbs/"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <p><img src="01_embeddings_files/figure-html/cell-11-output-1.png" class="img-fluid"></p>
 </div>

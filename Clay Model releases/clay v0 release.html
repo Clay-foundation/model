@@ -515,7 +515,7 @@ Done!
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>top3 <span class="op">=</span> embeddings.gdf.nsmallest(<span class="dv">3</span>, <span class="st">"distance_to_peak"</span>).index</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs(top3,local_folder<span class="op">=</span><span class="st">'/home/brunosan/data/Clay/rgbs/'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs(top3, local_folder<span class="op">=</span><span class="st">"/home/brunosan/data/Clay/rgbs/"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <p><img src="Clay v0 release_files/figure-html/cell-9-output-1.png" class="img-fluid"></p>
 </div>
@@ -546,12 +546,12 @@ Done!
 </div>
 <p>Min/Max entropy, as measure or “smooth” and “rough” semantics.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">#make the stdev of the vector on column embeddings</span></span>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># make the stdev of the vector on column embeddings</span></span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>embeddings.gdf[<span class="st">"stdev"</span>] <span class="op">=</span> embeddings.gdf[<span class="st">"embeddings"</span>].<span class="bu">apply</span>(<span class="kw">lambda</span> x: np.std(x))</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co">#biggest stdev index</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># biggest stdev index</span></span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>top3 <span class="op">=</span> embeddings.gdf.nlargest(<span class="dv">3</span>, <span class="st">"stdev"</span>).index</span>
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(top3)</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs(top3,local_folder<span class="op">=</span>Path(<span class="st">'/home/brunosan/data/Clay/rgbs/'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs(top3, local_folder<span class="op">=</span>Path(<span class="st">"/home/brunosan/data/Clay/rgbs/"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Index([391697, 466977, 646521], dtype='int64')</code></pre>
 </div>
@@ -562,7 +562,7 @@ Done!
 <div class="cell">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>top3 <span class="op">=</span> embeddings.gdf.nsmallest(<span class="dv">3</span>, <span class="st">"stdev"</span>).index</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(top3)</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs(top3,local_folder<span class="op">=</span>Path(<span class="st">'/home/brunosan/data/Clay/rgbs/'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>embeddings.rgb_imgs(top3, local_folder<span class="op">=</span>Path(<span class="st">"/home/brunosan/data/Clay/rgbs/"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Index([713536, 446810, 210232], dtype='int64')</code></pre>
 </div>
