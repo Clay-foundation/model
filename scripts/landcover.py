@@ -65,11 +65,18 @@ SCHEMA = {
     required=True,
     type=str,
 )
-def process(wd, worldcover, mgrs):
+@click.option(
+    "--skip-stats",
+    is_flag=True,
+    required=False,
+    default=False,
+)
+def process(wd, worldcover, mgrs, skip_stats):
     """
     Run statistics and sampling.
     """
-    compute_stats(wd, worldcover, mgrs)
+    if not skip_stats:
+        compute_stats(wd, worldcover, mgrs)
     sample(wd)
 
 
@@ -162,23 +169,18 @@ def sample(wd):
     data_norm = percentages(data.loc[:, data.columns != "count"])
     data[data_norm.columns] = data_norm
 
-    diversity = split_highest(data, "count", 200, 2000)
-    urban = split_highest(data, "Built-up", 200)
-    wetland = split_highest(data, "Herbaceous wetland", 50)
-    mangroves = split_highest(data, "Mangroves", 50)
-    moss = split_highest(data, "Moss and lichen", 50)
-    cropland = split_highest(data, "Cropland", 50)
-    trees = split_highest(data, "Tree cover", 50)
-    shrubland = split_highest(data, "Shrubland", 50)
-    grassland = split_highest(data, "Grassland", 50)
-    bare = split_highest(data, "Bare / sparse vegetation", 50)
-    snow = split_highest(data, "Snow and Ice", 50)
-
-    selector = numpy.logical_and(
-        data["Permanent water bodies"] > WATER_LOWER_TH,
-        data["Permanent water bodies"] < WATER_UPPER_TH,
-    )
-    water = data[selector].sample(100, random_state=RANDOM_SEED)
+    diversity = split_highest(data, "count", 500, 3000)
+    urban = split_highest(data, "Built-up", 400)
+    wetland = split_highest(data, "Herbaceous wetland", 50, 500)
+    mangroves = split_highest(data, "Mangroves", 50, 500)
+    moss = split_highest(data, "Moss and lichen", 50, 500)
+    cropland = split_highest(data, "Cropland", 100, 500)
+    trees = split_highest(data, "Tree cover", 100, 500)
+    shrubland = split_highest(data, "Shrubland", 50, 500)
+    grassland = split_highest(data, "Grassland", 50, 500)
+    bare = split_highest(data, "Bare / sparse vegetation", 50, 500)
+    snow = split_highest(data, "Snow and Ice", 50, 500)
+    water = split_highest(data, "Permanent water bodies", 100, 1000)
 
     result = pandas.concat(
         [
@@ -199,7 +201,7 @@ def sample(wd):
 
     result = result.drop_duplicates(subset=["name"])
 
-    result.to_file(Path(wd, "mgrs_sample.geojson", driver="GeoJSON"))
+    result.to_file(Path(wd, "mgrs_sample.fgb", driver="FlatGeobuf"))
 
 
 if __name__ == "__main__":
