@@ -3,6 +3,7 @@ LightningDataModule to load Earth Observation data from GeoTIFF files using
 rasterio.
 """
 import math
+import os
 import random
 from pathlib import Path
 from typing import List, Literal
@@ -12,9 +13,11 @@ import numpy as np
 import rasterio
 import torch
 import torchdata
-from pyproj import Transformer as ProjTransformer
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
+
+os.environ["GDAL_DISABLE_READDIR_ON_OPEN"] = "EMPTY_DIR"
+os.environ["GDAL_HTTP_MERGE_CONSECUTIVE_RANGES"] = "YES"
 
 
 # %%
@@ -53,25 +56,27 @@ class ClayDataset(Dataset):
         return lon, lat
 
     def read_chip(self, chip_path):
-        # read timestep & normalize
-        ts = chip_path.parent.name
-        year, month, day = self.normalize_timestamp(ts)
-
         chip = rasterio.open(chip_path)
 
+        # read timestep & normalize
+        date = chip.tags()["date"]  # YYYY-MM-DD
+        year, month, day = self.normalize_timestamp(date)
+
         # read lat,lon from UTM to WGS84 & normalize
-        bounds = chip.bounds
-        crs = chip.crs
-        cx = (bounds.left + bounds.right) / 2
-        cy = (bounds.top + bounds.bottom) / 2
-        tfmer = ProjTransformer.from_crs(crs, "epsg:4326", always_xy=True)
-        lon, lat = tfmer.transform(cx, cy)
+        bounds = chip.bounds  # xmin, ymin, xmax, ymax
+        epsg = chip.crs.to_epsg()  # e.g. 32632
+        lon, lat = chip.lnglat()  # longitude, latitude
         lon, lat = self.normalize_latlon(lon, lat)
 
         return {
             "pixels": chip.read(),
-            "timestep": (year, month, day),
+            # Raw values
+            "bbox": bounds,
+            "epsg": epsg,
+            "date": date,
+            # Normalized values
             "latlon": (lat, lon),
+            "timestep": (year, month, day),
         }
 
     def __getitem__(self, idx):
@@ -79,10 +84,16 @@ class ClayDataset(Dataset):
         cube = self.read_chip(chip_path)
 
         # remove nans and convert to tensor
-        cube["pixels"] = torch.nan_to_num(torch.as_tensor(data=cube["pixels"]), nan=0.0)
+        cube["pixels"] = torch.as_tensor(data=cube["pixels"], dtype=torch.float16)
+        cube["bbox"] = torch.as_tensor(data=cube["bbox"], dtype=torch.float64)
+        cube["epsg"] = torch.as_tensor(data=cube["epsg"], dtype=torch.int32)
+        cube["date"] = str(cube["date"])
         cube["latlon"] = torch.as_tensor(data=cube["latlon"])
         cube["timestep"] = torch.as_tensor(data=cube["timestep"])
-        cube["path"] = str(chip_path.absolute())
+        try:
+            cube["source_url"] = str(chip_path.absolute())
+        except AttributeError:
+            cube["source_url"] = chip_path
 
         if self.transform:
             # convert to float16 and normalize
@@ -137,21 +148,27 @@ class ClayDataModule(L.LightningDataModule):
         self.data_dir = Path(data_dir)
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.tfm = v2.Compose(
-            [
-                v2.Normalize(mean=self.MEAN, std=self.STD),
-            ]
-        )
+        self.split_ratio = 0.8
+        self.tfm = v2.Compose([v2.Normalize(mean=self.MEAN, std=self.STD)])
 
-    def setup(self, stage: str | None = None) -> None:
-        chips_path = list(self.data_dir.glob("**/*.tif"))
+    def setup(self, stage: Literal["fit", "predict"] | None = None) -> None:
+        # Get list of GeoTIFF filepaths from s3 bucket or data/ folder
+        if self.data_dir.startswith("s3://"):
+            dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_dir])
+            chips_path = list(dp.list_files_by_s3(masks="*.tif"))
+        else:  # if self.data_dir is a local data path
+            chips_path = list(Path(self.data_dir).glob("**/*.tif"))
         print(f"Total number of chips: {len(chips_path)}")
-        random.shuffle(chips_path)
-        split_ratio = 0.8
-        split = int(len(chips_path) * split_ratio)
 
-        self.trn_ds = ClayDataset(chips_path[:split], transform=self.tfm)
-        self.val_ds = ClayDataset(chips_path[split:], transform=self.tfm)
+        if stage == "fit":
+            random.shuffle(chips_path)
+            split = int(len(chips_path) * self.split_ratio)
+
+            self.trn_ds = ClayDataset(chips_path=chips_path[:split], transform=self.tfm)
+            self.val_ds = ClayDataset(chips_path=chips_path[split:], transform=self.tfm)
+
+        elif stage == "predict":
+            self.prd_ds = ClayDataset(chips_path=chips_path, transform=self.tfm)
 
     def train_dataloader(self):
         return DataLoader(
@@ -169,6 +186,14 @@ class ClayDataModule(L.LightningDataModule):
             num_workers=self.num_workers,
             shuffle=False,
             pin_memory=True,
+        )
+
+    def predict_dataloader(self):
+        return DataLoader(
+            dataset=self.prd_ds,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
         )
 
 
@@ -193,6 +218,7 @@ def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
         - bbox: torch.Tensor - spatial bounding box as (xmin, ymin, xmax, ymax)
         - epsg: torch.Tensor - coordinate reference system as an EPSG code
         - date: str - the date the image was acquired in YYYY-MM-DD format
+        - source_url: str - the URL or path to the source GeoTIFF file
     """
     # GeoTIFF - Rasterio
     with rasterio.open(fp=filepath) as dataset:
@@ -209,7 +235,13 @@ def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
         # Get date
         date: str = dataset.tags()["date"]  # YYYY-MM-DD format
 
-    return {"image": tensor, "bbox": bbox, "epsg": epsg, "date": date}
+    return {
+        "image": tensor,  # shape (13, 512, 512)
+        "bbox": bbox,  # bounds [xmin, ymin, xmax, ymax]
+        "epsg": epsg,  # e.g. 32632
+        "date": date,  # e.g. 2020-12-31
+        "source_url": filepath,  # e.g. s3://.../claytile_12ABC_20201231_v0_0200.tif
+    }
 
 
 class GeoTIFFDataPipeModule(L.LightningDataModule):
@@ -221,7 +253,7 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
 
     def __init__(
         self,
-        data_path: str = "data/",
+        data_dir: str = "data/",
         batch_size: int = 32,
         num_workers: int = 8,
     ):
@@ -230,7 +262,7 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
 
         Parameters
         ----------
-        data_path : str
+        data_dir : str
             Path to the data folder where the GeoTIFF files are stored. Default
             is 'data/'.
         batch_size : int
@@ -245,7 +277,7 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
             A torch DataPipe that can be passed into a torch DataLoader.
         """
         super().__init__()
-        self.data_path: str = data_path
+        self.data_dir: str = data_dir
         self.batch_size: int = batch_size
         self.num_workers: int = num_workers
 
@@ -261,12 +293,12 @@ class GeoTIFFDataPipeModule(L.LightningDataModule):
             the prediction loop. Choose from either 'fit' or 'predict'.
         """
         # Step 1 - Get list of GeoTIFF filepaths from s3 bucket or data/ folder
-        if self.data_path.startswith("s3://"):
-            dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_path])
+        if self.data_dir.startswith("s3://"):
+            dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_dir])
             self.dp_paths = dp.list_files_by_s3(masks="*.tif")
-        else:  # if self.data_path is a local data path
+        else:  # if self.data_dir is a local data path
             self.dp_paths = torchdata.datapipes.iter.FileLister(
-                root=self.data_path, masks="*.tif", recursive=True
+                root=self.data_dir, masks="*.tif", recursive=True
             )
 
         if stage == "fit":  # training/validation loop
