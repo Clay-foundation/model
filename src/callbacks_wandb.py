@@ -192,7 +192,11 @@ class LogIntermediatePredictions(L.Callback):
 
             # get the first batch from trainer
             batch = next(iter(trainer.val_dataloaders))
-            batch = {k: v.to(pl_module.device) for k, v in batch.items()}
+            batch = {
+                k: v.to(pl_module.device)
+                for k, v in batch.items()
+                if isinstance(v, torch.Tensor)
+            }
             # ENCODER
             (
                 encoded_unmasked_patches,
@@ -221,13 +225,13 @@ class LogIntermediatePredictions(L.Callback):
 
             for i in range(n_cols):
                 axs[0, i].imshow(
-                    batch["pixels"][i][0].detach().cpu().numpy(), cmap="bwr"
+                    batch["pixels"][i][0].detach().cpu().numpy(), cmap="viridis"
                 )
                 axs[0, i].set_title(f"Image {i}")
                 axs[0, i].axis("off")
 
-                axs[1, i].imshow(pixels[i][0].detach().cpu().numpy(), cmap="gray")
+                axs[1, i].imshow(pixels[i][0].detach().cpu().numpy(), cmap="viridis")
                 axs[1, i].set_title(f"Preds {i}")
                 axs[1, i].axis("off")
 
-            wandb.log({"Images": wandb.Image(fig)})
+            self.logger.experiment.log({"Images": wandb.Image(fig)})
