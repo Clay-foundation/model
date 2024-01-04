@@ -1,8 +1,7 @@
-import streamlit as st
-import numpy as np
 import lancedb
 import matplotlib.pyplot as plt
 import rasterio as rio
+import streamlit as st
 from rasterio.plot import show
 
 st.set_page_config(layout="wide")
