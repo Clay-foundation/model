@@ -1,10 +1,8 @@
-import streamlit as st
-import numpy as np
 import lancedb
-import pickle
-from pathlib import Path
 import matplotlib.pyplot as plt
+import numpy as np
 import rasterio as rio
+import streamlit as st
 
 st.set_page_config(layout="wide")
 
