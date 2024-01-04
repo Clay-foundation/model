@@ -61,6 +61,9 @@ We store each chip as geotiff, along with their coordinate & timestamp informati
 
 ## Training Card
 
+CLAY v0 `small` is trained on 4 NVIDIA A10G GPUs for 25 epochs on ~1.2 Million chips.  
+Effective Batch Size = Batch Size x Number of GPUs x Gradiet Accumulation Steps = 10 x 4 x 5 = 200
+
 ![Learning Rate & Epoch](assets/lr.png)
 
 ![MSE Loss for Pixel Reconstruction](assets/loss.png)
