@@ -280,7 +280,7 @@ class Encoder(nn.Module):
         patches = self.to_patch_embed(
             cube
         )  # [B G L D] - patchify & create embeddings per patch
-        
+
         # Move position & band encoding to the device
         self.pos_encoding = self.pos_encoding.to(patches.device)
         self.band_encoding = self.band_encoding.to(patches.device)
