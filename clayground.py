@@ -1,41 +1,33 @@
+import streamlit as st
+import numpy as np
 import lancedb
 import matplotlib.pyplot as plt
-import numpy as np
 import rasterio as rio
-import streamlit as st
+from rasterio.plot import show
 
 st.set_page_config(layout="wide")
 
 
 # Get preferrred chips
 def get_unique_chips(tbl):
-    # 05WPP-1064 - Straight road line
-    # 05WNS-855 - Tree pattern
-    # 32TLP-1190 - Urban
-    # 32TLP-1272 - SAR Cut
-    # 05VPJ-1589 - Good DEM
-    # 06WWS-1109 - Cross Roads
-    # 05WNS-957
-    # 03UUV-1134
-    # 06KTF-383
-    # 05VPK-395
-    # 06VVP-539
     chips = [
-        # {"tile": "05WPP", "idx": 1064},
-        {"tile": "05WNS", "idx": 855},
-        {"tile": "32TLP", "idx": 1190},
-        {"tile": "32TLP", "idx": 1272},
-        {"tile": "05VPJ", "idx": 1589},
-        {"tile": "06WWS", "idx": 1109},
-        {"tile": "05WNS", "idx": 957},
-        {"tile": "03UUV", "idx": 1134},
-        {"tile": "06VUN", "idx": 57},
-        # {"tile": "05VPK", "idx": 395},
-        {"tile": "06VVP", "idx": 539},
-        {"tile": "06VUN", "idx": 173},
+        {"tile": "17MNP", "idx": "0271", "year": 2023},
+        {"tile": "19HGU", "idx": "0033", "year": 2018},
+        {"tile": "33NVB", "idx": "0393", "year": 2020},
+        {"tile": "21JVJ", "idx": "0100", "year": 2020},
+        {"tile": "34KHD", "idx": "0080", "year": 2018},
+        {"tile": "19JCF", "idx": "0215", "year": 2023},
+        {"tile": "20HMK", "idx": "0100", "year": 2020},
+        {"tile": "37MFT", "idx": "0313", "year": 2023},
+        {"tile": "49KHR", "idx": "0020", "year": 2017},
+        {"tile": "55LBC", "idx": "0075", "year": 2022},
     ]
+
     filter = " OR ".join(
-        [f"(tile == '{chip['tile']}' AND idx == {chip['idx']})" for chip in chips]
+        [
+            f"(tile == '{chip['tile']}' AND idx == '{chip['idx']}') AND year == {chip['year']}"
+            for chip in chips
+        ]
     )
     result = tbl.search().where(filter, prefilter=True).to_pandas()
     return result
@@ -45,7 +37,7 @@ def get_unique_chips(tbl):
 @st.cache_resource()
 def connect_to_database():
     db = lancedb.connect("nbs/embeddings")
-    tbl = db.open_table("clay-v0")
+    tbl = db.open_table("clay-v001")
     return tbl
 
 
@@ -61,28 +53,13 @@ def show_samples(_tbl):
     options = {}
     for idx, sample in enumerate(samples):
         path = sample["path"]
-        rgb_chip = rio.open(path).read(indexes=[3, 2, 1]).transpose(1, 2, 0) / 3000
-        dem_chip = rio.open(path).read(indexes=[13])[0]
-        vv, vh = (
-            rio.open(path).read(indexes=[11])[0],
-            rio.open(path).read(indexes=[12])[0],
-        )
-        sar_chip = np.stack([vv, vh, vv], axis=-1)
-        sar_chip = sar_chip / np.percentile(sar_chip, 98)  # Normalize
-        sar_chip = np.power(sar_chip, 0.45)  # Gamma correction
+        rgb_chip = rio.open(path).read(indexes=[3, 2, 1])
+        rgb_chip = (rgb_chip - rgb_chip.min()) / (rgb_chip.max() - rgb_chip.min())
         with cols[idx % 10]:
-            st.text(f"{sample['tile']}-{sample['idx']}")
-            plt.imshow(rgb_chip)
+            st.caption(f"{sample['tile']}-{sample['date']}-{sample['idx']}")
+            show(rgb_chip)
             plt.axis("off")
             st.pyplot(plt)
-        # with cols[idx % 10]:
-        #     plt.imshow(sar_chip)
-        #     plt.axis("off")
-        #     st.pyplot(plt)
-        # with cols[idx % 10]:
-        #     plt.imshow(dem_chip)
-        #     plt.axis("off")
-        #     st.pyplot(plt)
 
         options[f"{sample['tile']}-{sample['idx']}"] = {
             "vector": sample["vector"],
@@ -94,11 +71,12 @@ def show_samples(_tbl):
 
 
 # Function to find similar vectors
-def find_similar_vectors(tbl, query):
+@st.cache_data()
+def find_similar_vectors(_tbl, query):
     # tile, year = query["tile"], query["year"]
     # filter = f"tile != '{tile}'"
     result = (
-        tbl.search(query=query["vector"], vector_column_name="vector")
+        _tbl.search(query=query["vector"], vector_column_name="vector")
         .metric("cosine")
         # .where(filter, prefilter=True)
         .limit(10)
@@ -108,28 +86,13 @@ def find_similar_vectors(tbl, query):
     cols = st.columns(10)
     for idx, row in result.iterrows():
         path = row["path"]
-        rgb_chip = rio.open(path).read(indexes=[3, 2, 1]).transpose(1, 2, 0) / 3000
-        dem_chip = rio.open(path).read(indexes=[13])[0]
-        vv, vh = (
-            rio.open(path).read(indexes=[11])[0],
-            rio.open(path).read(indexes=[12])[0],
-        )
-        sar_chip = np.stack([vv, vh, vv], axis=-1)
-        sar_chip = sar_chip / np.percentile(sar_chip, 98)  # Normalize
-        sar_chip = np.power(sar_chip, 0.45)  # Gamma correction
+        rgb_chip = rio.open(path).read(indexes=[3, 2, 1])
+        rgb_chip = (rgb_chip - rgb_chip.min()) / (rgb_chip.max() - rgb_chip.min())
         with cols[idx % 10]:
-            st.text(f"{row['tile']}-{row['idx']}")
-            plt.imshow(rgb_chip)
+            st.caption(f"{row['tile']}-{row['date']}-{row['idx']}")
+            show(rgb_chip)
             plt.axis("off")
             st.pyplot(plt)
-        # with cols[idx % 10]:
-        #     plt.imshow(sar_chip)
-        #     plt.axis("off")
-        #     st.pyplot(plt)
-        # with cols[idx % 10]:
-        #     plt.imshow(dem_chip)
-        #     plt.axis("off")
-        #     st.pyplot(plt)
 
 
 # Main app
