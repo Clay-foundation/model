@@ -70,9 +70,6 @@ class Encoder(nn.Module):
         self.num_spatial_patches = (image_size // patch_size) ** 2
         self.num_group_patches = len(band_groups)
         self.num_patches = self.num_spatial_patches * self.num_group_patches
-        self.num_masked_patches = int(
-            self.mask_ratio * self.num_patches
-        )  # Number of patches to be masked out
 
         # Split the embedding dimensions between spatial & band patches equally
         pos_dim = band_dim = dim // 2
@@ -87,12 +84,20 @@ class Encoder(nn.Module):
         )
 
         # Fix the position & band embedding to sine & cosine functions
-        self.pos_encoding = posemb_sincos_2d(
-            h=image_size // patch_size, w=image_size // patch_size, dim=pos_dim
-        )  # [L D/2]
-        self.band_encoding = posemb_sincos_1d(
-            length=self.num_group_patches, dim=band_dim
-        )  # [G D/2]
+        self.register_buffer(
+            name="pos_encoding",
+            tensor=posemb_sincos_2d(
+                h=image_size // patch_size, w=image_size // patch_size, dim=pos_dim
+            ),  # [L D/2]
+            persistent=False,
+        )
+        self.register_buffer(
+            name="band_encoding",
+            tensor=posemb_sincos_1d(
+                length=self.num_group_patches, dim=band_dim
+            ),  # [G D/2]
+            persistent=False,
+        )
 
         # Freeze the weights of position & band encoding
         self.pos_encoding = self.pos_encoding.requires_grad_(False)
@@ -234,15 +239,18 @@ class Encoder(nn.Module):
         random_indices = torch.argsort(noise, dim=-1)  # [B GL]
         reverse_indices = torch.argsort(random_indices, dim=-1)  # [B GL]
 
+        num_masked_patches = int(
+            self.mask_ratio * self.num_patches
+        )  # Number of patches to be masked out
         masked_indices, unmasked_indices = (
-            random_indices[:, : self.num_masked_patches],  # [B mask_ratio * GL]
-            random_indices[:, self.num_masked_patches :],  # [B (1 - mask_ratio) * GL]
+            random_indices[:, :num_masked_patches],  # [B mask_ratio * GL]
+            random_indices[:, num_masked_patches:],  # [B (1 - mask_ratio) * GL]
         )
 
         # create a mask of shape B G L, where 1 indicates a masked patch
         # and 0 indicates an unmasked patch
         masked_matrix = torch.zeros((B, GL), device=patches.device)  # [B GL] = 0
-        masked_matrix[:, : self.num_masked_patches] = 1  # [B mask_ratio * GL] = 1
+        masked_matrix[:, :num_masked_patches] = 1  # [B mask_ratio * GL] = 1
         masked_matrix = torch.gather(
             masked_matrix, dim=1, index=reverse_indices
         )  # [B GL] -> [B GL] - reorder the patches
@@ -280,7 +288,7 @@ class Encoder(nn.Module):
         patches = self.to_patch_embed(
             cube
         )  # [B G L D] - patchify & create embeddings per patch
-        
+
         # Move position & band encoding to the device
         self.pos_encoding = self.pos_encoding.to(patches.device)
         self.band_encoding = self.band_encoding.to(patches.device)
@@ -345,7 +353,6 @@ class Decoder(nn.Module):
         self.num_spatial_patches = (image_size // patch_size) ** 2
         self.num_group_patches = len(band_groups)
         self.num_patches = self.num_spatial_patches * self.num_group_patches
-        self.num_masked_patches = int(self.mask_ratio * self.num_patches)
 
         self.enc_to_dec = (
             nn.Linear(encoder_dim, dim) if encoder_dim != dim else nn.Identity()
@@ -364,12 +371,20 @@ class Decoder(nn.Module):
         pos_dim = band_dim = dim // 2
 
         # Fix the position & band embedding to sine & cosine functions
-        self.pos_encoding = posemb_sincos_2d(
-            h=image_size // patch_size, w=image_size // patch_size, dim=pos_dim
-        )  # [L D/2]
-        self.band_encoding = posemb_sincos_1d(
-            length=self.num_group_patches, dim=band_dim
-        )  # [G D/2]
+        self.register_buffer(
+            name="pos_encoding",
+            tensor=posemb_sincos_2d(
+                h=image_size // patch_size, w=image_size // patch_size, dim=pos_dim
+            ),  # [L D/2]
+            persistent=False,
+        )
+        self.register_buffer(
+            name="band_encoding",
+            tensor=posemb_sincos_1d(
+                length=self.num_group_patches, dim=band_dim
+            ),  # [G D/2]
+            persistent=False,
+        )
 
         # Freeze the weights of position & band encoding
         self.pos_encoding = self.pos_encoding.requires_grad_(False)
@@ -439,8 +454,9 @@ class Decoder(nn.Module):
 
         # Reconstruct the masked patches from the random mask patch &
         # add position & band encoding to them
+        num_masked_patches = int(self.mask_ratio * self.num_patches)
         masked_patches = repeat(
-            self.mask_patch, "D -> B GL D", B=B, GL=self.num_masked_patches
+            self.mask_patch, "D -> B GL D", B=B, GL=num_masked_patches
         )  # [B GL:mask_ratio D]
         masked_patches = (
             masked_patches + masked_pos_band_encoding
