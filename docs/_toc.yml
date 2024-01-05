@@ -22,10 +22,12 @@ parts:
       file: model_embeddings
     - title: Finetuning
       file: model_finetuning
-- caption: Quality of model
+- caption: Experiments
   chapters:
-    - title: Quality of reconstruction from the model
+    - title: Pixel Level Reconstruction
       file: 240105-clay-v0-reconstruction
+    - title: Location embeddings
+      file: 240105-location-embeddings
 - caption: About Clay
   chapters:
     - title: GitHub
