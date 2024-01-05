@@ -84,7 +84,7 @@ class ClayDataset(Dataset):
         cube = self.read_chip(chip_path)
 
         # remove nans and convert to tensor
-        cube["pixels"] = torch.as_tensor(data=cube["pixels"], dtype=torch.float16)
+        cube["pixels"] = torch.as_tensor(data=cube["pixels"])
         cube["bbox"] = torch.as_tensor(data=cube["bbox"], dtype=torch.float64)
         cube["epsg"] = torch.as_tensor(data=cube["epsg"], dtype=torch.int32)
         cube["date"] = str(cube["date"])
@@ -145,7 +145,7 @@ class ClayDataModule(L.LightningDataModule):
         num_workers: int = 8,
     ):
         super().__init__()
-        self.data_dir = Path(data_dir)
+        self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.split_ratio = 0.8
