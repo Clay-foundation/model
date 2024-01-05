@@ -22,6 +22,10 @@ parts:
       file: model_embeddings
     - title: Finetuning
       file: model_finetuning
+- caption: Quality of model
+  chapters:
+    - title: Quality of reconstruction from the model
+      file: 240105-clay-v0-reconstruction
 - caption: About Clay
   chapters:
     - title: GitHub
