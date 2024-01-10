@@ -1,10 +1,10 @@
-# model
-Where the Clay model lives
+# Clay Foundation Model
 
-The code lives here, and the managment of the code, roadmap, sprints, and other colab aspect are managed with Issues.
+[![Jupyter Book Badge](https://jupyterbook.org/badge.svg)](https://clay-foundation.github.io/model)
+[![Deploy Book Status](https://github.com/Clay-foundation/model/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/Clay-foundation/model/actions/workflows/deploy-docs.yml)
+[![Continuous Integration Tests Status](https://github.com/Clay-foundation/model/actions/workflows/test.yml/badge.svg)](https://github.com/Clay-foundation/model/actions/workflows/test.yml)
 
-
-Note that this repo *is* public.
+An open source AI model and interface for Earth.
 
 # Getting started
 
@@ -95,7 +95,7 @@ To generate embeddings from the pretrained model's encoder on 1024 images
 
     python trainer.py predict --ckpt_path=checkpoints/last.ckpt \
                               --data.batch_size=1024 \
-                              --data.data_path=s3://clay-tiles-02 \
+                              --data.data_dir=s3://clay-tiles-02 \
                               --trainer.limit_predict_batches=1
 
 More options can be found using `python trainer.py fit --help`, or at the

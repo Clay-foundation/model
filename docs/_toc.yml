@@ -1,0 +1,26 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: intro
+parts:
+- caption: Getting Started
+  chapters:
+    - title: Installation
+      file: installation
+- caption: Data Preparation
+  chapters:
+    - title: Benchmark dataset labels
+      file: data_labels
+- caption: Running the model
+  chapters:
+    - title: Generating embeddings
+      file: model_embeddings
+    - title: Finetuning
+      file: model_finetuning
+- caption: About Clay
+  chapters:
+    - title: GitHub
+      url: https://github.com/Clay-foundation
+    - title: LinkedIn
+      url: https://www.linkedin.com/company/made-with-clay
