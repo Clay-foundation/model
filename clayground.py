@@ -22,13 +22,15 @@ def get_unique_chips(tbl):
         {"tile": "55LBC", "idx": "0075", "year": 2022},
     ]
 
-    filter = " OR ".join(
+    tile_filter = " OR ".join(
         [
-            f"(tile == '{chip['tile']}' AND idx == '{chip['idx']}') AND year == {chip['year']}"
+            f"(tile == '{chip['tile']}' "
+            f"AND idx == '{chip['idx']}') "
+            f"AND year == {chip['year']}"
             for chip in chips
         ]
     )
-    result = tbl.search().where(filter, prefilter=True).to_pandas()
+    result = tbl.search().where(tile_filter, prefilter=True).to_pandas()
     return result
 
 
