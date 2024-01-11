@@ -14,6 +14,7 @@ from lightning.pytorch.callbacks import (
     ModelCheckpoint,
 )
 from lightning.pytorch.cli import ArgsType, LightningCLI
+from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.plugins.io import AsyncCheckpointIO
 
 from src.callbacks_wandb import (  # noqa: F401
@@ -31,27 +32,29 @@ def cli_main(
     seed_everything_default=42,
     trainer_defaults: dict = {
         "accelerator": "auto",
+        "devices": "auto",
+        "strategy": "ddp",
+        "precision": "bf16-mixed",
+        "log_every_n_steps": 1,
+        "max_epochs": 100,
+        "accumulate_grad_batches": 5,
         "callbacks": [
             ModelCheckpoint(
-                # dirpath="checkpoints/",
+                dirpath="checkpoints/",
                 auto_insert_metric_name=False,
                 filename="mae_epoch-{epoch:02d}_val-loss-{val/loss:.2f}",
                 monitor="val/loss",
                 mode="min",
                 save_last=True,
-                save_top_k=3,
+                save_top_k=2,
                 save_weights_only=True,
                 verbose=True,
             ),
-            # LearningRateMonitor(logging_interval="step"),
-            # LogIntermediatePredictions(),
+            LearningRateMonitor(logging_interval="step"),
+            LogIntermediatePredictions(),
         ],
-        "logger": False,  # WandbLogger(project="CLAY-v0", log_model=False)
+        "logger": [WandbLogger(project="CLAY-v0", log_model=False)],
         "plugins": [AsyncCheckpointIO()],
-        "precision": "bf16-mixed",
-        "max_epochs": 20,
-        "log_every_n_steps": 1,
-        "accumulate_grad_batches": 20,
     },
     args: ArgsType = None,
 ):

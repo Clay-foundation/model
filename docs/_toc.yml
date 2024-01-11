@@ -8,6 +8,18 @@ parts:
   chapters:
     - title: Installation
       file: installation
+- caption: Data Preparation
+  chapters:
+    - title: Creating datacubes
+      file: data_datacube
+    - title: Benchmark dataset labels
+      file: data_labels
+- caption: Running the model
+  chapters:
+    - title: Generating embeddings
+      file: model_embeddings
+    - title: Finetuning
+      file: model_finetuning
 - caption: About Clay
   chapters:
     - title: GitHub
