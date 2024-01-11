@@ -520,10 +520,6 @@ class Decoder(nn.Module):
             encoded_unmasked_patches[:, -2:, :],
         )  # [B (GL:(1 - mask_ratio)) D], [B 2 D]
 
-        # move position & band encoding to the device
-        self.pos_encoding = self.pos_encoding.to(encoded_unmasked_patches.device)
-        self.band_encoding = self.band_encoding.to(encoded_unmasked_patches.device)
-
         # Reconstruct the patches to feed into the decoder transformer
         decoder_patches = self.reconstruct_and_add_encoding(
             encoded_unmasked_patches, unmasked_indices, masked_indices
