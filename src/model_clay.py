@@ -47,6 +47,7 @@ class Encoder(nn.Module):
         mask_ratio,
         image_size,
         patch_size,
+        shuffle,
         dim,
         depth,
         heads,
@@ -64,6 +65,7 @@ class Encoder(nn.Module):
         self.mask_ratio = mask_ratio
         self.image_size = image_size
         self.patch_size = patch_size
+        self.shuffle = shuffle
         self.dim = dim
         self.bands = bands
         self.band_groups = band_groups
@@ -235,7 +237,13 @@ class Encoder(nn.Module):
             GL == self.num_patches
         ), f"Expected {self.num_patches} patches, got {GL} patches."
 
-        noise = torch.randn((B, GL), device=patches.device)  # [B GL]
+        if self.shuffle:  # Shuffle the patches
+            noise = torch.randn((B, GL), device=patches.device)  # [B GL]
+        else:  # Don't shuffle the patches, this is useful for interpolation & inspection of embeddings
+            noise = rearrange(
+                torch.arange(B * GL, device=patches.device), "(B GL) -> B GL", B=B
+            )
+
         random_indices = torch.argsort(noise, dim=-1)  # [B GL]
         reverse_indices = torch.argsort(random_indices, dim=-1)  # [B GL]
 
@@ -554,6 +562,7 @@ class CLAY(nn.Module):
         mask_ratio,
         image_size,
         patch_size,
+        shuffle,
         # ENCODER
         dim,
         depth,
@@ -585,6 +594,7 @@ class CLAY(nn.Module):
         self.mask_ratio = mask_ratio
         self.image_size = image_size
         self.patch_size = patch_size
+        self.shuffle = shuffle
         self.bands = bands
         self.band_groups = band_groups
 
@@ -592,6 +602,7 @@ class CLAY(nn.Module):
             mask_ratio=mask_ratio,
             image_size=image_size,
             patch_size=patch_size,
+            shuffle=shuffle,
             dim=dim,
             depth=depth,
             heads=heads,
@@ -784,6 +795,7 @@ class CLAYModule(L.LightningModule):
         mask_ratio=0.75,
         image_size=512,
         patch_size=32,
+        shuffle=True,
         lr=1e-4,
         wd=0.05,
         b1=0.9,
@@ -802,6 +814,7 @@ class CLAYModule(L.LightningModule):
                 mask_ratio=mask_ratio,
                 image_size=image_size,
                 patch_size=patch_size,
+                shuffle=shuffle,
             )
         else:
             raise ValueError(
