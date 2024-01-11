@@ -84,7 +84,6 @@ class ClayDataset(Dataset):
 
         chip_path = chips_path[idx]
         chip_label_path = chips_label_path[idx]
-        #print("CHECK: ", chip_path, chip_label_path, " BREAK - ")
         
 
         position = "_".join(chip_path.split("/")[-1].split("_")[-3:-1])
@@ -107,7 +106,14 @@ class ClayDataset(Dataset):
         # Get EPSG
         epsg = chip_data_array.crs.to_epsg()
         chip_label_path_data_array = rasterio.open(f"{self.data_dir}/{flood_event}/{filename}_LabelWater.tif") #chip_label_path)
+        chip_label_cloud_path_data_array = rasterio.open(f"{self.data_dir}/{flood_event}/{filename}_LabelCloud.tif") #chip_label_path)
         label_array_values = chip_label_path_data_array.read()
+        label_cloud_array_values = chip_label_cloud_path_data_array.read()
+        # Mask out clouds and cloud shadows from datacube and labels
+        image_array_values = np.where(label_cloud_array_values == 1, 0, image_array_values) # clouds
+        label_array_values = np.where(label_cloud_array_values == 1, 0, label_array_values) # clouds
+        image_array_values = np.where(label_cloud_array_values == 2, 0, image_array_values) # cloud shadows
+        label_array_values = np.where(label_cloud_array_values == 2, 0, label_array_values) # cloud shadows
         return image_array_values, label_array_values, flood_event, position, date, bounds, centroid, epsg, filename
     
     def get_benchmark_data(self, chips_path, chips_label_path, idx):
@@ -146,7 +152,6 @@ class ClayDataset(Dataset):
 
 
 class ClayDataModule(L.LightningDataModule):
-    
     MEAN = [
         1369.03,
         1597.68,
