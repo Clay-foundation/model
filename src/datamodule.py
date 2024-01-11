@@ -145,7 +145,7 @@ class ClayDataModule(L.LightningDataModule):
         num_workers: int = 8,
     ):
         super().__init__()
-        self.data_dir = Path(data_dir)
+        self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.split_ratio = 0.8
