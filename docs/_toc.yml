@@ -28,6 +28,8 @@ parts:
       file: 240105-clay-v0-reconstruction
     - title: Location embeddings
       file: 240105-location-embeddings
+    - title: Interpolation in embedding space
+      file: 240105-clay-v0-interpolation
 - caption: About Clay
   chapters:
     - title: GitHub
