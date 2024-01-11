@@ -125,10 +125,15 @@ def test_model_predict(datapipe, litmodule, precision):
         )
         geodataframe: gpd.GeoDataFrame = gpd.read_parquet(path=path)
 
-        assert geodataframe.shape == (2, 4)  # 2 rows, 4 columns
-        assert all(
-            geodataframe.columns == ["source_url", "date", "embeddings", "geometry"]
-        )
+        assert geodataframe.shape == (2, 5)  # 2 rows, 5 columns
+        assert list(geodataframe.columns) == [
+            "index",
+            "source_url",
+            "date",
+            "embeddings",
+            "geometry",
+        ]
+        assert geodataframe.index.dtype == "int64"
         assert geodataframe.source_url.dtype == "string"
         assert geodataframe.date.dtype == "date32[day][pyarrow]"
         assert geodataframe.embeddings.dtype == "object"
