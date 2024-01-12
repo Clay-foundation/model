@@ -1,4 +1,12 @@
+import os
+import re
+
+import geopandas as gpd
 import lightning as L
+import numpy as np
+import pandas as pd
+import pyarrow as pa
+import shapely
 import torch
 import torch.nn.functional as F
 from einops import rearrange, reduce, repeat
@@ -10,6 +18,7 @@ from src.utils import posemb_sincos_1d, posemb_sincos_2d
 torch.set_float32_matmul_precision(precision="medium")
 
 
+# %%
 class Patchify(nn.Module):
     """
     Patchify the input cube & create embeddings per patch
@@ -154,7 +163,7 @@ class Encoder(nn.Module):
             A tensor of shape (B, G, L, D) containing the embeddings of the
             patches + position & band encoding.
         """
-        B, G, L, D = patches.shape
+        self.B, G, L, D = patches.shape
 
         # Align position & band embeddings across patches
         pos_encoding = repeat(
@@ -842,3 +851,122 @@ class CLAYModule(L.LightningModule):
 
     def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int):
         return self.shared_step(batch, batch_idx, phase="val")
+
+    def predict_step(
+        self, batch: dict[str, torch.Tensor | list[str]], batch_idx: int
+    ) -> gpd.GeoDataFrame:
+        """
+        Logic for the neural network's prediction loop.
+        """
+        # Get image, bounding box, EPSG code, and date inputs
+        # x: torch.Tensor = batch["pixels"]  # image of shape (1, 13, 512, 512) # BCHW
+        bboxes: np.ndarray = batch["bbox"].cpu().__array__()  # bounding boxes
+        epsgs: torch.Tensor = batch["epsg"]  # coordinate reference systems as EPSG code
+        dates: list[str] = batch["date"]  # dates, e.g. ['2022-12-12', '2022-12-12']
+        source_urls: list[str] = batch[  # URLs, e.g. ['s3://1.tif', 's3://2.tif']
+            "source_url"
+        ]
+
+        # Forward encoder
+        self.model.encoder.mask_ratio = 0.0  # disable masking
+        outputs_encoder: dict = self.model.encoder(
+            datacube=batch  # input (pixels, timestep, latlon)
+        )
+
+        # Get embeddings generated from encoder
+        # (encoded_unmasked_patches, _, _, _) = outputs_encoder
+        embeddings_raw: torch.Tensor = outputs_encoder[0]
+        assert embeddings_raw.shape == torch.Size(
+            [self.model.encoder.B, 1538, 768]  # (batch_size, seq_length, hidden_size)
+        )
+        assert not torch.isnan(embeddings_raw).any()  # ensure no NaNs in embedding
+
+        # Take the mean of the embeddings along the sequence_length dimension
+        # excluding the last two latlon_ and time_ embeddings, i.e. compute
+        # mean over patch embeddings only
+        embeddings_mean: torch.Tensor = embeddings_raw[:, :-2, :].mean(dim=1)
+        assert embeddings_mean.shape == torch.Size(
+            [self.model.encoder.B, 768]  # (batch_size, hidden_size)
+        )
+
+        # Create table to store the embeddings with spatiotemporal metadata
+        unique_epsg_codes = set(int(epsg) for epsg in epsgs)
+        if len(unique_epsg_codes) == 1:  # check that there's only 1 unique EPSG
+            epsg: int = batch["epsg"][0]
+        else:
+            raise NotImplementedError(
+                f"More than 1 EPSG code detected: {unique_epsg_codes}"
+            )
+
+        gdf = gpd.GeoDataFrame(
+            data={
+                "source_url": pd.Series(data=source_urls, dtype="string[pyarrow]"),
+                "date": pd.to_datetime(arg=dates, format="%Y-%m-%d").astype(
+                    dtype="date32[day][pyarrow]"
+                ),
+                "embeddings": pa.FixedShapeTensorArray.from_numpy_ndarray(
+                    embeddings_mean.cpu().detach().__array__()
+                ),
+            },
+            geometry=shapely.box(
+                xmin=bboxes[:, 0],
+                ymin=bboxes[:, 1],
+                xmax=bboxes[:, 2],
+                ymax=bboxes[:, 3],
+            ),
+            crs=f"EPSG:{epsg}",
+        )
+        gdf = gdf.to_crs(crs="OGC:CRS84")  # reproject from UTM to lonlat coordinates
+
+        return gdf
+
+    def on_predict_epoch_end(self) -> gpd.GeoDataFrame:
+        """
+        Logic to gather all the results from one epoch in a prediction loop.
+        """
+        # Combine list of geopandas.GeoDataFrame objects
+        results: list[gpd.GeoDataFrame] = self.trainer.predict_loop.predictions
+        if results:
+            gdf: gpd.GeoDataFrame = pd.concat(
+                objs=results, axis="index", ignore_index=True
+            )
+        else:
+            print(
+                "No embeddings generated, "
+                f"possibly no GeoTIFF files in {self.trainer.datamodule.data_dir}"
+            )
+            return
+
+        # Save embeddings in GeoParquet format, one file for each MGRS code
+        outfolder: str = f"{self.trainer.default_root_dir}/data/embeddings"
+        os.makedirs(name=outfolder, exist_ok=True)
+
+        # Find unique MGRS names (e.g. '12ABC'), e.g.
+        # from 's3://.../.../claytile_12ABC_20201231_v02_0001.tif', get 12ABC
+        mgrs_codes = gdf.source_url.str.split("/").str[-1].str.split("_").str[1]
+        unique_mgrs_codes = mgrs_codes.unique()
+        for mgrs_code in unique_mgrs_codes:
+            if re.match(pattern=r"(\d{2}[A-Z]{3})", string=mgrs_code) is None:
+                raise ValueError(
+                    "MGRS code should have 2 numbers and 3 letters (e.g. 12ABC), "
+                    f"but got {mgrs_code} instead"
+                )
+
+            # Subset GeoDataFrame to a single MGRS code
+            _gdf: gpd.GeoDataFrame = gdf.loc[mgrs_codes == mgrs_code].reset_index()
+
+            # Get min/max date from GeoDataFrame
+            minmax_date: pd.Series = _gdf.date.agg(func=["min", "max"])
+            min_date: str = minmax_date["min"].strftime("%Y%m%d")
+            max_date: str = minmax_date["max"].strftime("%Y%m%d")
+
+            # Output to a GeoParquet filename like
+            # {MGRS:5}_{MINDATE:8}_{MAXDATE:8}_v{VERSION:3}.gpq
+            outpath = f"{outfolder}/{mgrs_code}_{min_date}_{max_date}_v001.gpq"
+            _gdf.to_parquet(path=outpath, compression="ZSTD", schema_version="1.0.0")
+            print(
+                f"Saved {len(_gdf)} rows of embeddings of "
+                f"shape {gdf.embeddings.iloc[0].shape} to {outpath}"
+            )
+
+        return gdf
