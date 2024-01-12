@@ -20,6 +20,10 @@ parts:
       file: model_embeddings
     - title: Finetuning
       file: model_finetuning
+- caption: Reference Documentation
+  chapters:
+    - title: Changelog
+      file: changelog
 - caption: About Clay
   chapters:
     - title: GitHub
