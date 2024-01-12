@@ -316,20 +316,20 @@ def make_datasets(s2_items, s1_items, dem_items, resolution):
 
 def process(
     aoi,
-    year,
+    date_range,
     resolution,
     cloud_cover_percentage,
     nodata_pixel_percentage,
 ):
     """
     Process Sentinel-2, Sentinel-1, and Copernicus DEM data for a specified
-    year, area of interest (AOI), resolution, EPSG code, cloud cover
+    date_range, area of interest (AOI), resolution, EPSG code, cloud cover
     percentage, and nodata pixel percentage.
 
     Parameters:
     - aoi (shapely.geometry.base.BaseGeometry): Geometry object for an Area of
         Interest (AOI).
-    - year (int): The year for finding imagery.
+    - date_range (str): Date range string to pass to the catalog search.
     - resolution (int): Spatial resolution.
     - cloud_cover_percentage (int): Maximum acceptable cloud cover percentage
         for Sentinel-2 images.
@@ -339,7 +339,6 @@ def process(
     Returns:
     - xr.Dataset: Merged xarray Dataset containing processed data.
     """
-    date_range = f"{year}-01-01/{year}-12-31"
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
 
     for i in range(S1_MATCH_ATTEMPTS):
@@ -364,8 +363,8 @@ def process(
 
     if i == S1_MATCH_ATTEMPTS - 1:
         print(
-            "No match for S1 scenes found for year "
-            f"{year} after {S1_MATCH_ATTEMPTS} attempts."
+            "No match for S1 scenes found for date range "
+            f"{date_range} after {S1_MATCH_ATTEMPTS} attempts."
         )
         return None, None
 
@@ -423,10 +422,26 @@ def convert_attrs_and_coords_objects_to_str(data):
 @click.option(
     "--subset",
     required=False,
-    default=None,
-    help="For debugging, subset x and y to this pixel window.",
+    default="",
+    help="For debugging, subset x and y to this pixel window as a comma"
+    "separated string of 4 integers.",
+    type=str,
 )
-def main(sample, index, subset, bucket):
+@click.option(
+    "--localpath",
+    required=False,
+    default=None,
+    help="If specified, this path will be used to write the tiles locally"
+    "Otherwise a temp dir will be used.",
+)
+@click.option(
+    "--dateranges",
+    required=False,
+    default="",
+    type=str,
+    help="Comma separated list of date ranges, each provided as yy-mm-dd/yy-mm-dd.",
+)
+def main(sample, index, subset, bucket, localpath, dateranges):
     index = int(index)
     tiles = gpd.read_file(sample)
     tile = tiles.iloc[index]
@@ -434,17 +449,27 @@ def main(sample, index, subset, bucket):
 
     print(f"Starting algorithm for MGRS tile {tile['name']} with index {index}")
 
-    # Shuffle years, use index as seed for reproducibility but no
-    # to have the same shuffle every time.
-    years = [2017, 2018, 2019, 2020, 2021, 2022, 2023]
-    random.seed(index)
-    random.shuffle(years)
+    if subset:
+        subset = [int(dat) for dat in subset.split(",")]
+
+    if dateranges:
+        date_ranges = dateranges.split(",")
+    else:
+        # Shuffle years, use index as seed for reproducibility but no
+        # to have the same shuffle every time.
+        date_ranges = [
+            f"{year}-01-01/{year}-12-31"
+            for year in (2017, 2018, 2019, 2020, 2021, 2022, 2023)
+        ]
+        random.seed(index)
+        random.shuffle(date_ranges)
+
     match_count = 0
-    for year in years:
-        print(f"Processing data for year {year}")
+    for date_range in date_ranges:
+        print(f"Processing data for date range {date_range}")
         date, pixels = process(
             tile.geometry,
-            year,
+            date_range,
             SPATIAL_RESOLUTION,
             CLOUD_COVER_PERCENTAGE,
             NODATA_PIXEL_PERCENTAGE,
@@ -455,7 +480,6 @@ def main(sample, index, subset, bucket):
             match_count += 1
 
         if subset:
-            subset = [int(dat) for dat in subset.split(",")]
             print(f"Subsetting to {subset}")
             pixels = [
                 part[:, subset[1] : subset[3], subset[0] : subset[2]] for part in pixels
@@ -463,7 +487,7 @@ def main(sample, index, subset, bucket):
 
         pixels = [part.compute() for part in pixels]
 
-        tiler(pixels, date, mgrs, bucket)
+        tiler(pixels, date, mgrs, bucket, localpath)
 
         if match_count == DATES_PER_LOCATION:
             break
