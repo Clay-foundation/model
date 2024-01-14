@@ -11,11 +11,11 @@ Model weights released on 2024/01/12.
 
 ### Summary
 
-Clay v0 is a self-supervised modified vision transfer model trained on stacks of Sentinel-2, Sentinel-1 & DEM data. It is trained as a Masked Autoencoder (MAE) to reconstruct the original image from a masked image. 
+Clay v0 is a self-supervised modified vision transfer model trained on stacks of Sentinel-2, Sentinel-1 & DEM data. It is trained as a Masked Autoencoder (MAE) to reconstruct the original image from a masked image.
 
 Each data entry is a stack of 13 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. The model is trained with 3 timesteps of data for each location, with a total of 1203 MGRS tiles globally distributed, each of size 10km x 10km. The data was collected from the Microsoft Planetary Computer.
 
-The model was trained on AWS on 4 NVIDIA A10G GPUs for 25 epochs (~14h per epoch) in December 2024. 
+The model was trained on AWS on 4 NVIDIA A10G GPUs for 25 epochs (~14h per epoch) in December 2024.
 
 Model weights are available on HuggingFace [here](https://huggingface.co/made-with-clay/Clay/).
 
@@ -31,9 +31,9 @@ For details, check the source code [here](https://github.com/Clay-foundation/mod
 
 * Core Framework: [Lightning](https://lightning.ai/) and its dependencies, like PyTorch, etc.
 
-* Input modalities: 
+* Input modalities:
     * Fixed spec of 13 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. See below for details.
-* Output modalities: 
+* Output modalities:
     * As a masked auto-enconder, fixed spec of 13 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data, to mimic the input as close as possible.
 * Model size:
     * Number of parameters: `127M`
@@ -101,10 +101,10 @@ We organize our input dataset creation in MGRS tiles. Each tile is a 10km x 10km
 * Training dataset items:
     * The actual list of files used is available [here](https://gist.github.com/brunosan/62247e5dc79684bdaca11cefae679e90).
 * Data source selection and curation process:
-    * We aim for fully open data, with global and historical coverage, with the highest spatial, temporal and spectral resolution, hosted on a cloud format that eases the process to search and download the needed sections. 
+    * We aim for fully open data, with global and historical coverage, with the highest spatial, temporal and spectral resolution, hosted on a cloud format that eases the process to search and download the needed sections.
     * Once these sources are selected, we make a [statistical sample based on cover type](https://github.com/Clay-foundation/model/blob/0145e55bcf6bd3e9b19f5c07819a1398b6a22c35/scripts/landcover.py#L156), so that we have a good coverage of the different landscapes. The land cover data is from [ESA WorldCover 2021](https://registry.opendata.aws/esa-worldcover-vito/).
 * Data augmentation:
-    * We do not use any data augmentation techniques like affine transformations, random crops (except the masked autoencoder task), etc. We also do not use input mixing like CutMix, MixUp, etc. 
+    * We do not use any data augmentation techniques like affine transformations, random crops (except the masked autoencoder task), etc. We also do not use input mixing like CutMix, MixUp, etc.
     * Clouds, cloud shadows, smog, atmospheric scattering, mid-air planes and other non-ground registrations could be considered natural augmentations. We explicitly filter out large % of clouds on our chips, but small clouds and their shadows might be present. As we increase the number of observations per location, and bands, we expect the model to learn to ignore single events but register patterns (places that are often cloudy or with smog).
 * PII or harmful content:
     * We believe that satellites images at this resolution (`10m/px`) are not subject to PII or harmful content concerns.
@@ -124,21 +124,21 @@ We store each chip as geotiff, along with their coordinate & timestamp informati
     * Batch Size = `10`
     * Effective Batch Size = Batch Size x Number of GPUs x Gradient Accumulation Steps = `10` x `4` x `5` = `200`
 * Training Time:
-    * `25` epochs, each taking ~`15h` to train.   
+    * `25` epochs, each taking ~`15h` to train.
 * Carbon Emissions:
     * *Report not yet available from provider, expected March'24*
 * Training stages:
     * While developing the model we run small tests locally and on the cloud. We estimate that all testing and development compute is less than the compute used for 1 epoch of training.
     * QA of the model is also done locally and on the cloud, and we estimate that it is less than the compute used for 1 epoch of training.
 * Release and distribution:
-    * Model development happens in an open source repository on GitHub [here](https://github.com/Clay-foundation/model/). 
+    * Model development happens in an open source repository on GitHub [here](https://github.com/Clay-foundation/model/).
     * We release the model weights on HuggingFace [here](https://huggingface.co/made-with-clay/Clay/).
     * We release the embeddings on Source Cooperative [here](https://beta.source.coop/clay/).
     * We do not have other distribution channels at this time.
 * Production use:
     * We support our partners to build applications with the model, and we expect them to use the model in production.
     * We are developing a web application and expect to release it in 2024 Q1.
-   
+
 
 ![Learning Rate & Epoch](assets/lr.png)
 
@@ -152,18 +152,18 @@ As a foundational model, it is designed to be used as a building block for other
 
 
 ### Performance Metrics
-The model shows the following performance characteristics for its Masked Autoencoder objective: 
+The model shows the following performance characteristics for its Masked Autoencoder objective:
 * Training loss: `0.52`
 * Validation loss: `0.46`
 
 ## Known Limitations and Biases
 
 - The model is trained on Sentinel data only.
-- Sentinel data only covers land and coastal waters. 
-- We only train on a ver small sample of the Sentinel archives, both in terms of spatial coverage and time. 
-- We do not train on the poles, and we do not train on open ocean, nor ocean nor atmospheric volumetric data. 
-- We do not train on night time data. 
-- We do not explicitly include extreme events in the training data. 
+- Sentinel data only covers land and coastal waters.
+- We only train on a ver small sample of the Sentinel archives, both in terms of spatial coverage and time.
+- We do not train on the poles, and we do not train on open ocean, nor ocean nor atmospheric volumetric data.
+- We do not train on night time data.
+- We do not explicitly include extreme events in the training data.
 - We only train at most 3 different times per location.
 
 
@@ -171,6 +171,6 @@ The model shows the following performance characteristics for its Masked Autoenc
 
 Our goal is to lower the barrier to use EO data for biodiversity and climate change mitigation and adaptation. We have designed our model to support this goal.
 
-We have also designed our model to be as open as possible, as modular as possible, as undifferentiated and general as possible, and as well documented as possible, so we can maximize the leverage of the resources needed for the creation of this model. 
+We have also designed our model to be as open as possible, as modular as possible, as undifferentiated and general as possible, and as well documented as possible, so we can maximize the leverage of the resources needed for the creation of this model.
 
 As a fully open model, we cannot however control how it is used. We are aware that EO data can be used for harmful purposes, and we are committed to work with our partners to prevent this from happening.

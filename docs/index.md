@@ -5,7 +5,7 @@
 Clay is a foundational model of Earth. It uses an expanded visual transformer upgraded to understand geospatial and temporal relations on Earth data. The model is trained as a self-supervised Masked Autoencoder (MAE).
 
 The Clay model can be used in three main ways:
-- Generate semantic embeddings for any location and time. 
+- Generate semantic embeddings for any location and time.
 - Fine-tune the model for downstream tasks such as classification, regression, and generative tasks.
 - Use the model as a backbone for other models.
 
