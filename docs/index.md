@@ -16,7 +16,7 @@ The Clay model can be used in three main ways:
 - The Clay model **code** lives on [Github](https://github.com/Clay-foundation/model). License: [Apache](https://github.com/Clay-foundation/model/LICENSE). The latest release is [v0.0.1](https://github.com/Clay-foundation/model/releases/tag/v0.0.1)
 - The Clay model **weights**  on [Hugging Face](https://huggingface.co/made-with-clay/Clay/). License: [OpenRAIL-M](https://github.com/Clay-foundation/model/blob/main/LICENSE-MODEL.md).
 - The Clay **documentation** [lives on this site](https://clay-foundation.github.io/model/intro.html). License: [CC-BY](http://creativecommons.org/licenses/by/4.0/).
-- *Coming Soon* We maintain a set of **embeddings** on [Source Cooperative](#). License: [ODC-BY](#).
+- *Coming Soon* > We maintain a set of **embeddings** on [Source Cooperative](https://beta.source.coop/clay/). License: [ODC-BY](https://opendatacommons.org/licenses/by/).
 
 CLAY is a fiscal sponsored project of the 501c3 non-profit [Radiant Earth Foundation](https://www.radiant.earth/).
 
