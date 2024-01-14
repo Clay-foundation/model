@@ -1,6 +1,11 @@
-# Changelog
+(software_release)=
+# Code Model release v0.0.1
 
-## Release v0.0.1 (2024/01/12)
+This changelog is a summary of the changes to the source code of the Clay model. 
+Released on 2024/01/12.
+
+> For release notes for the trained model, see [](model_release)
+
 
 ### 💫 Highlights
 

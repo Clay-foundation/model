@@ -1,4 +1,12 @@
-# CLAY v0
+
+
+(model_release)=
+# Pretrained Model release v0.0.1
+
+This changelog is a summary of the changes to the pretrained model weights for the Clay model. 
+Released on 2024/01/12.
+
+> For release notes for the source code, see [](software_release)
 
 ### Summary
 
