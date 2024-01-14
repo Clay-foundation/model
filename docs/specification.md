@@ -146,9 +146,9 @@ We store each chip as geotiff, along with their coordinate & timestamp informati
 
 ## Results
 
-> CLAY v0 with 75% masked images as input to the model.
+As a foundational model, it is designed to be used as a building block for other models. In this section we only a sample of the training objective, which is to reconstruct the original image from a 75% masked image.
 
-![Reconstruction](assets/reconstruction.png)
+[![Reconstruction](assets/reconstruction.png)](assets/reconstruction.png)
 
 
 ### Performance Metrics
