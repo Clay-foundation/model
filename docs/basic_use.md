@@ -39,4 +39,4 @@ More options can be found using `python trainer.py fit --help`, or at the
 
 ## Advanced
 
-See [Readme](../../README.md) on model root for more details.
+See [Readme](https://github.com/Clay-foundation/model/blob/v0.0.1/README.md) on model root for more details.
