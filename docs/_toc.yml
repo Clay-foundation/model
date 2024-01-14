@@ -14,7 +14,7 @@ parts:
     chapters:
       - title: Installation
         file: installation
-      - title: Basic USe
+      - title: Basic Use
         file: basic_use
   - caption: Data Preparation
     chapters:
