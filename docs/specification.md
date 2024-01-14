@@ -1,12 +1,24 @@
 # CLAY v0
 
+### Summary
+
+Clay v0 is a self-supervised modified vision transfer model trained on stacks of Sentinel-2, Sentinel-1 & DEM data. It is trained as a Masked Autoencoder (MAE) to reconstruct the original image from a masked image. 
+
+Each data entry is a stack of 13 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. The model is trained with 3 timesteps of data for each location, with a total of 1203 MGRS tiles globally distributed, each of size 10km x 10km. The data was collected from the Microsoft Planetary Computer.
+
+The model was trained on AWS on 4 NVIDIA A10G GPUs for 25 epochs (~14h per epoch) in December 2024. 
+
+Model weights are available on HuggingFace [here](https://huggingface.co/made-with-clay/Clay/).
+
+We also generated embeddings for all trainning data, which can be found on Source Cooperative [here](https://source.coop/).
+
 ## Model Architecture
 
 ![Architecture](assets/architecture.png)
 
 ## Model Card
 
-For v0 of CLAY, we used the `clay_small` model.
+For v0 of CLAY, we used the [`clay_small`](https://github.com/Clay-foundation/model/blob/0145e55bcf6bd3e9b19f5c07819a1398b6a22c35/src/model_clay.py#L713) setup model.
 
 ```
 MASKED PATCHES = 75%
@@ -44,11 +56,12 @@ DECODER
     decoder_dropout = 0.0
 ```
 
+(Data_card)=
 ## Data Card
 
 Training dataset size: `6.4 TB`  
 Number of unique MGRS Tiles: `1203`  
-We picked 3 timesteps for each tile, so we have `3609 Tiles` in total. Each MGRS tile covers an area of 10km x 10km. The tiles are sampled intelligently, so that we have a good coverage of the different landscapes.  
+We picked 3 timesteps for each tile, so we have `3609 Tiles` in total. Each MGRS tile covers an area of 10km x 10km. The tiles are [statistically sampled based on cover type](https://github.com/Clay-foundation/model/blob/0145e55bcf6bd3e9b19f5c07819a1398b6a22c35/scripts/landcover.py#L156), so that we have a good coverage of the different landscapes.  
 
 ![Tile location](assets/tiles.png)
 
@@ -62,7 +75,7 @@ We store each chip as geotiff, along with their coordinate & timestamp informati
 ## Training Card
 
 CLAY v0 `small` is trained on 4 NVIDIA A10G GPUs for 25 epochs on ~1.2 Million chips.  
-Effective Batch Size = Batch Size x Number of GPUs x Gradiet Accumulation Steps = 10 x 4 x 5 = 200
+Effective Batch Size = Batch Size x Number of GPUs x Gradient Accumulation Steps = 10 x 4 x 5 = 200
 
 ![Learning Rate & Epoch](assets/lr.png)
 
