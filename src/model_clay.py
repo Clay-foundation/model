@@ -247,7 +247,7 @@ class Encoder(nn.Module):
 
         if self.shuffle:  # Shuffle the patches
             noise = torch.randn((B, GL), device=patches.device)  # [B GL]
-        else:  # Don't shuffle the patches, this is useful for interpolation & inspection of embeddings
+        else:  # Don't shuffle useful for interpolation & inspection of embeddings
             noise = rearrange(
                 torch.arange(B * GL, device=patches.device), "(B GL) -> B GL", B=B
             )
