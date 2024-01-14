@@ -1,0 +1,20 @@
+# Clay Model Documentation
+
+This Documentation uses [Jupyter Book](https://jupyterbook.org/intro.html).
+
+Install it with:
+```bash
+pip install -U jupyter-book
+```
+
+Then build it with:
+```bash
+jupyter-book build .
+```
+
+You can preview the site locally with:
+```bash
+python -m http.server --directory _build/html
+```
+
+There is a GitHub Action on `./github/workflows/deploy-docs.yml` that builds the site and pushes it to the `gh-pages` branch.
