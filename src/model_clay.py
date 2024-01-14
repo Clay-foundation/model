@@ -570,7 +570,6 @@ class CLAY(nn.Module):
         mask_ratio,
         image_size,
         patch_size,
-        shuffle,
         # ENCODER
         dim,
         depth,
@@ -596,6 +595,7 @@ class CLAY(nn.Module):
             "sar": (10, 11),
             "dem": (12,),
         },
+        shuffle=True,
         **kwargs,
     ):
         super().__init__()
