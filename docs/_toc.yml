@@ -16,8 +16,8 @@ parts:
       file: specification
 - caption: Data Preparation
   chapters:
-    - title: Preparing data 
-      file: input_data
+    - title: Creating datacubes
+      file: data_datacube
     - title: Benchmark dataset labels
       file: data_labels
 - caption: Running the model
@@ -26,6 +26,10 @@ parts:
       file: model_embeddings
     - title: Finetuning
       file: model_finetuning
+- caption: Reference Documentation
+  chapters:
+    - title: Changelog
+      file: changelog
 - caption: Experiments
   chapters:
     - title: Pixel Level Reconstruction
