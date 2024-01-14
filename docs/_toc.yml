@@ -8,12 +8,16 @@ parts:
   chapters:
     - title: Installation
       file: installation
-- caption: Specification
+    - title: Basic USe
+      file: basic_use
+- caption: Clay Model Releases
   chapters:
     - title: CLAY v0
       file: specification
 - caption: Data Preparation
   chapters:
+    - title: Preparing data 
+      file: input_data
     - title: Benchmark dataset labels
       file: data_labels
 - caption: Running the model
