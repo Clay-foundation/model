@@ -84,7 +84,7 @@ class ClayDataset(Dataset):
         cube = self.read_chip(chip_path)
 
         # remove nans and convert to tensor
-        cube["pixels"] = torch.as_tensor(data=cube["pixels"])
+        cube["pixels"] = torch.as_tensor(data=cube["pixels"], dtype=torch.float16)
         cube["bbox"] = torch.as_tensor(data=cube["bbox"], dtype=torch.float64)
         cube["epsg"] = torch.as_tensor(data=cube["epsg"], dtype=torch.int32)
         cube["date"] = str(cube["date"])
