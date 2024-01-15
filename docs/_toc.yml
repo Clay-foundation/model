@@ -4,45 +4,45 @@
 format: jb-book
 root: index
 parts:
-  - caption: Clay v0 Releases notes
-    chapters:
-      - title: Software release notes
-        file: changelog
-      - title: Model release notes
-        file: specification
-  - caption: Getting Started
-    chapters:
-      - title: Installation
-        file: installation
-      - title: Basic Use
-        file: basic_use
-  - caption: Data Preparation
-    chapters:
-      - title: Creating datacubes
-        file: data_datacube
-      - title: Benchmark dataset labels
-        file: data_labels
-  - caption: Running the model
-    chapters:
-      - title: Run over a region
-        file: run_region
-      - title: Generating embeddings
-        file: model_embeddings
-      - title: Finetuning
-        file: model_finetuning
-  - caption: Tutorials
-    chapters:
-      - title: Generative AI for pixel reconstruction
-        file: 240105-clay-v0-reconstruction
-      - title: Create location embeddings
-        file: 240105-location-embeddings
-      - title: Interpolating images in embedding space
-        file: 240105-clay-v0-interpolation
-  - caption: About Clay
-    chapters:
-      - title: GitHub
-        url: https://github.com/Clay-foundation
-      - title: LinkedIn
-        url: https://www.linkedin.com/company/made-with-clay
-      - title: Website
-        url: https://madewithclay.org
+- caption: Release notes
+  chapters:
+    - title: Software release notes
+      file: changelog
+    - title: Model release notes
+      file: specification
+- caption: Getting Started
+  chapters:
+    - title: Installation
+      file: installation
+    - title: Basic Use
+      file: basic_use
+- caption: Data Preparation
+  chapters:
+    - title: Creating datacubes
+      file: data_datacube
+    - title: Benchmark dataset labels
+      file: data_labels
+- caption: Running the model
+  chapters:
+    - title: Run over a region
+      file: run_region
+    - title: Generating embeddings
+      file: model_embeddings
+    - title: Finetuning
+      file: model_finetuning
+- caption: Tutorials
+  chapters:
+    - title: Generative AI for pixel reconstruction
+      file: 240105-clay-v0-reconstruction
+    - title: Create location embeddings
+      file: 240105-location-embeddings
+    - title: Interpolating images in embedding space
+      file: 240105-clay-v0-interpolation
+- caption: About Clay
+  chapters:
+    - title: GitHub
+      url: https://github.com/Clay-foundation
+    - title: LinkedIn
+      url: https://www.linkedin.com/company/made-with-clay
+    - title: Website
+      url: https://madewithclay.org
