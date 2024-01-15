@@ -2,17 +2,14 @@
 LightningDataModule to load Earth Observation data from GeoTIFF files using
 rasterio.
 """
+import glob
 import math
 import os
 import random
-from pathlib import Path
-from typing import List, Literal
 
-import glob
 import lightning as L
 import numpy as np
 import rasterio
-import rioxarray
 import torch
 import torchdata
 from torch.utils.data import DataLoader, Dataset
@@ -20,6 +17,7 @@ from torchvision.transforms import v2
 
 os.environ["GDAL_DISABLE_READDIR_ON_OPEN"] = "EMPTY_DIR"
 os.environ["GDAL_HTTP_MERGE_CONSECUTIVE_RANGES"] = "YES"
+
 
 class ClayDataset(Dataset):
     def __init__(self, chips_path, chips_label_path, data_dir, transform=None):
@@ -57,19 +55,22 @@ class ClayDataset(Dataset):
         return lon, lat
 
     def read_chip(self, chip_path, chip_path_label, date, bounds, centroid, epsg):
-        chip = chip_path # rasterio.open(chip_path)
-        chip_label = chip_path_label # rasterio.open(chip_path_label)
+        chip = chip_path  # rasterio.open(chip_path)
+        chip_label = chip_path_label  # rasterio.open(chip_path_label)
 
         # read timestep & normalize
         year, month, day = self.normalize_timestamp(date)
 
         # read lat,lon from UTM to WGS84 & normalize
-        lon, lat = centroid[0], centroid[1],  # longitude, latitude
+        lon, lat = (
+            centroid[0],
+            centroid[1],
+        )  # longitude, latitude
         lon, lat = self.normalize_latlon(lon, lat)
 
         return {
             "labels": chip_label,
-            "pixels": chip, #chip.read(),
+            "pixels": chip,  # chip.read(),
             # Raw values
             "bbox": bounds,
             "epsg": epsg,
@@ -78,13 +79,10 @@ class ClayDataset(Dataset):
             "latlon": (lat, lon),
             "timestep": (year, month, day),
         }
-    
-    
-    def get_image_granules(self, chips_path, chips_label_path, idx):
 
+    def get_image_granules(self, chips_path, chips_label_path, idx):
         chip_path = chips_path[idx]
         chip_label_path = chips_label_path[idx]
-        
 
         position = "_".join(chip_path.split("/")[-1].split("_")[-3:-1])
         date = "_".join(chip_path.split("/")[-1].split("_"))
@@ -105,28 +103,80 @@ class ClayDataset(Dataset):
         centroid = (centroid_x, centroid_y)
         # Get EPSG
         epsg = chip_data_array.crs.to_epsg()
-        chip_label_path_data_array = rasterio.open(f"{self.data_dir}/{flood_event}/{filename}_LabelWater.tif") #chip_label_path)
-        chip_label_cloud_path_data_array = rasterio.open(f"{self.data_dir}/{flood_event}/{filename}_LabelCloud.tif") #chip_label_path)
+        chip_label_path_data_array = rasterio.open(
+            f"{self.data_dir}/{flood_event}/{filename}_LabelWater.tif"
+        )  # chip_label_path)
+        chip_label_cloud_path_data_array = rasterio.open(
+            f"{self.data_dir}/{flood_event}/{filename}_LabelCloud.tif"
+        )  # chip_label_path)
         label_array_values = chip_label_path_data_array.read()
         label_cloud_array_values = chip_label_cloud_path_data_array.read()
         # Mask out clouds and cloud shadows from datacube and labels
-        image_array_values = np.where(label_cloud_array_values == 1, 0, image_array_values) # clouds
-        label_array_values = np.where(label_cloud_array_values == 1, 0, label_array_values) # clouds
-        image_array_values = np.where(label_cloud_array_values == 2, 0, image_array_values) # cloud shadows
-        label_array_values = np.where(label_cloud_array_values == 2, 0, label_array_values) # cloud shadows
-        return image_array_values, label_array_values, flood_event, position, date, bounds, centroid, epsg, filename
-    
+        image_array_values = np.where(
+            label_cloud_array_values == 1, 0, image_array_values
+        )  # clouds
+        label_array_values = np.where(
+            label_cloud_array_values == 1, 0, label_array_values
+        )  # clouds
+        image_array_values = np.where(
+            label_cloud_array_values == 2, 0, image_array_values
+        )  # cloud shadows
+        label_array_values = np.where(
+            label_cloud_array_values == 2, 0, label_array_values
+        )  # cloud shadows
+        return (
+            image_array_values,
+            label_array_values,
+            flood_event,
+            position,
+            date,
+            bounds,
+            centroid,
+            epsg,
+            filename,
+        )
+
     def get_benchmark_data(self, chips_path, chips_label_path, idx):
-        image_array_values, label_array_values, flood_events, positions, dates, bounds_, centroids, epsgs, filenames  = \
-        self.get_image_granules(chips_path, chips_label_path, idx)
-        return image_array_values, label_array_values, flood_events, positions, dates, bounds_, centroids, epsgs, filenames
+        (
+            image_array_values,
+            label_array_values,
+            flood_events,
+            positions,
+            dates,
+            bounds_,
+            centroids,
+            epsgs,
+            filenames,
+        ) = self.get_image_granules(chips_path, chips_label_path, idx)
+        return (
+            image_array_values,
+            label_array_values,
+            flood_events,
+            positions,
+            dates,
+            bounds_,
+            centroids,
+            epsgs,
+            filenames,
+        )
 
     def __getitem__(self, idx):
-        #image_array_values, label_array_values, flood_events, positions, dates, bounds_, centroids, epsgs, filenames = \
+        # image_array_values, label_array_values, flood_events, positions, dates, bounds_, centroids, epsgs, filenames = \
         #    self.get_benchmark_data(self.chips_path, self.chips_label_path)
-        image_array_values, label_array_values, flood_event, position, date, bounds, centroid, epsg, filename = \
-            self.get_benchmark_data(self.chips_path, self.chips_label_path, idx)
-        cube = self.read_chip(image_array_values, label_array_values, date, bounds, centroid, epsg)
+        (
+            image_array_values,
+            label_array_values,
+            flood_event,
+            position,
+            date,
+            bounds,
+            centroid,
+            epsg,
+            filename,
+        ) = self.get_benchmark_data(self.chips_path, self.chips_label_path, idx)
+        cube = self.read_chip(
+            image_array_values, label_array_values, date, bounds, centroid, epsg
+        )
 
         # remove nans and convert to tensor
         cube["labels"] = torch.as_tensor(data=cube["labels"], dtype=torch.float32)
@@ -139,7 +189,7 @@ class ClayDataset(Dataset):
         try:
             cube["source_url"] = str(self.chip_path.absolute())
         except AttributeError:
-            cube["source_url"] = filename #chip_path
+            cube["source_url"] = filename  # chip_path
 
         if self.transform:
             # convert to float16 and normalize
@@ -230,28 +280,42 @@ class ClayDataModule(L.LightningDataModule):
         self.split_ratio = 0.8
         self.tfm = v2.Compose([v2.Normalize(mean=self.MEAN, std=self.STD)])
 
-    def setup(self, stage='fit'):
+    def setup(self, stage="fit"):
         # Get list of GeoTIFF filepaths from s3 bucket or data/ folder
-        #if self.data_dir.startswith("s3://"):
+        # if self.data_dir.startswith("s3://"):
         #    dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_dir])
         #    chips_path = list(dp.list_files_by_s3(masks="*.tif"))
-        #else:  # if self.data_dir is a local data path
+        # else:  # if self.data_dir is a local data path
 
-        chips_path = glob.glob(f"{self.data_dir}/**/*_rtc.tif") #list(Path(self.data_dir).glob("**/*_rtc.tif"))
-        chips_label_path = glob.glob(f"{self.data_dir}/**/*_LabelWater.tif")#list(Path(self.data_dir).glob("**/*_LabelWater.tif"))
+        chips_path = glob.glob(
+            f"{self.data_dir}/**/*_rtc.tif"
+        )  # list(Path(self.data_dir).glob("**/*_rtc.tif"))
+        chips_label_path = glob.glob(
+            f"{self.data_dir}/**/*_LabelWater.tif"
+        )  # list(Path(self.data_dir).glob("**/*_LabelWater.tif"))
         print(f"Total number of chips: {len(chips_path)}")
-        #print(f"All chips: {chips_path}")
+        # print(f"All chips: {chips_path}")
         sorted(chips_path)
         sorted(chips_label_path)
 
         if stage == "fit":
-            random.seed(42) #42, 21, 33, 9
+            random.seed(42)  # 42, 21, 33, 9
             random.shuffle(chips_path)
             split = int(len(chips_path) * self.split_ratio)
-            #print("Splits: ", chips_path[:split], chips_label_path[:split])
+            # print("Splits: ", chips_path[:split], chips_label_path[:split])
 
-            self.trn_ds = ClayDataset(chips_path=chips_path[:split], chips_label_path=chips_label_path[:split], data_dir=self.data_dir, transform=self.tfm)
-            self.val_ds = ClayDataset(chips_path=chips_path[split:], chips_label_path=chips_label_path[:split], data_dir=self.data_dir, transform=self.tfm)
+            self.trn_ds = ClayDataset(
+                chips_path=chips_path[:split],
+                chips_label_path=chips_label_path[:split],
+                data_dir=self.data_dir,
+                transform=self.tfm,
+            )
+            self.val_ds = ClayDataset(
+                chips_path=chips_path[split:],
+                chips_label_path=chips_label_path[:split],
+                data_dir=self.data_dir,
+                transform=self.tfm,
+            )
 
         elif stage == "predict":
             self.prd_ds = ClayDataset(chips_path=chips_path, transform=self.tfm)
