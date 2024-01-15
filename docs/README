@@ -9,7 +9,7 @@ pip install -U jupyter-book
 
 Then build it with:
 ```bash
-jupyter-book build .
+jupyter-book build docs/
 ```
 
 You can preview the site locally with:
