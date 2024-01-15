@@ -423,8 +423,8 @@ def convert_attrs_and_coords_objects_to_str(data):
     "--subset",
     required=False,
     default="",
-    help="For debugging, subset x and y to this pixel window as a comma"
-    "separated string of 4 integers.",
+    help="For debugging, subset the MGRS tile data to this pixel window."
+    "Expects a comma separated string of 4 integers.",
     type=str,
 )
 @click.option(
@@ -439,7 +439,7 @@ def convert_attrs_and_coords_objects_to_str(data):
     required=False,
     default="",
     type=str,
-    help="Comma separated list of date ranges, each provided as yy-mm-dd/yy-mm-dd.",
+    help="Comma separated list of date ranges, each provided as YYYY-MM-DD/YYYY-MM-DD.",
 )
 def main(sample, index, subset, bucket, localpath, dateranges):
     index = int(index)
