@@ -17,4 +17,4 @@ You can preview the site locally with:
 python -m http.server --directory _build/html
 ```
 
-There is a GitHub Action on `./github/workflows/deploy-docs.yml` that builds the site and pushes it to the `gh-pages` branch.
+There is a GitHub Action on `./github/workflows/deploy-docs.yml` that builds the site and pushes it to GitHub Pages.
