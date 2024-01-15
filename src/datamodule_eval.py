@@ -245,7 +245,8 @@ class ClayDataModule(L.LightningDataModule):
         sorted(chips_label_path)
 
         if stage == "fit":
-            #random.shuffle(chips_path)
+            random.seed(42) #42, 21, 33, 9
+            random.shuffle(chips_path)
             split = int(len(chips_path) * self.split_ratio)
             #print("Splits: ", chips_path[:split], chips_label_path[:split])
 
