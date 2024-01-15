@@ -724,8 +724,6 @@ def clay_tiny(**kwargs):
     }
     args.update(kwargs)
     model = CLAY(**args)
-    args.update(kwargs)
-    model = CLAY(**args)
     return model
 
 
