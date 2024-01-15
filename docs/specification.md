@@ -27,7 +27,7 @@ Clat is a Unet, with a modified ViT encoder down to embeddings, and a decoder to
 
 For details, check the source code [here](https://github.com/Clay-foundation/model/blob/v0.0.1/src/model_clay.py).
 
-![Architecture](assets/architecture.png)
+![Architecture](https://github.com/Clay-foundation/model/assets/23487320/c9b46255-c2d7-4ca4-a980-7ff3033c23e3)
 
 * Core Framework: [Lightning](https://lightning.ai/) and its dependencies, like PyTorch, etc.
 
@@ -90,8 +90,7 @@ DECODER
 
 We organize our input dataset creation in MGRS tiles. Each tile is a 10km x 10km area. We have `1203` tiles in total, each with 3 timesteps of data between `2017` and `2023`, so `3609 Tiles` in total. Each timestep is a stack of `13` bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. Each tile is split into `512 x 512` chips, so we have around `~1.2 Million` chips in total. Each chip contains `13 bands`, 10 of which are the Sentinel-2 bands, 2 are Sentinel 1 bands & 1 DEM band. We store each chip as geotiff, along with their coordinate & timestamp information that is used for model training.
 
-![Tile location](assets/tiles.png)
-
+![Tile locations](https://github.com/Clay-foundation/model/assets/23487320/af46a272-a102-4c66-a8bc-52bcb987c365)
 
 * Training dataset size: `6.4 TB`
 * Training dataset source links:
@@ -113,7 +112,7 @@ We organize our input dataset creation in MGRS tiles. Each tile is a 10km x 10km
 
 We store each chip as geotiff, along with their coordinate & timestamp information that is used for model training.
 
-![Chips](assets/bands.png)
+![bands](https://github.com/Clay-foundation/model/assets/23487320/85fbc8d2-28f6-4021-855b-c1eb84dd09e3)
 
 
 ## Training Card
@@ -140,15 +139,15 @@ We store each chip as geotiff, along with their coordinate & timestamp informati
     * We are developing a web application and expect to release it in 2024 Q1.
 
 
-![Learning Rate & Epoch](assets/lr.png)
+![Learning Rate & Epoch](https://github.com/Clay-foundation/model/assets/23487320/d2a2944c-0b2c-4c19-893b-abe3fca10edc)
 
-![MSE Loss for Pixel Reconstruction](assets/loss.png)
+![MSE Loss for Pixel Reconstruction](https://github.com/Clay-foundation/model/assets/23487320/cbbed1d1-ca7b-4352-8a2a-610b33f42d1c)
 
 ## Results
 
 As a foundational model, it is designed to be used as a building block for other models. In this section we only a sample of the training objective, which is to reconstruct the original image from a 75% masked image.
 
-[![Reconstruction](assets/reconstruction.png)](assets/reconstruction.png)
+[Reconstruction](https://github.com/Clay-foundation/model/assets/23487320/491febc1-af3c-43ab-bd9a-85ef7fbf6064)
 
 
 ### Performance Metrics
