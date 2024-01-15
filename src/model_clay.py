@@ -18,6 +18,7 @@ from src.utils import posemb_sincos_1d, posemb_sincos_2d
 torch.set_float32_matmul_precision(precision="medium")
 
 
+# %%
 class Patchify(nn.Module):
     """
     Patchify the input cube & create embeddings per patch
@@ -763,8 +764,6 @@ def clay_medium(**kwargs):
     }
     args.update(kwargs)
     model = CLAY(**args)
-    args.update(kwargs)
-    model = CLAY(**args)
     return model
 
 
@@ -786,8 +785,6 @@ def clay_large(**kwargs):
         "decoder_mlp_ratio": 4,
         "decoder_dropout": 0.0,
     }
-    args.update(kwargs)
-    model = CLAY(**args)
     args.update(kwargs)
     model = CLAY(**args)
     return model
