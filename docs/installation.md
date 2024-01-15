@@ -30,4 +30,4 @@ Activate the virtual environment first.
 
 ## Advanced
 
-See [Readme](https://github.com/Clay-foundation/model/blob/v0.0.1/README.md) on model root for more details.
+See [Readme](https://github.com/Clay-foundation/model/blob/main/README.md) on model root for more details.
