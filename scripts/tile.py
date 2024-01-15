@@ -55,7 +55,7 @@ def filter_clouds_nodata(tile):
     return True  # If both conditions pass
 
 
-def tiler(stack, date, mgrs, bucket):
+def tile_to_dir(stack, date, mgrs, bucket, dir):
     """
     Function to tile a multi-dimensional imagery stack while filtering out
     tiles with high cloud coverage or no-data pixels.
@@ -66,67 +66,77 @@ def tiler(stack, date, mgrs, bucket):
     - mgrs (str): MGRS Tile id
     - bucket(str): AWS S3 bucket to write tiles to
     """
+    print("Writing tempfiles to ", dir)
+
     # Calculate the number of full tiles in x and y directions
     num_x_tiles = stack[0].x.size // TILE_SIZE
     num_y_tiles = stack[0].y.size // TILE_SIZE
 
     counter = 0
-    with tempfile.TemporaryDirectory() as dir:
-        print("Writing tempfiles to ", dir)
-        # Iterate through each chunk of x and y dimensions and create tiles
-        for y_idx in range(num_y_tiles):
-            for x_idx in range(num_x_tiles):
-                # Calculate the start and end indices for x and y dimensions
-                # for the current tile
-                x_start = x_idx * TILE_SIZE
-                y_start = y_idx * TILE_SIZE
-                x_end = x_start + TILE_SIZE
-                y_end = y_start + TILE_SIZE
+    # Iterate through each chunk of x and y dimensions and create tiles
+    for y_idx in range(num_y_tiles):
+        for x_idx in range(num_x_tiles):
+            # Calculate the start and end indices for x and y dimensions
+            # for the current tile
+            x_start = x_idx * TILE_SIZE
+            y_start = y_idx * TILE_SIZE
+            x_end = x_start + TILE_SIZE
+            y_end = y_start + TILE_SIZE
 
-                # Select the subset of data for the current tile
-                parts = [part[:, y_start:y_end, x_start:x_end] for part in stack]
+            # Select the subset of data for the current tile
+            parts = [part[:, y_start:y_end, x_start:x_end] for part in stack]
 
-                # Only concat here to save memory, it converts S2 data to float
-                tile = xr.concat(parts, dim="band").rename("tile")
+            # Only concat here to save memory, it converts S2 data to float
+            tile = xr.concat(parts, dim="band").rename("tile")
 
-                counter += 1
-                if counter % 100 == 0:
-                    print(f"Counted {counter} tiles")
+            counter += 1
+            if counter % 100 == 0:
+                print(f"Counted {counter} tiles")
 
-                if not filter_clouds_nodata(tile):
-                    continue
+            if not filter_clouds_nodata(tile):
+                continue
 
-                tile = tile.drop_sel(band="SCL")
+            tile = tile.drop_sel(band="SCL")
 
-                # Track band names and color interpretation
-                tile.attrs["long_name"] = [str(x.values) for x in tile.band]
-                color = [ColorInterp.blue, ColorInterp.green, ColorInterp.red] + [
-                    ColorInterp.gray
-                ] * (len(tile.band) - 3)
+            # Track band names and color interpretation
+            tile.attrs["long_name"] = [str(x.values) for x in tile.band]
+            color = [ColorInterp.blue, ColorInterp.green, ColorInterp.red] + [
+                ColorInterp.gray
+            ] * (len(tile.band) - 3)
 
-                # Write tile to tempdir
-                name = "{dir}/claytile_{mgrs}_{date}_v{version}_{counter}.tif".format(
-                    dir=dir,
-                    mgrs=mgrs,
-                    date=date.replace("-", ""),
-                    version=VERSION,
-                    counter=str(counter).zfill(4),
-                )
-                tile.rio.to_raster(name, compress="deflate")
+            # Write tile to tempdir
+            name = "{dir}/claytile_{mgrs}_{date}_v{version}_{counter}.tif".format(
+                dir=dir,
+                mgrs=mgrs,
+                date=date.replace("-", ""),
+                version=VERSION,
+                counter=str(counter).zfill(4),
+            )
+            tile.rio.to_raster(name, compress="deflate")
 
-                with rasterio.open(name, "r+") as rst:
-                    rst.colorinterp = color
-                    rst.update_tags(date=date)
+            with rasterio.open(name, "r+") as rst:
+                rst.colorinterp = color
+                rst.update_tags(date=date)
+        if bucket:
+            print(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
+            subprocess.run(
+                [
+                    "aws",
+                    "s3",
+                    "sync",
+                    dir,
+                    f"s3://{bucket}/{VERSION}/{mgrs}/{date}",
+                    "--no-progress",
+                ],
+                check=True,
+            )
+        else:
+            print("No bucket specified, skipping S3 sync.")
 
-        print(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
-        subprocess.run(
-            [
-                "aws",
-                "s3",
-                "sync",
-                dir,
-                f"s3://{bucket}/{VERSION}/{mgrs}/{date}",
-                "--no-progress",
-            ],
-            check=True,
-        )
+
+def tiler(stack, date, mgrs, bucket, dir):
+    if dir:
+        tile_to_dir(stack, date, mgrs, bucket, dir)
+    else:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tile_to_dir(stack, date, mgrs, bucket, tmpdir)
