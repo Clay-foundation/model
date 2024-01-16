@@ -21,7 +21,7 @@ We also generated embeddings for all trainning data, which can be found on Sourc
 
 ## Model Architecture
 
-Clat is a Unet, with a modified ViT encoder down to embeddings, and a decoder to reconstruct the masked parts of the original image. The loss function is the MSE between the original image and the reconstructed image.
+Clay is a MAE, with a modified ViT encoder down to embeddings, and a decoder to reconstruct the masked parts of the original image. The loss function is the MSE between the original image and the reconstructed image.
 
 For details, check the source code [here](https://github.com/Clay-foundation/model/blob/v0.0.1/src/model_clay.py).
 
