@@ -33,11 +33,11 @@ parts:
 - caption: Tutorials
   chapters:
     - title: Generative AI for pixel reconstruction
-      file: 240105-clay-v0-reconstruction
+      file: clay-v0-reconstruction
     - title: Create location embeddings
-      file: 240105-location-embeddings
+      file: clay-v0-location-embeddings
     - title: Interpolating images in embedding space
-      file: 240105-clay-v0-interpolation
+      file: clay-v0-interpolation
 - caption: About Clay
   chapters:
     - title: GitHub
