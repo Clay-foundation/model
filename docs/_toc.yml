@@ -2,12 +2,20 @@
 # Learn more at https://jupyterbook.org/customize/toc.html
 
 format: jb-book
-root: intro
+root: index
 parts:
+- caption: Release notes
+  chapters:
+    - title: Software release notes
+      file: changelog
+    - title: Model release notes
+      file: specification
 - caption: Getting Started
   chapters:
     - title: Installation
       file: installation
+    - title: Basic Use
+      file: basic_use
 - caption: Data Preparation
   chapters:
     - title: Creating datacubes
@@ -22,13 +30,19 @@ parts:
       file: model_embeddings
     - title: Finetuning
       file: model_finetuning
-- caption: Reference Documentation
+- caption: Tutorials
   chapters:
-    - title: Changelog
-      file: changelog
+    - title: Generative AI for pixel reconstruction
+      file: clay-v0-reconstruction
+    - title: Create location embeddings
+      file: clay-v0-location-embeddings
+    - title: Interpolating images in embedding space
+      file: clay-v0-interpolation
 - caption: About Clay
   chapters:
     - title: GitHub
       url: https://github.com/Clay-foundation
     - title: LinkedIn
       url: https://www.linkedin.com/company/made-with-clay
+    - title: Website
+      url: https://madewithclay.org
