@@ -10,9 +10,9 @@ custom AOIs and over custom date ranges.
 cd /path/to/repository/model/
 
 # Ensure data sub-directories exist
-mdkir data/mgrs
-mdkir data/chips
-mdkir data/embeddings
+mkdir data/mgrs
+mkdir data/chips
+mkdir data/embeddings
 ```
 
 ## Download global list of MGRS tiles
