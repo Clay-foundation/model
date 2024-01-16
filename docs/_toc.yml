@@ -24,6 +24,8 @@ parts:
       file: data_labels
 - caption: Running the model
   chapters:
+    - title: Run over a region
+      file: run_region
     - title: Generating embeddings
       file: model_embeddings
     - title: Finetuning
