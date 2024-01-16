@@ -22,6 +22,8 @@ parts:
       file: data_datacube
     - title: Benchmark dataset labels
       file: data_labels
+    - title: Data sampling strategy
+      file: data_sampling
 - caption: Running the model
   chapters:
     - title: Run over a region
