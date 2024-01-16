@@ -1,5 +1,3 @@
-
-
 (model_release)=
 # Pretrained Model release v0.0.1
 
@@ -13,9 +11,9 @@ Model weights released on 2024/01/12.
 
 Clay v0 is a self-supervised modified vision transfer model trained on stacks of Sentinel-2, Sentinel-1 & DEM data. It is trained as a Masked Autoencoder (MAE) to reconstruct the original image from a masked image.
 
-Each data entry is a stack of 13 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. The model is trained with 3 timesteps of data for each location, with a total of 1203 MGRS tiles globally distributed, each of size 10km x 10km. The data was collected from the Microsoft Planetary Computer.
+Each data entry is a stack of 10 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. The model is trained with 3 timesteps of data for each location, with a total of 1203 MGRS tiles globally distributed, each of size 10km x 10km. The data was collected from the Microsoft Planetary Computer.
 
-The model was trained on AWS on 4 NVIDIA A10G GPUs for 25 epochs (~14h per epoch) in December 2024.
+The model was trained on AWS on 4 NVIDIA A10G GPUs for 25 epochs (~14h per epoch) in December 2023.
 
 Model weights are available on HuggingFace [here](https://huggingface.co/made-with-clay/Clay/).
 
@@ -32,9 +30,9 @@ For details, check the source code [here](https://github.com/Clay-foundation/mod
 * Core Framework: [Lightning](https://lightning.ai/) and its dependencies, like PyTorch, etc.
 
 * Input modalities:
-    * Fixed spec of 13 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. See below for details.
+    * Fixed spec of 10 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. See below for details.
 * Output modalities:
-    * As a masked auto-enconder, fixed spec of 13 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data, to mimic the input as close as possible.
+    * As a masked auto-enconder, fixed spec of 10 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data, to mimic the input as close as possible.
 * Model size:
     * Number of parameters: `127M`
     * Model size on disk: `~500MB`.
@@ -88,7 +86,7 @@ DECODER
 (Data_card)=
 ## Data Card
 
-We organize our input dataset creation in MGRS tiles. Each tile is a 10km x 10km area. We have `1203` tiles in total, each with 3 timesteps of data between `2017` and `2023`, so `3609 Tiles` in total. Each timestep is a stack of `13` bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. Each tile is split into `512 x 512` chips, so we have around `~1.2 Million` chips in total. Each chip contains `13 bands`, 10 of which are the Sentinel-2 bands, 2 are Sentinel 1 bands & 1 DEM band. We store each chip as geotiff, along with their coordinate & timestamp information that is used for model training.
+We organize our input dataset creation in MGRS tiles. Each tile is a 10km x 10km area. We have `1203` tiles in total, each with 3 timesteps of data between `2017` and `2023`, so `3609 Tiles` in total. Each timestep is a stack of 10 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. Each tile is split into `512 x 512` chips, so we have around `~1.2 Million` chips in total. Each chip contains `13 bands`, 10 of which are the Sentinel-2 bands, 2 are Sentinel 1 bands & 1 DEM band. We store each chip as geotiff, along with their coordinate & timestamp information that is used for model training.
 
 ![Tile locations](https://github.com/Clay-foundation/model/assets/23487320/af46a272-a102-4c66-a8bc-52bcb987c365)
 
