@@ -10,6 +10,8 @@ only_build_toc_files: true
 # See https://jupyterbook.org/content/execute.html
 execute:
   execute_notebooks: cache
+  exclude_patterns:
+    - clay-v0-*.ipynb
 
 # Define the name of the latex output file for PDF builds
 latex:
