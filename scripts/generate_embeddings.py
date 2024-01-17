@@ -3,13 +3,12 @@ import os
 import sys
 import warnings
 
-import tqdm
 import lightning as L
 import torch
+import tqdm
 
 from src.datamodule import ClayDataModule
 from src.model_clay import CLAYModule
-
 
 # Set some environment variables and parameters
 torch.set_float32_matmul_precision(precision="medium")
