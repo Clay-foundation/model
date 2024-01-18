@@ -30,6 +30,8 @@ parts:
       file: 240105-location-embeddings
     - title: Interpolation in embedding space
       file: 240105-clay-v0-interpolation
+    - title: Visualizing the embeddings
+      file: 240105-clay-v0-visualization
 - caption: About Clay
   chapters:
     - title: GitHub
