@@ -211,7 +211,7 @@ class ViTLitModule(L.LightningModule):
            | s3://3C.tif  | 2021-12-31 | [0.3, 0.6, ... x768] | POLYGON(...) |
         """
         # Get image, bounding box, EPSG code, and date inputs
-        x: torch.Tensor = batch["image"]  # image of shape (1, 13, 256, 256) # BCHW
+        x: torch.Tensor = batch["image"]  # image of shape (1, 13, 512, 512) # BCHW
         bboxes: np.ndarray = batch["bbox"].cpu().__array__()  # bounding boxes
         epsgs: torch.Tensor = batch["epsg"]  # coordinate reference systems as EPSG code
         dates: list[str] = batch["date"]  # dates, e.g. ['2022-12-12', '2022-12-12']
@@ -319,10 +319,18 @@ class ViTLitModule(L.LightningModule):
                     f"but got {mgrs_code} instead"
                 )
 
-            # Output to a GeoParquet filename like {MGRS:5}_v{VERSION:2}.gpq
-            outpath = f"{outfolder}/{mgrs_code}_v01.gpq"
-            _gdf: gpd.GeoDataFrame = gdf.loc[mgrs_codes == mgrs_code]
-            _gdf.to_parquet(path=outpath, schema_version="1.0.0", compression="ZSTD")
+            # Subset GeoDataFrame to a single MGRS code
+            _gdf: gpd.GeoDataFrame = gdf.loc[mgrs_codes == mgrs_code].reset_index()
+
+            # Get min/max date from GeoDataFrame
+            minmax_date: pd.Series = _gdf.date.agg(func=["min", "max"])
+            min_date: str = minmax_date["min"].strftime("%Y%m%d")
+            max_date: str = minmax_date["max"].strftime("%Y%m%d")
+
+            # Output to a GeoParquet filename like
+            # {MGRS:5}_{MINDATE:8}_{MAXDATE:8}_v{VERSION:3}.gpq
+            outpath = f"{outfolder}/{mgrs_code}_{min_date}_{max_date}_v001.gpq"
+            _gdf.to_parquet(path=outpath, compression="ZSTD", schema_version="1.0.0")
             print(
                 f"Saved {len(_gdf)} rows of embeddings of "
                 f"shape {gdf.embeddings.iloc[0].shape} to {outpath}"

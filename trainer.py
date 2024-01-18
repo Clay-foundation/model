@@ -31,8 +31,8 @@ def cli_main(
     save_config_callback=None,
     seed_everything_default=42,
     trainer_defaults: dict = {
-        "accelerator": "gpu",
-        "devices": 4,
+        "accelerator": "auto",
+        "devices": "auto",
         "strategy": "ddp",
         "precision": "bf16-mixed",
         "log_every_n_steps": 1,

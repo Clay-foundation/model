@@ -18,6 +18,8 @@ logs/
 # Data files and folders
 data/**
 !data/**/
+**/*/.gif
+**/*/.png
 
 # Distribution / packaging
 .Python

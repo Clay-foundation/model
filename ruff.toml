@@ -1,0 +1,21 @@
+[per-file-ignores]
+"docs/clay_over_aoi.ipynb" = ["E501"]
+
+[format]
+# https://docs.astral.sh/ruff/settings/#format
+line-ending = "lf"  # Use UNIX `\n` line endings for all files
+
+[lint]
+# https://docs.astral.sh/ruff/rules/
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "NPY",  # numpy
+    "PL",   # pylint
+    "UP",   # pyupgrade
+    "W",    # pycodestyle warnings
+]
+
+[lint.pylint]
+max-args = 6
