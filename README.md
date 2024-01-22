@@ -100,3 +100,17 @@ To generate embeddings from the pretrained model's encoder on 1024 images
 
 More options can be found using `python trainer.py fit --help`, or at the
 [LightningCLI docs](https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html).
+
+
+## Generating the embeddings
+
+Get the list of MGRS tiles & store them inside `mgrs_world.txt`:
+
+    aws s3 ls s3://clay-tiles-02/02/ | tr -s ' ' |  cut -d ' ' -f 3 | cut -d '/' -f 1 > mgrs_world.txt
+
+To get embeddings from a specific CLAY model checkpoint:
+
+    python generate_embeddings.py mgrs_world.txt checkpoints/<checkpoint-name>.ckpt
+
+To push the embeddings into s3:
+    aws s3 sync data/embeddings/ s3://clay-vector-embeddings/<version>/<yyyymmdd>/

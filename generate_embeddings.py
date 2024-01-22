@@ -37,10 +37,7 @@ def main(mgrs_tiles_path, checkpoint_path):
             )
             try:
                 trainer.predict(model=model, datamodule=datamodule)
-            except RuntimeError as err:
-                print(f"Processing of MGRS Tile {mgrs_tile} failed because of {err}")
-                warnings.warn(message=repr(err))
-            except AssertionError as err:
+            except Exception as err:
                 print(f"Processing of MGRS Tile {mgrs_tile} failed because of {err}")
                 warnings.warn(message=repr(err))
 
