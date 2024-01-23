@@ -142,3 +142,8 @@ Further reading:
 - https://guide.cloudnativegeo.org/geoparquet
 - https://cloudnativegeo.org/blog/2023/10/the-geoparquet-ecosystem-at-1.0.0
 ```
+
+## Exploring the embeddings
+
+Given the high dimensionality of the embeddings, it is often useful to reduce them to 2 dimensions.
+We have created [this sample notebook](explore_embeddings.ipynb) that uses T-SNE and Mapbox to explore and visualize the embedding's space.
