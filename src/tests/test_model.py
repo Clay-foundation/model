@@ -91,13 +91,7 @@ def test_model_vit_fit(datapipe):
         (ViTLitModule, "bf16-mixed"),
     ],
 )
-@pytest.mark.parametrize(
-    "litmodule,output_patch_embeddings",
-    [
-        (CLAYModule, True),
-        (CLAYModule, False),
-    ],
-)
+@pytest.mark.parametrize("output_patch_embeddings", [True, False])
 def test_model_predict(datapipe, litmodule, precision, output_patch_embeddings):
     """
     Run a single prediction loop using 1 batch.
