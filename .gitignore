@@ -63,4 +63,9 @@ docs/_build/
 
 # Mac OS-specific storage files
 .DS_Store
+
 datadisk/
+docs/rgbs/
+*.pkl
+*.parquet
+*.csv
