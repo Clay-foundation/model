@@ -100,9 +100,14 @@ def test_model_predict(datapipe, litmodule, precision, output_patch_embeddings):
     dataloader = torchdata.dataloader2.DataLoader2(datapipe=datapipe)
 
     # Initialize model
-    litargs = {}
-    if isinstance(litmodule, CLAYModule):
-        litargs = {"output_patch_embeddings": output_patch_embeddings}
+    if litmodule == CLAYModule:
+        litargs = {
+            "output_patch_embeddings": output_patch_embeddings,
+            "shuffle": False,
+        }
+    else:
+        litargs = {}
+
     model: L.LightningModule = litmodule(**litargs)
 
     # Run tests in a temporary folder
@@ -146,7 +151,7 @@ def test_model_predict(datapipe, litmodule, precision, output_patch_embeddings):
         for embeddings in geodataframe.embeddings:
             assert (
                 embeddings.shape == (16 * 16 * 768,)
-                if output_patch_embeddings
+                if output_patch_embeddings and litmodule == CLAYModule
                 else (768,)
             )
             assert embeddings.dtype == "float32"
