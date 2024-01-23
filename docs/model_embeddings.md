@@ -164,7 +164,7 @@ will have all patch embeddings ravelled in one row. Each row represents a
 512x512 pixel image, and contains 16x16 patch embeddings.
 
 To convert each row into patch level embeddings, the embedding array has to
-be split
+be unravelled into 256 patches like so
 
 ```{code}
 ravelled_patch_embeddings = geodataframe.embeddings[0]
