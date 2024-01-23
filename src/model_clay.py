@@ -890,9 +890,9 @@ class CLAYModule(L.LightningModule):
 
         if self.hparams.output_patch_embeddings:
             embeddings_raw = rearrange(
-                embeddings_raw[:, :-2, :], "b (w h g) s -> b (w h s) g", w=16, h=16, g=6
+                embeddings_raw[:, :-2, :], "b (g l) s -> b g (l s)", l=256, g=6
             )
-            embeddings_mean: torch.Tensor = embeddings_raw.mean(dim=2)
+            embeddings_mean = reduce(embeddings_raw, "b g s -> b s", "mean")
             assert embeddings_mean.shape == torch.Size(
                 [
                     self.model.encoder.B,
