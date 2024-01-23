@@ -91,7 +91,14 @@ def test_model_vit_fit(datapipe):
         (ViTLitModule, "bf16-mixed"),
     ],
 )
-def test_model_predict(datapipe, litmodule, precision):
+@pytest.mark.parametrize(
+    "litmodule,output_patch_embeddings",
+    [
+        (CLAYModule, True),
+        (CLAYModule, False),
+    ],
+)
+def test_model_predict(datapipe, litmodule, precision, output_patch_embeddings):
     """
     Run a single prediction loop using 1 batch.
     """
@@ -140,6 +147,10 @@ def test_model_predict(datapipe, litmodule, precision):
         assert geodataframe.geometry.dtype == gpd.array.GeometryDtype()
 
         for embeddings in geodataframe.embeddings:
-            assert embeddings.shape == (768,)
+            assert (
+                embeddings.shape == (16 * 16 * 768,)
+                if output_patch_embeddings
+                else (768,)
+            )
             assert embeddings.dtype == "float32"
             assert not np.isnan(embeddings).any()

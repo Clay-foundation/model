@@ -796,6 +796,7 @@ class CLAYModule(L.LightningModule):
         wd=0.05,
         b1=0.9,
         b2=0.95,
+        output_patch_embeddings=False,
     ):
         super().__init__()
         self.save_hyperparameters(logger=True)
@@ -887,13 +888,25 @@ class CLAYModule(L.LightningModule):
         )
         assert not torch.isnan(embeddings_raw).any()  # ensure no NaNs in embedding
 
-        # Take the mean of the embeddings along the sequence_length dimension
-        # excluding the last two latlon_ and time_ embeddings, i.e. compute
-        # mean over patch embeddings only
-        embeddings_mean: torch.Tensor = embeddings_raw[:, :-2, :].mean(dim=1)
-        assert embeddings_mean.shape == torch.Size(
-            [self.model.encoder.B, 768]  # (batch_size, hidden_size)
-        )
+        if self.hparams.output_patch_embeddings:
+            embeddings_raw = rearrange(
+                embeddings_raw[:, :-2, :], "b (w h g) s -> b (w h s) g", w=16, h=16, g=6
+            )
+            embeddings_mean: torch.Tensor = embeddings_raw.mean(dim=2)
+            assert embeddings_mean.shape == torch.Size(
+                [
+                    self.model.encoder.B,
+                    256 * 768,
+                ]  # (batch_size, nr of patches * hidden_size)
+            )
+        else:
+            # Take the mean of the embeddings along the sequence_length dimension
+            # excluding the last two latlon_ and time_ embeddings, i.e. compute
+            # mean over patch embeddings only
+            embeddings_mean: torch.Tensor = embeddings_raw[:, :-2, :].mean(dim=1)
+            assert embeddings_mean.shape == torch.Size(
+                [self.model.encoder.B, 768]  # (batch_size, hidden_size)
+            )
 
         # Create table to store the embeddings with spatiotemporal metadata
         unique_epsg_codes = set(int(epsg) for epsg in epsgs)
