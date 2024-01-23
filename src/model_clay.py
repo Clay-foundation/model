@@ -797,6 +797,7 @@ class CLAYModule(L.LightningModule):
         b1=0.9,
         b2=0.95,
         output_patch_embeddings=False,
+        shuffle=True,
     ):
         super().__init__()
         self.save_hyperparameters(logger=True)
@@ -811,6 +812,7 @@ class CLAYModule(L.LightningModule):
                 mask_ratio=mask_ratio,
                 image_size=image_size,
                 patch_size=patch_size,
+                shuffle=shuffle,
             )
         else:
             raise ValueError(
@@ -889,6 +891,9 @@ class CLAYModule(L.LightningModule):
         assert not torch.isnan(embeddings_raw).any()  # ensure no NaNs in embedding
 
         if self.hparams.output_patch_embeddings:
+            # Take the mean of the embeddings along the group dimension
+            # excluding the last two latlon_ and time_ embeddings. This
+            # results in one embedding per patch.
             embeddings_raw = rearrange(
                 embeddings_raw[:, :-2, :], "b (g l) s -> b g (l s)", l=256, g=6
             )
