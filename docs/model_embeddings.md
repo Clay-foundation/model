@@ -44,8 +44,8 @@ Step by step instructions to create embeddings for a single MGRS tile location
                              --trainer.precision=bf16-mixed \
                              --data.data_dir=s3://clay-tiles-02/02/27WXN \
                              --data.batch_size=32 \
-                             --data.num_workers=16
-                             --output-patch-embeddings=False
+                             --data.num_workers=16 \
+                             --output-patch-embeddings=False \
                              --shuffle=False
    ```
 
@@ -155,4 +155,18 @@ print(geodataframe)
 Further reading:
 - https://guide.cloudnativegeo.org/geoparquet
 - https://cloudnativegeo.org/blog/2023/10/the-geoparquet-ecosystem-at-1.0.0
+```
+
+## Converting to patch level embeddings
+
+In the case where patch level embeddings are requested, the resulting array
+will have all patch embeddings ravelled in one row. Each row represents a
+512x512 pixel image, and contains 16x16 patch embeddings.
+
+To convert each row into patch level embeddings, the embedding array has to
+be split
+
+```{code}
+ravelled_patch_embeddings = geodataframe.embeddings[0]
+patch_embeddings = ravelled_patch_embeddings.reshape(256, 768)
 ```
