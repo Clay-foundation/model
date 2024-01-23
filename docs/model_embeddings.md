@@ -45,12 +45,22 @@ Step by step instructions to create embeddings for a single MGRS tile location
                              --data.data_dir=s3://clay-tiles-02/02/27WXN \
                              --data.batch_size=32 \
                              --data.num_workers=16
+                             --output-patch-embeddings=False
+                             --shuffle=False
    ```
 
    This should output a GeoParquet file containing the embeddings for MGRS tile
    27WXN (recall that each 10000x10000 pixel MGRS tile contains hundreds of
    smaller 512x512 chips), saved to the `data/embeddings/` folder. See the next
    sub-section for details about the embeddings file.
+
+   The `output_patch_embeddings` flag determines how the embeddings are calculated.
+   If `False`, one average embedding per MGRS tile of size 768 will be created. If
+   `True`, the embeddings will be kept at the patch level. The embedding array will
+   be of size 16 * 16 * 768, representing.
+
+   The `shuffle` flag should be set to `False` of the `output_patch_embeddings` is
+   `True` to ensure that the order of the patch embeddings is not randomized.
 
    ```{note}
    For those interested in how the embeddings were computed, the predict step
@@ -62,8 +72,9 @@ Step by step instructions to create embeddings for a single MGRS tile location
       dimension itself is a concatenation of 1536 (6 band groups x 16x16
       spatial patches of size 32x32 pixels each in a 512x512 image) + 2 (latlon
       embedding and time embedding) = 1538.
-   2. The mean or average is taken across the 1536 patch dimension, yielding an
-      output embedding of shape (B, 768).
+   2. By default, the mean or average is taken across the 1536 patch dimension,
+      yielding an output embedding of shape (B, 768). If patch embeddings are
+      requested, the shape is (B, 16 * 16 * 768), one embedding per patch.
 
    More details of how this is implemented can be found by inspecting the
    `predict_step` method in the `model_clay.py` file.
@@ -104,11 +115,14 @@ and contains a record of the embeddings, spatiotemporal metadata, and a link to
 the GeoTIFF file used as the source image for the embedding. The table looks
 something like this:
 
-|         source_url          |    date    |      embeddings      |   geometry   |
-|-----------------------------|------------|----------------------|--------------|
-| s3://.../.../claytile_*.tif | 2021-01-01 | [0.1, 0.4, ... x768] | POLYGON(...) |
-| s3://.../.../claytile_*.tif | 2021-06-30 | [0.2, 0.5, ... x768] | POLYGON(...) |
-| s3://.../.../claytile_*.tif | 2021-12-31 | [0.3, 0.6, ... x768] | POLYGON(...) |
+Embedding size is 768 by default, and 16 * 16 * 768 for patch level embeddings.
+
+
+|         source_url          |    date    |    embeddings    |   geometry   |
+|-----------------------------|------------|------------------|--------------|
+| s3://.../.../claytile_*.tif | 2021-01-01 | [0.1, 0.4, ... ] | POLYGON(...) |
+| s3://.../.../claytile_*.tif | 2021-06-30 | [0.2, 0.5, ... ] | POLYGON(...) |
+| s3://.../.../claytile_*.tif | 2021-12-31 | [0.3, 0.6, ... ] | POLYGON(...) |
 
 Details of each column are as follows:
 
