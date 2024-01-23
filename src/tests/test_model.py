@@ -100,7 +100,10 @@ def test_model_predict(datapipe, litmodule, precision, output_patch_embeddings):
     dataloader = torchdata.dataloader2.DataLoader2(datapipe=datapipe)
 
     # Initialize model
-    model: L.LightningModule = litmodule()
+    litargs = {}
+    if isinstance(litmodule, CLAYModule):
+        litargs = {"output_patch_embeddings": output_patch_embeddings}
+    model: L.LightningModule = litmodule(**litargs)
 
     # Run tests in a temporary folder
     with tempfile.TemporaryDirectory() as tmpdirname:
