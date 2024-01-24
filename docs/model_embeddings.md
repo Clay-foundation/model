@@ -45,8 +45,8 @@ Step by step instructions to create embeddings for a single MGRS tile location
                              --data.data_dir=s3://clay-tiles-02/02/27WXN \
                              --data.batch_size=32 \
                              --data.num_workers=16 \
-                             --output-patch-embeddings=False \
-                             --shuffle=False
+                             --model.output_patch_embeddings=False \
+                             --model.shuffle=False
    ```
 
    This should output a GeoParquet file containing the embeddings for MGRS tile
