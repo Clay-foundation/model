@@ -946,7 +946,7 @@ class CLAYModule(L.LightningModule):
                     dtype="date32[day][pyarrow]"
                 ),
                 "embeddings": pa.FixedShapeTensorArray.from_numpy_ndarray(
-                    embeddings_output.cpu().detach().__array__()
+                    np.ascontiguousarray(embeddings_output.cpu().detach().__array__())
                 ),
             },
             geometry=shapely.box(
