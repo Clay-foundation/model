@@ -87,12 +87,12 @@ def test_model_vit_fit(datapipe):
 @pytest.mark.parametrize(
     "litmodule,precision",
     [
-        (CLAYModule, "bf16-mixed" if torch.cuda.is_available() else "32-true"),
-        (ViTLitModule, "bf16-mixed"),
+        (CLAYModule, "16-mixed" if torch.cuda.is_available() else "32-true"),
+        (ViTLitModule, "16-mixed"),
     ],
 )
-@pytest.mark.parametrize("output_patch_embeddings", [True, False])
-def test_model_predict(datapipe, litmodule, precision, output_patch_embeddings):
+@pytest.mark.parametrize("embeddings_level", ["mean", "patch", "group"])
+def test_model_predict(datapipe, litmodule, precision, embeddings_level):
     """
     Run a single prediction loop using 1 batch.
     """
@@ -102,7 +102,7 @@ def test_model_predict(datapipe, litmodule, precision, output_patch_embeddings):
     # Initialize model
     if litmodule == CLAYModule:
         litargs = {
-            "output_patch_embeddings": output_patch_embeddings,
+            "embeddings_level": embeddings_level,
             "shuffle": False,
         }
     else:
@@ -148,10 +148,16 @@ def test_model_predict(datapipe, litmodule, precision, output_patch_embeddings):
         assert geodataframe.embeddings.dtype == "object"
         assert geodataframe.geometry.dtype == gpd.array.GeometryDtype()
 
+        expected_shape_lookup = {
+            "mean": (768,),
+            "patch": (16 * 16 * 768,),
+            "group": (6 * 16 * 16 * 768,),
+        }
+
         for embeddings in geodataframe.embeddings:
             assert (
-                embeddings.shape == (16 * 16 * 768,)
-                if output_patch_embeddings and litmodule == CLAYModule
+                embeddings.shape == expected_shape_lookup[embeddings_level]
+                if litmodule == CLAYModule
                 else (768,)
             )
             assert embeddings.dtype == "float32"

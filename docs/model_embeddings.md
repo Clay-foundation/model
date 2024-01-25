@@ -45,7 +45,7 @@ Step by step instructions to create embeddings for a single MGRS tile location
                              --data.data_dir=s3://clay-tiles-02/02/27WXN \
                              --data.batch_size=32 \
                              --data.num_workers=16 \
-                             --model.output_patch_embeddings=False \
+                             --model.embeddings_level=group \
                              --model.shuffle=False
    ```
 
@@ -54,10 +54,17 @@ Step by step instructions to create embeddings for a single MGRS tile location
    smaller 512x512 chips), saved to the `data/embeddings/` folder. See the next
    sub-section for details about the embeddings file.
 
-   The `output_patch_embeddings` flag determines how the embeddings are calculated.
-   If `False`, one average embedding per MGRS tile of size 768 will be created. If
-   `True`, the embeddings will be kept at the patch level. The embedding array will
-   be of size 16 * 16 * 768, representing.
+   The `embeddings_level` flag determines how the embeddings are calculated.
+   The default is `mean`, resulting in one average embedding per MGRS tile of
+   size 768. If set to `patch`, the embeddings will be kept at the patch level.
+   The embedding array will be of size 16 * 16 * 768, representing one
+   embedding per patch. The third option `group` will keep the full
+   dimensionality of the encoder output, including the band group
+   dimension. The array size of those embeddings is 6 * 16 * 16 * 768.
+
+   The embeddings are flattened into one dimensional arrays because pandas
+   does not allow for multidimensional arrays. This makes it necessary to
+   reshape the flattened arrays to access the patch level embeddings.
 
    The `shuffle` flag should be set to `False` of the `output_patch_embeddings` is
    `True` to ensure that the order of the patch embeddings is not randomized.
@@ -115,7 +122,8 @@ and contains a record of the embeddings, spatiotemporal metadata, and a link to
 the GeoTIFF file used as the source image for the embedding. The table looks
 something like this:
 
-Embedding size is 768 by default, and 16 * 16 * 768 for patch level embeddings.
+Embedding size is 768 by default, 16 * 16 * 768 for patch level embeddings, and
+6 * 16 * 16 * 768 for group level embeddings.
 
 
 |         source_url          |    date    |    embeddings    |   geometry   |
@@ -167,6 +175,7 @@ To convert each row into patch level embeddings, the embedding array has to
 be unravelled into 256 patches like so
 
 ```{code}
+# This assumes embeddings levels set to "patch"
 ravelled_patch_embeddings = geodataframe.embeddings[0]
-patch_embeddings = ravelled_patch_embeddings.reshape(256, 768)
+patch_embeddings = ravelled_patch_embeddings.reshape(16, 16, 768)
 ```
