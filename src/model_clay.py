@@ -805,6 +805,15 @@ class CLAYModule(L.LightningModule):
         image_size=512,
         patch_size=32,
         shuffle=True,
+        bands=13,
+        band_groups={
+            "rgb": (2, 1, 0),
+            "rededge": (3, 4, 5, 7),
+            "nir": (6,),
+            "swir": (8, 9),
+            "sar": (10, 11),
+            "dem": (12,),
+        },
         lr=1e-4,
         wd=0.05,
         b1=0.9,
@@ -824,6 +833,8 @@ class CLAYModule(L.LightningModule):
                 image_size=image_size,
                 patch_size=patch_size,
                 shuffle=shuffle,
+                bands=bands,
+                band_groups=band_groups,
             )
         else:
             raise ValueError(
