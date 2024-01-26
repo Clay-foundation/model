@@ -27,3 +27,9 @@ The Clay model can be used in three main ways:
 
 CLAY is a fiscal sponsored project of the 501c3 non-profit
 [Radiant Earth Foundation](https://www.radiant.earth).
+
+---
+### Table of Contents
+
+```{tableofcontents}
+```
