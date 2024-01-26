@@ -45,8 +45,7 @@ Step by step instructions to create embeddings for a single MGRS tile location
                              --data.data_dir=s3://clay-tiles-02/02/27WXN \
                              --data.batch_size=32 \
                              --data.num_workers=16 \
-                             --model.embeddings_level=group \
-                             --model.shuffle=False
+                             --model.embeddings_level=group
    ```
 
    This should output a GeoParquet file containing the embeddings for MGRS tile
@@ -65,9 +64,6 @@ Step by step instructions to create embeddings for a single MGRS tile location
    The embeddings are flattened into one dimensional arrays because pandas
    does not allow for multidimensional arrays. This makes it necessary to
    reshape the flattened arrays to access the patch level embeddings.
-
-   The `shuffle` flag should be set to `False` of the `output_patch_embeddings` is
-   `True` to ensure that the order of the patch embeddings is not randomized.
 
    ```{note}
    For those interested in how the embeddings were computed, the predict step

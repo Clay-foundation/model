@@ -103,7 +103,6 @@ def test_model_predict(datapipe, litmodule, precision, embeddings_level):
     if litmodule == CLAYModule:
         litargs = {
             "embeddings_level": embeddings_level,
-            "shuffle": False,
         }
     else:
         litargs = {}

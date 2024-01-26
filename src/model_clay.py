@@ -798,7 +798,6 @@ class CLAYModule(L.LightningModule):
         b1=0.9,
         b2=0.95,
         embeddings_level: Literal["mean", "patch", "group"] = "mean",
-        shuffle=True,
     ):
         super().__init__()
         self.save_hyperparameters(logger=True)
@@ -813,7 +812,6 @@ class CLAYModule(L.LightningModule):
                 mask_ratio=mask_ratio,
                 image_size=image_size,
                 patch_size=patch_size,
-                shuffle=shuffle,
             )
         else:
             raise ValueError(
