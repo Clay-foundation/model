@@ -246,7 +246,7 @@ class Encoder(nn.Module):
 
         if self.training:  # Shuffle the patches
             noise = torch.randn((B, GL), device=patches.device)  # [B GL]
-        else:  # Don't shuffle useful for interpolation & inspection of embeddings
+        else:  # Don't shuffle the patches, this is useful for interpolation & inspection of embeddings
             noise = rearrange(
                 torch.arange(B * GL, device=patches.device), "(B GL) -> B GL", B=B
             )
@@ -304,6 +304,9 @@ class Encoder(nn.Module):
             cube
         )  # [B G L D] - patchify & create embeddings per patch
 
+        # Move position & band encoding to the device
+        self.pos_encoding = self.pos_encoding.to(patches.device)
+        self.band_encoding = self.band_encoding.to(patches.device)
         patches = self.add_encodings(
             patches
         )  # [B G L D] - add position & band encoding to the embeddings
@@ -535,6 +538,10 @@ class Decoder(nn.Module):
             encoded_unmasked_patches[:, -2:, :],
         )  # [B (GL:(1 - mask_ratio)) D], [B 2 D]
 
+        # move position & band encoding to the device
+        self.pos_encoding = self.pos_encoding.to(encoded_unmasked_patches.device)
+        self.band_encoding = self.band_encoding.to(encoded_unmasked_patches.device)
+
         # Reconstruct the patches to feed into the decoder transformer
         decoder_patches = self.reconstruct_and_add_encoding(
             encoded_unmasked_patches, unmasked_indices, masked_indices
@@ -562,6 +569,7 @@ class CLAY(nn.Module):
         mask_ratio,
         image_size,
         patch_size,
+        shuffle,
         # ENCODER
         dim,
         depth,
@@ -792,6 +800,16 @@ class CLAYModule(L.LightningModule):
         mask_ratio=0.75,
         image_size=512,
         patch_size=32,
+        shuffle=True,
+        bands=13,
+        band_groups={
+            "rgb": (2, 1, 0),
+            "rededge": (3, 4, 5, 7),
+            "nir": (6,),
+            "swir": (8, 9),
+            "sar": (10, 11),
+            "dem": (12,),
+        },
         lr=1e-4,
         wd=0.05,
         b1=0.9,
@@ -810,6 +828,9 @@ class CLAYModule(L.LightningModule):
                 mask_ratio=mask_ratio,
                 image_size=image_size,
                 patch_size=patch_size,
+                shuffle=shuffle,
+                bands=bands,
+                band_groups=band_groups,
             )
         else:
             raise ValueError(

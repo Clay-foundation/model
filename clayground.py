@@ -1,7 +1,15 @@
+<<<<<<< HEAD
+import streamlit as st
+import numpy as np
+import lancedb
+import matplotlib.pyplot as plt
+import rasterio as rio
+=======
 import lancedb
 import matplotlib.pyplot as plt
 import rasterio as rio
 import streamlit as st
+>>>>>>> main
 from rasterio.plot import show
 
 st.set_page_config(layout="wide")
@@ -22,6 +30,15 @@ def get_unique_chips(tbl):
         {"tile": "55LBC", "idx": "0075", "year": 2022},
     ]
 
+<<<<<<< HEAD
+    filter = " OR ".join(
+        [
+            f"(tile == '{chip['tile']}' AND idx == '{chip['idx']}') AND year == {chip['year']}"
+            for chip in chips
+        ]
+    )
+    result = tbl.search().where(filter, prefilter=True).to_pandas()
+=======
     tile_filter = " OR ".join(
         [
             f"(tile == '{chip['tile']}' "
@@ -31,6 +48,7 @@ def get_unique_chips(tbl):
         ]
     )
     result = tbl.search().where(tile_filter, prefilter=True).to_pandas()
+>>>>>>> main
     return result
 
 
