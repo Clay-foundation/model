@@ -44,13 +44,26 @@ Step by step instructions to create embeddings for a single MGRS tile location
                              --trainer.precision=bf16-mixed \
                              --data.data_dir=s3://clay-tiles-02/02/27WXN \
                              --data.batch_size=32 \
-                             --data.num_workers=16
+                             --data.num_workers=16 \
+                             --model.embeddings_level=group
    ```
 
    This should output a GeoParquet file containing the embeddings for MGRS tile
    27WXN (recall that each 10000x10000 pixel MGRS tile contains hundreds of
    smaller 512x512 chips), saved to the `data/embeddings/` folder. See the next
    sub-section for details about the embeddings file.
+
+   The `embeddings_level` flag determines how the embeddings are calculated.
+   The default is `mean`, resulting in one average embedding per MGRS tile of
+   size 768. If set to `patch`, the embeddings will be kept at the patch level.
+   The embedding array will be of size 16 * 16 * 768, representing one
+   embedding per patch. The third option `group` will keep the full
+   dimensionality of the encoder output, including the band group
+   dimension. The array size of those embeddings is 6 * 16 * 16 * 768.
+
+   The embeddings are flattened into one dimensional arrays because pandas
+   does not allow for multidimensional arrays. This makes it necessary to
+   reshape the flattened arrays to access the patch level embeddings.
 
    ```{note}
    For those interested in how the embeddings were computed, the predict step
@@ -62,8 +75,9 @@ Step by step instructions to create embeddings for a single MGRS tile location
       dimension itself is a concatenation of 1536 (6 band groups x 16x16
       spatial patches of size 32x32 pixels each in a 512x512 image) + 2 (latlon
       embedding and time embedding) = 1538.
-   2. The mean or average is taken across the 1536 patch dimension, yielding an
-      output embedding of shape (B, 768).
+   2. By default, the mean or average is taken across the 1536 patch dimension,
+      yielding an output embedding of shape (B, 768). If patch embeddings are
+      requested, the shape is (B, 16 * 16 * 768), one embedding per patch.
 
    More details of how this is implemented can be found by inspecting the
    `predict_step` method in the `model_clay.py` file.
@@ -104,11 +118,15 @@ and contains a record of the embeddings, spatiotemporal metadata, and a link to
 the GeoTIFF file used as the source image for the embedding. The table looks
 something like this:
 
-|         source_url          |    date    |      embeddings      |   geometry   |
-|-----------------------------|------------|----------------------|--------------|
-| s3://.../.../claytile_*.tif | 2021-01-01 | [0.1, 0.4, ... x768] | POLYGON(...) |
-| s3://.../.../claytile_*.tif | 2021-06-30 | [0.2, 0.5, ... x768] | POLYGON(...) |
-| s3://.../.../claytile_*.tif | 2021-12-31 | [0.3, 0.6, ... x768] | POLYGON(...) |
+Embedding size is 768 by default, 16 * 16 * 768 for patch level embeddings, and
+6 * 16 * 16 * 768 for group level embeddings.
+
+
+|         source_url          |    date    |    embeddings    |   geometry   |
+|-----------------------------|------------|------------------|--------------|
+| s3://.../.../claytile_*.tif | 2021-01-01 | [0.1, 0.4, ... ] | POLYGON(...) |
+| s3://.../.../claytile_*.tif | 2021-06-30 | [0.2, 0.5, ... ] | POLYGON(...) |
+| s3://.../.../claytile_*.tif | 2021-12-31 | [0.3, 0.6, ... ] | POLYGON(...) |
 
 Details of each column are as follows:
 
@@ -141,4 +159,19 @@ print(geodataframe)
 Further reading:
 - https://guide.cloudnativegeo.org/geoparquet
 - https://cloudnativegeo.org/blog/2023/10/the-geoparquet-ecosystem-at-1.0.0
+```
+
+## Converting to patch level embeddings
+
+In the case where patch level embeddings are requested, the resulting array
+will have all patch embeddings ravelled in one row. Each row represents a
+512x512 pixel image, and contains 16x16 patch embeddings.
+
+To convert each row into patch level embeddings, the embedding array has to
+be unravelled into 256 patches like so
+
+```{code}
+# This assumes embeddings levels set to "patch"
+ravelled_patch_embeddings = geodataframe.embeddings[0]
+patch_embeddings = ravelled_patch_embeddings.reshape(16, 16, 768)
 ```
