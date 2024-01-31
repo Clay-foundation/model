@@ -29,7 +29,7 @@ class ClayDataset(Dataset):
         self.transform = transform
 
     def normalize_timestamp(self, ts):
-        year, month, day = map(np.float16, ts.split("-"))
+        year, month, day = map(np.float32, ts.split("-"))
         year_radians = 2 * math.pi * (year - 2012) / (2030 - 2012)  # years 2012-2030
         month_radians = 2 * math.pi * (month - 1) / 11
         day_radians = (
@@ -84,7 +84,7 @@ class ClayDataset(Dataset):
         cube = self.read_chip(chip_path)
 
         # remove nans and convert to tensor
-        cube["pixels"] = torch.as_tensor(data=cube["pixels"], dtype=torch.float16)
+        cube["pixels"] = torch.as_tensor(data=cube["pixels"], dtype=torch.float32)
         cube["bbox"] = torch.as_tensor(data=cube["bbox"], dtype=torch.float64)
         cube["epsg"] = torch.as_tensor(data=cube["epsg"], dtype=torch.int32)
         cube["date"] = str(cube["date"])
@@ -96,7 +96,7 @@ class ClayDataset(Dataset):
             cube["source_url"] = chip_path
 
         if self.transform:
-            # convert to float16 and normalize
+            # Normalize data
             cube["pixels"] = self.transform(cube["pixels"])
 
         return cube
@@ -202,7 +202,7 @@ class ClayDataModule(L.LightningDataModule):
 def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
     """
     Read a GeoTIFF file using rasterio into a numpy.ndarray, convert it to a
-    torch.Tensor (float16 dtype), and also output spatiotemporal metadata
+    torch.Tensor (float32 dtype), and also output spatiotemporal metadata
     associated with the image.
 
     Parameters
@@ -224,7 +224,7 @@ def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
     with rasterio.open(fp=filepath) as dataset:
         # Get image data
         array: np.ndarray = dataset.read()
-        tensor: torch.Tensor = torch.as_tensor(data=array.astype(dtype="float16"))
+        tensor: torch.Tensor = torch.as_tensor(data=array.astype(dtype="float32"))
 
         # Get spatial bounding box and coordinate reference system in UTM projection
         bbox: torch.Tensor = torch.as_tensor(  # xmin, ymin, xmax, ymax

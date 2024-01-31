@@ -29,7 +29,7 @@ def fixture_datapipe() -> torchdata.datapipes.iter.IterDataPipe:
         iterable=[
             {
                 # For ViTLitModule
-                "image": torch.randn(3, 13, 512, 512).to(dtype=torch.float16),
+                "image": torch.randn(3, 13, 512, 512).to(dtype=torch.float32),
                 # For CLAYModule
                 "pixels": torch.randn(3, 13, 512, 512).to(dtype=torch.float32),
                 "timestep": torch.tensor(
