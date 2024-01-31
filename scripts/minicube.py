@@ -1,14 +1,24 @@
 from pathlib import Path
 
 import geopandas as gpd
+import matplotlib.pyplot as plt
+import numpy
 import pandas as pd
 import pystac_client
 import rasterio
 import rioxarray  # noqa: F401
 import stackstac
-from matplotlib import pyplot as plt
+import torch
 from rasterio.enums import Resampling
 from shapely import Point
+from sklearn import decomposition
+
+from src.datamodule import ClayDataModule
+from src.model_clay import CLAYModule
+
+# ###########################################################
+# Download a time series of image chips over point location
+# ###########################################################
 
 STAC_API = "https://earth-search.aws.element84.com/v1"
 # STAC_API = "https://planetarycomputer.microsoft.com/api/stac/v1"
@@ -76,7 +86,7 @@ stack = stackstac.stack(
     dtype="float32",
     rescale=False,
     fill_value=0,
-    assets=BAND_GROUPS["rgb"],
+    assets=BAND_GROUPS["rgb"] + BAND_GROUPS["nir"],
     resampling=Resampling.bilinear,
 )
 
@@ -103,3 +113,91 @@ for tile in stack:
 
     with rasterio.open(name, "r+") as rst:
         rst.update_tags(date=date)
+
+
+# ###########################################################
+# Now switch gears and load the tiles to create embeddings
+# and analyze them. Most of the partial input code is copied
+# from the partial inputs notebook here
+# https://github.com/Clay-foundation/model/blob/docs/model/docs/clay-v0-partial-inputs.ipynb
+# ###########################################################
+
+DATA_DIR = "data/minicubes"  # data directory for all chips
+CKPT_PATH = "data/checkpoints/Clay_v0.1_epoch-24_val-loss-0.46.ckpt"
+
+
+rgb_model = CLAYModule.load_from_checkpoint(
+    CKPT_PATH,
+    mask_ratio=0.0,  # mask out 70% of the input patches
+    # bands=3,
+    # band_groups={"rgb": (2, 1, 0)},
+    # bands=4,
+    band_groups={"rgb": (2, 1, 0), "nir": (3,)},
+    strict=False,  # ignore the extra parameters in the checkpoint
+)
+rgb_model.eval()  # set the model to evaluation mode
+
+
+class ClayDataModuleRGB(ClayDataModule):
+    MEAN = [
+        1369.03,
+        1597.68,
+        1741.10,
+        2858.43,  # nir
+    ]
+    STD = [
+        2026.96,
+        2011.88,
+        2146.35,
+        2016.38,  # nir
+    ]
+
+
+data_dir = Path(DATA_DIR)
+
+dm = ClayDataModuleRGB(data_dir=str(data_dir), batch_size=8)
+dm.setup(stage="predict")
+trn_dl = iter(dm.predict_dataloader())
+
+embeddings = []
+
+for batch in trn_dl:
+    with torch.no_grad():
+        # Move data from to the device of model
+        batch["pixels"] = batch["pixels"].to(rgb_model.device)
+        # Pass just the specific band through the model
+        batch["timestep"] = batch["timestep"].to(rgb_model.device)
+        batch["latlon"] = batch["latlon"].to(rgb_model.device)
+
+        # Pass pixels, latlon, timestep through the encoder to create encoded patches
+        (
+            unmasked_patches,
+            unmasked_indices,
+            masked_indices,
+            masked_matrix,
+        ) = rgb_model.model.encoder(batch)
+
+        embeddings.append(unmasked_patches.detach().cpu().numpy())
+
+embeddings = numpy.vstack(embeddings)
+
+embeddings_mean = embeddings[:, :-2, :].mean(axis=1)
+
+pca = decomposition.PCA(2)
+
+# pca_result = pca.fit_transform(rearrange(embeddings, "o s w -> o (s w)"))
+pca_result = pca.fit_transform(embeddings_mean)
+
+plt.scatter(range(len(pca_result)), pca_result[:, 0], color="blue")
+plt.scatter(range(len(pca_result)), pca_result[:, 1], color="red")
+# plt.scatter(range(len(pca_result)), pca_result[:, 2], color="green")
+# plt.scatter(range(len(pca_result)), pca_result)
+
+plt.show()
+
+# Load the RGB Clay Dataset
+# ds = ClayDataset(chips_path=list(data_dir.glob("**/*.tif")))
+# sample = ds[2]  # pick a random sample
+# bgr = rearrange(sample["pixels"].cpu().numpy(), "c h w -> h w c")
+# rgb = bgr[..., ::-1]  # reverse the order of the channels
+# plt.imshow(rgb / 2000)
