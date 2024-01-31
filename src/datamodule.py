@@ -157,7 +157,7 @@ class ClayDataModule(L.LightningDataModule):
             dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_dir])
             chips_path = list(dp.list_files_by_s3(masks="*.tif"))
         else:  # if self.data_dir is a local data path
-            chips_path = list(Path(self.data_dir).glob("**/*.tif"))
+            chips_path = sorted(list(Path(self.data_dir).glob("**/*.tif")))
         print(f"Total number of chips: {len(chips_path)}")
 
         if stage == "fit":
