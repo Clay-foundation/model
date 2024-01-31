@@ -816,7 +816,7 @@ class CLAYModule(L.LightningModule):
             }
             if band_groups:
                 model_args["band_groups"] = band_groups
-            self.model = model_map[model_size](**band_groups)
+            self.model = model_map[model_size](**model_args)
         else:
             raise ValueError(
                 f"Invalid model size {model_size}. Expected one of {model_map.keys()}"
