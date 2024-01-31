@@ -70,7 +70,7 @@ def test_datapipemodule(datamodule, geotiff_folder, stage, dataloader):
     source_url = batch["source_url"]
 
     assert image.shape == torch.Size([2, 13, 256, 256])
-    assert image.dtype == torch.float16
+    assert image.dtype == torch.float32
 
     torch.testing.assert_close(
         actual=bbox,
