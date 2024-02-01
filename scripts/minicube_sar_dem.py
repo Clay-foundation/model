@@ -26,25 +26,21 @@ Functions:
       Process Sentinel-2, Sentinel-1, and DEM data for a specified time range,
       area of interest, and resolution.
 """
-import random
-from datetime import timedelta
-import os 
-from pathlib import Path
 from datetime import datetime, timedelta
-import pandas as pd
+from pathlib import Path
+
 import geopandas as gpd
-from shapely import Point
 import numpy as np
+import pandas as pd
 import planetary_computer as pc
 import pystac_client
+import rasterio
 import stackstac
 import xarray as xr
 from pystac import ItemCollection
-from shapely.geometry import box
-from tile import tiler
-import rasterio
 from rasterio.enums import Resampling
-
+from shapely import Point
+from shapely.geometry import box
 
 STAC_API = "https://earth-search.aws.element84.com/v1"
 STAC_API_S2_DEM = "https://planetarycomputer.microsoft.com/api/stac/v1"
@@ -65,14 +61,14 @@ NODATA = 0
 S1_MATCH_ATTEMPTS = 20
 DATES_PER_LOCATION = 3
 
-EPSG_AOI = 32642 # Pakistan # 32644 # Nepal # 32638 # Georgia
+EPSG_AOI = 32642  # Pakistan # 32644 # Nepal # 32638 # Georgia
 
 # lat/lon
 POI = 39.99146, -8.06256  # Pedrogao, Portugal
 POI = 37.30939, -8.57207  # Monchique Portugal
-POI = 41.921592, 41.982836 # Ozurgeti, Georgia
-POI = 29.232631, 81.218995 # Achham District, Nepal
-POI = 26.776567, 68.287374 # Padidan, Pakistan
+POI = 41.921592, 41.982836  # Ozurgeti, Georgia
+POI = 29.232631, 81.218995  # Achham District, Nepal
+POI = 26.776567, 68.287374  # Padidan, Pakistan
 # POI = 29.5672, 116.1346  # Poyang, China
 # POI = 21.8978476,106.2495839  # Bac Son, Vietnam
 # POI = 10.22651, 105.21669  # Mekong delta, Vietnam
@@ -302,7 +298,7 @@ def make_datasets(s2_items, s1_items, dem_items, resolution, aoi, bounds):
         bounds=bounds,
         resolution=resolution,
         dtype=np.float32,
-        fill_value=0, #np.nan,
+        fill_value=0,  # np.nan,
     )
 
     da_dem: xr.DataArray = stackstac.stack(
@@ -311,7 +307,7 @@ def make_datasets(s2_items, s1_items, dem_items, resolution, aoi, bounds):
         bounds=bounds,
         resolution=resolution,
         dtype=np.float32,
-        fill_value=0, #np.nan,
+        fill_value=0,  # np.nan,
     )
 
     print("da_sen2: ", da_sen2.shape)
@@ -366,7 +362,9 @@ def process(
     - xr.Dataset: Merged xarray Dataset containing processed data.
     """
     catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
-    catalog_S2_DEM = pystac_client.Client.open(STAC_API_S2_DEM, modifier=pc.sign_inplace)
+    catalog_S2_DEM = pystac_client.Client.open(
+        STAC_API_S2_DEM, modifier=pc.sign_inplace
+    )
 
     for i in range(S1_MATCH_ATTEMPTS):
         s2_item, bbox = search_sentinel2(
@@ -399,14 +397,7 @@ def process(
 
     date = s2_item.properties["datetime"][:10]
 
-    result = make_datasets(
-        s2_item,
-        s1_items,
-        dem_items,
-        resolution,
-        aoi,
-        bounds
-    )
+    result = make_datasets(s2_item, s1_items, dem_items, resolution, aoi, bounds)
 
     return date, result
 
@@ -430,15 +421,13 @@ def convert_attrs_and_coords_objects_to_str(data):
 
 
 def main(poi, bounds, start, end):
-    date_ranges = [
-        f"{start}/{end}"
-    ]
+    date_ranges = [f"{start}/{end}"]
 
     geometry = box(*bounds)
 
     # Create a GeoDataFrame
     gdf = gpd.GeoDataFrame(geometry=[geometry])
-    bbox=(poi[1] - 1e-5, poi[0] - 1e-5, poi[1] + 1e-5, poi[0] + 1e-5)
+    bbox = (poi[1] - 1e-5, poi[0] - 1e-5, poi[1] + 1e-5, poi[0] + 1e-5)
 
     match_count = 0
     for date_range in date_ranges:
@@ -463,16 +452,15 @@ def main(poi, bounds, start, end):
 
         outdir = Path("data/minicubes")
         assert outdir.exists()
-        
+
         # Write tile to output dir
         for tile in pixels:
-        
             name = "{dir}/claytile_{date}.tif".format(
                 dir=outdir,
                 date=date.replace("-", ""),
             )
             tile.rio.to_raster(name, compress="deflate")
-        
+
             with rasterio.open(name, "r+") as rst:
                 rst.update_tags(date=date)
 
@@ -489,8 +477,10 @@ dates = []
 # Loop through the dates and create date ranges
 while START_DATE < END_DATE:
     end_of_range = START_DATE + timedelta(days=14)
-    end_of_range = min(end_of_range, END_DATE)  # Ensure end_of_range doesn't exceed end_date
-    dates.append([START_DATE.strftime('%Y-%m-%d'), end_of_range.strftime('%Y-%m-%d')])
+    end_of_range = min(
+        end_of_range, END_DATE
+    )  # Ensure end_of_range doesn't exceed end_date
+    dates.append([START_DATE.strftime("%Y-%m-%d"), end_of_range.strftime("%Y-%m-%d")])
     start_date = end_of_range + timedelta(days=1)
 
 print("List of dates:")
@@ -501,7 +491,7 @@ poidf = gpd.GeoDataFrame(
     pd.DataFrame(),
     crs="EPSG:4326",
     geometry=[Point(POI[1], POI[0])],
-).to_crs(f"EPSG:{EPSG_AOI}") # 32644 Nepal 32638 # Georgia
+).to_crs(f"EPSG:{EPSG_AOI}")  # 32644 Nepal 32638 # Georgia
 
 coords = poidf.iloc[0].geometry.coords[0]
 
