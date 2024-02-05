@@ -32,6 +32,8 @@ parts:
       file: model_embeddings
     - title: Finetuning
       file: model_finetuning
+    - title: Partial inputs
+      file: partial-inputs
 - caption: Tutorials
   chapters:
     - title: Generative AI for pixel reconstruction
