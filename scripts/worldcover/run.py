@@ -13,7 +13,7 @@ from shapely import box
 from src.datamodule import ClayDataModule
 from src.model_clay import CLAYModule
 
-index = os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 100)
+index = os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 1)
 
 YEAR = 2021
 DATE = f"{YEAR}-06-01"
@@ -31,7 +31,9 @@ all_bounds = []
 
 with tempfile.TemporaryDirectory() as tmp:
     # tmp = "/home/tam/Desktop/wcctmp"
-    with rasterio.open(f"scripts/worldcover/worldcover_index_usa_{YEAR}.vrt") as src:
+    with rasterio.open(
+        f"https://clay-mgrs-samples.s3.amazonaws.com/worldcover_index_usa_{YEAR}.vrt"
+    ) as src:
         while yoff < RASTER_Y_SIZE - TILE_SIZE:
             print("Offset", xoff, yoff)
 
@@ -137,5 +139,5 @@ with tempfile.TemporaryDirectory() as tmp:
     s3_client.upload_file(
         outpath,
         BUCKET,
-        f"v{VERSION}/{os.path.basename(outpath)}",
+        f"v{VERSION}/{YEAR}/{os.path.basename(outpath)}",
     )
