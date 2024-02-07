@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import tempfile
 
@@ -21,13 +22,14 @@ RASTER_X_SIZE = (125 - 67) * 12000
 RASTER_Y_SIZE = (49 - 24) * 12000
 TILE_SIZE = 512
 NODATA = 0
-CKPT_PATH = "https://huggingface.co/made-with-clay/Clay1/resolve/main/Clay_v0.1_epoch-24_val-loss-0.46.ckpt"
+CKPT_PATH = "s3://clay-model-ckpt/v0/mae_epoch-24_val-loss-0.46.ckpt"
 VERSION = "001"
 BUCKET = "clay-worldcover-embeddings"
 
 xoff = index * TILE_SIZE
 yoff = 0
 all_bounds = []
+counter = 0
 
 with tempfile.TemporaryDirectory() as tmp:
     # tmp = "/home/tam/Desktop/wcctmp"
@@ -35,7 +37,9 @@ with tempfile.TemporaryDirectory() as tmp:
         f"https://clay-mgrs-samples.s3.amazonaws.com/worldcover_index_usa_{YEAR}.vrt"
     ) as src:
         while yoff < RASTER_Y_SIZE - TILE_SIZE:
-            print("Offset", xoff, yoff)
+            if counter % 100 == 0:
+                print("Offset", xoff, yoff)
+            counter += 1
 
             # Read window
             win = Window(xoff, yoff, TILE_SIZE, TILE_SIZE)
@@ -66,8 +70,6 @@ with tempfile.TemporaryDirectory() as tmp:
             all_bounds.append(src.window_bounds(win))
 
             yoff += TILE_SIZE
-            # if yoff > 2000:
-            #     break
 
     # Load model
     rgb_model = CLAYModule.load_from_checkpoint(
