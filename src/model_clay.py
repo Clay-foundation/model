@@ -62,7 +62,6 @@ class Encoder(nn.Module):
         heads,
         dim_head,
         mlp_ratio,
-        bands,
         band_groups,
         dropout,
         emb_dropout,
@@ -75,7 +74,6 @@ class Encoder(nn.Module):
         self.image_size = image_size
         self.patch_size = patch_size
         self.dim = dim
-        self.bands = bands
         self.band_groups = band_groups
         self.num_spatial_patches = (image_size // patch_size) ** 2
         self.num_group_patches = len(band_groups)
@@ -352,7 +350,6 @@ class Decoder(nn.Module):
         heads,
         dim_head,
         mlp_ratio,
-        bands,
         band_groups,
         dropout,
     ):
@@ -579,7 +576,6 @@ class CLAY(nn.Module):
         decoder_mlp_ratio,
         decoder_dropout,
         # EO
-        bands=13,
         band_groups={
             "rgb": (2, 1, 0),
             "rededge": (3, 4, 5, 7),
@@ -594,7 +590,6 @@ class CLAY(nn.Module):
         self.mask_ratio = mask_ratio
         self.image_size = image_size
         self.patch_size = patch_size
-        self.bands = bands
         self.band_groups = band_groups
 
         self.encoder = Encoder(
@@ -606,7 +601,6 @@ class CLAY(nn.Module):
             heads=heads,
             dim_head=dim_head,
             mlp_ratio=mlp_ratio,
-            bands=bands,
             band_groups=band_groups,
             dropout=dropout,
             emb_dropout=emb_dropout,
@@ -622,7 +616,6 @@ class CLAY(nn.Module):
             heads=decoder_heads,
             dim_head=decoder_dim_head,
             mlp_ratio=decoder_mlp_ratio,
-            bands=bands,
             band_groups=band_groups,
             dropout=decoder_dropout,
         )
