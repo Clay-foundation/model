@@ -14,7 +14,7 @@ from shapely import box
 from src.datamodule import ClayDataModule
 from src.model_clay import CLAYModule
 
-index = os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 1)
+index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 0))
 
 YEAR = 2021
 DATE = f"{YEAR}-06-01"
@@ -97,7 +97,7 @@ with tempfile.TemporaryDirectory() as tmp:
             2016.38,  # nir
         ]
 
-    dm = ClayDataModuleRGB(data_dir=tmp, batch_size=20)
+    dm = ClayDataModuleRGB(data_dir=tmp, batch_size=8)
     dm.setup(stage="predict")
     trn_dl = iter(dm.predict_dataloader())
 
@@ -134,6 +134,7 @@ with tempfile.TemporaryDirectory() as tmp:
     )
 
     outpath = f"{tmp}/worldcover_embeddings_{YEAR}_{index}_v{VERSION}.gpq"
+    print(f"Uploading embeddings to {outpath}")
 
     gdf.to_parquet(path=outpath, compression="ZSTD", schema_version="1.0.0")
 
