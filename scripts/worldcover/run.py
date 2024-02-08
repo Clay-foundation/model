@@ -97,7 +97,7 @@ with tempfile.TemporaryDirectory() as tmp:
             2016.38,  # nir
         ]
 
-    dm = ClayDataModuleRGB(data_dir=tmp, batch_size=8)
+    dm = ClayDataModuleRGB(data_dir=tmp, batch_size=8, num_workers=0)
     dm.setup(stage="predict")
     trn_dl = iter(dm.predict_dataloader())
 
