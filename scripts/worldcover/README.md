@@ -1,5 +1,5 @@
 # Running embeddings for Worldcover Sentinel-2 Composites
-This package is made to generate embeddings from the ESA Worldcover
+This package is made to generate embeddings from the [ESA Worldcover](https://esa-worldcover.org/en/data-access)
 Sentinel-2 annual composites. The target region is all of the
 Contiguous United States.
 
