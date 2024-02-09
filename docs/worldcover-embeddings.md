@@ -59,7 +59,7 @@ This command will send the array job to AWS batch to run all of the
 import boto3
 
 batch = boto3.client("batch", region_name="us-east-1")
-year = 2021
+year = 2020
 job = {
     "jobName": f"worldcover-conus-{year}",
     "jobQueue": "fetch-and-run",

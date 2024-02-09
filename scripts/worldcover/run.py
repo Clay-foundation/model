@@ -40,7 +40,7 @@ CKPT_PATH = "s3://clay-model-ckpt/v0/mae_epoch-24_val-loss-0.46.ckpt"
 # CKPT_PATH = "https://huggingface.co/made-with-clay/Clay/resolve/main/Clay_v0.1_epoch-24_val-loss-0.46.ckpt"
 VERSION = "002"
 BUCKET = "clay-worldcover-embeddings"
-URL = "https://esa-worldcover-s2.s3.amazonaws.com/rgbnir/{YEAR}/N{yidx}/ESA_WorldCover_10m_{YEAR}_v200_N{yidx}W{xidx}_S2RGBNIR.tif"
+URL = "https://esa-worldcover-s2.s3.amazonaws.com/rgbnir/{year}/N{yidx}/ESA_WorldCover_10m_{year}_v200_N{yidx}W{xidx}_S2RGBNIR.tif"
 
 MEAN = [
     1369.03,  # red
@@ -79,7 +79,7 @@ def tiles_and_windows(input: Window):
 
     result = [
         (
-            URL.format(yidx=y_tile_index, xidx=str(x_tile_index).zfill(3)),
+            URL.format(yidx=y_tile_index, xidx=str(x_tile_index).zfill(3), year=YEAR),
             Window(x_local_off, y_local_off, x_size, y_size),
         )
     ]
@@ -87,21 +87,29 @@ def tiles_and_windows(input: Window):
     if x_another:
         result.append(
             (
-                URL.format(yidx=y_tile_index, xidx=str(x_tile_index - 1).zfill(3)),
+                URL.format(
+                    yidx=y_tile_index, xidx=str(x_tile_index - 1).zfill(3), year=YEAR
+                ),
                 Window(0, y_local_off, CHIP_SIZE - x_size, y_size),
             )
         )
     if y_another:
         result.append(
             (
-                URL.format(yidx=y_tile_index - 1, xidx=str(x_tile_index).zfill(3)),
+                URL.format(
+                    yidx=y_tile_index - 1, xidx=str(x_tile_index).zfill(3), year=YEAR
+                ),
                 Window(x_local_off, 0, x_size, CHIP_SIZE - y_size),
             )
         )
     if x_another and y_another:
         result.append(
             (
-                URL.format(yidx=y_tile_index - 1, xidx=str(x_tile_index - 1).zfill(3)),
+                URL.format(
+                    yidx=y_tile_index - 1,
+                    xidx=str(x_tile_index - 1).zfill(3),
+                    year=YEAR,
+                ),
                 Window(0, 0, CHIP_SIZE - x_size, CHIP_SIZE - y_size),
             )
         )
