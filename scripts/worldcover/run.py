@@ -56,8 +56,8 @@ STD = [
 ]
 
 grid = gpd.read_file(
-    "/home/tam/Desktop/usa/esa_worldcover_grid_usa.fgb"
-    # "https://clay-mgrs-samples.s3.amazonaws.com/esa_worldcover_grid_usa.fgb"
+    # "/home/tam/Desktop/usa/esa_worldcover_grid_usa.fgb"
+    "https://clay-mgrs-samples.s3.amazonaws.com/esa_worldcover_grid_usa.fgb"
 )
 
 
@@ -122,7 +122,7 @@ def make_batch(result):
     if len(pixels) == 1:
         pixels = pixels[0]
     elif len(pixels) == 2:  # noqa: PLR2004
-        if pixels[0].shape[0] == CHIP_SIZE:
+        if pixels[0].shape[2] == CHIP_SIZE:
             pixels = einops.pack(pixels, "b * w")[0]
         else:
             pixels = einops.pack(pixels, "b h *")[0]
@@ -146,7 +146,7 @@ def make_batch(result):
     }
 
 
-index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 0))
+index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 2))
 
 # Setup model components
 tfm = v2.Compose([v2.Normalize(mean=MEAN, std=STD)])
@@ -159,7 +159,7 @@ rgb_model = CLAYModule.load_from_checkpoint(
     strict=False,  # ignore the extra parameters in the checkpoint
 )
 
-xoff = index * TILE_SIZE
+xoff = index * CHIP_SIZE
 yoff = 0
 embeddings = []
 all_bounds = []
@@ -213,7 +213,7 @@ gdf = gpd.GeoDataFrame(
 with tempfile.TemporaryDirectory() as tmp:
     # tmp = "/home/tam/Desktop/wcctmp"
 
-    outpath = f"{tmp}/worldcover_embeddings_{YEAR}_{xoff}_v{VERSION}.gpq"
+    outpath = f"{tmp}/worldcover_embeddings_{YEAR}_{index}_v{VERSION}.gpq"
     print(f"Uploading embeddings to {outpath}")
 
     gdf.to_parquet(path=outpath, compression="ZSTD", schema_version="1.0.0")
