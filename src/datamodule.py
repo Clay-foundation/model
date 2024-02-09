@@ -19,7 +19,6 @@ from torchvision.transforms import v2
 os.environ["GDAL_DISABLE_READDIR_ON_OPEN"] = "EMPTY_DIR"
 os.environ["GDAL_HTTP_MERGE_CONSECUTIVE_RANGES"] = "YES"
 
-
 # %%
 # Regular torch Dataset
 class ClayDataset(Dataset):
@@ -29,7 +28,8 @@ class ClayDataset(Dataset):
         self.transform = transform
 
     def normalize_timestamp(self, ts):
-        year, month, day = map(np.float32, ts.split("-"))
+        year, month, day = map(np.float16, ts.split("-"))
+        year_non_norm, month_non_norm, day_non_norm = map(np.float16, ts.split("-"))
         year_radians = 2 * math.pi * (year - 2012) / (2030 - 2012)  # years 2012-2030
         month_radians = 2 * math.pi * (month - 1) / 11
         day_radians = (
@@ -41,7 +41,7 @@ class ClayDataset(Dataset):
         month = math.atan2(math.cos(month_radians), math.sin(month_radians))
         day = math.atan2(math.cos(day_radians), math.sin(day_radians))
 
-        return year, month, day
+        return year, month, day, year_non_norm, month_non_norm, day_non_norm
 
     def normalize_latlon(self, lon, lat):
         lon_radians = math.radians(lon)
@@ -60,7 +60,7 @@ class ClayDataset(Dataset):
 
         # read timestep & normalize
         date = chip.tags()["date"]  # YYYY-MM-DD
-        year, month, day = self.normalize_timestamp(date)
+        year, month, day, year_non_norm, month_non_norm, day_non_norm = self.normalize_timestamp(date)
 
         # read lat,lon from UTM to WGS84 & normalize
         bounds = chip.bounds  # xmin, ymin, xmax, ymax
@@ -77,6 +77,7 @@ class ClayDataset(Dataset):
             # Normalized values
             "latlon": (lat, lon),
             "timestep": (year, month, day),
+            "timestep_non_norm": (year_non_norm, month_non_norm, day_non_norm),
         }
 
     def __getitem__(self, idx):
@@ -84,7 +85,7 @@ class ClayDataset(Dataset):
         cube = self.read_chip(chip_path)
 
         # remove nans and convert to tensor
-        cube["pixels"] = torch.as_tensor(data=cube["pixels"], dtype=torch.float32)
+        cube["pixels"] = torch.as_tensor(data=cube["pixels"], dtype=torch.float)
         cube["bbox"] = torch.as_tensor(data=cube["bbox"], dtype=torch.float64)
         cube["epsg"] = torch.as_tensor(data=cube["epsg"], dtype=torch.int32)
         cube["date"] = str(cube["date"])
@@ -96,7 +97,7 @@ class ClayDataset(Dataset):
             cube["source_url"] = chip_path
 
         if self.transform:
-            # Normalize data
+            # convert to float16 and normalize
             cube["pixels"] = self.transform(cube["pixels"])
 
         return cube
@@ -175,7 +176,7 @@ class ClayDataModule(L.LightningDataModule):
             self.trn_ds,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
-            shuffle=True,
+            shuffle=False,
             pin_memory=True,
         )
 
@@ -202,7 +203,7 @@ class ClayDataModule(L.LightningDataModule):
 def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
     """
     Read a GeoTIFF file using rasterio into a numpy.ndarray, convert it to a
-    torch.Tensor (float32 dtype), and also output spatiotemporal metadata
+    torch.Tensor (float16 dtype), and also output spatiotemporal metadata
     associated with the image.
 
     Parameters
@@ -224,7 +225,7 @@ def _array_to_torch(filepath: str) -> dict[str, torch.Tensor | str]:
     with rasterio.open(fp=filepath) as dataset:
         # Get image data
         array: np.ndarray = dataset.read()
-        tensor: torch.Tensor = torch.as_tensor(data=array.astype(dtype="float32"))
+        tensor: torch.Tensor = torch.as_tensor(data=array.astype(dtype="float16"))
 
         # Get spatial bounding box and coordinate reference system in UTM projection
         bbox: torch.Tensor = torch.as_tensor(  # xmin, ymin, xmax, ymax
