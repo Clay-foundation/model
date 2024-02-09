@@ -12,6 +12,7 @@ execute:
   execute_notebooks: cache
   exclude_patterns:
     - clay-v0-*.ipynb
+    - partial-inputs.ipynb
 
 # Define the name of the latex output file for PDF builds
 latex:
