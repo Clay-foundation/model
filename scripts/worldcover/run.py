@@ -21,7 +21,7 @@ from torchvision.transforms import v2
 from src.datamodule import ClayDataset
 from src.model_clay import CLAYModule
 
-YEAR = 2021
+YEAR = int(os.environ.get("YEAR", 2021))
 DATE = f"{YEAR}-06-01"
 TILE_SIZE = 12000
 CHIP_SIZE = 512

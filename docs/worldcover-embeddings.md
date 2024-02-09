@@ -59,8 +59,9 @@ This command will send the array job to AWS batch to run all of the
 import boto3
 
 batch = boto3.client("batch", region_name="us-east-1")
+year = 2021
 job = {
-    "jobName": f"fetch-and-run",
+    "jobName": f"worldcover-conus-{year}",
     "jobQueue": "fetch-and-run",
     "jobDefinition": "fetch-and-run",
     "containerOverrides": {
@@ -70,7 +71,8 @@ job = {
             {
                 "name": "BATCH_FILE_S3_URL",
                 "value": "s3://clay-fetch-and-run-packages/batch-fetch-and-run-wc.zip",
-            }
+            },
+            {"name": "YEAR", "value": f"{year}"}
         ],
         "resourceRequirements": [
             {"type": "MEMORY", "value": "7500"},
