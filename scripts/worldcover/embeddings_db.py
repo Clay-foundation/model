@@ -5,12 +5,13 @@ import lancedb
 import matplotlib.pyplot as plt
 from skimage import io
 
+# Set working directory
 wd = "/home/usr/Desktop/"
 
 # To download the existing embeddings run aws s3 sync
 # aws s3 sync s3://clay-worldcover-embeddings /my/dir/clay-worldcover-embeddings
 
-vector_dir = Path(wd + "clay-worldcover-embeddings/v001/2021/")
+vector_dir = Path(wd + "clay-worldcover-embeddings/v002/2021/")
 
 # Create new DB structure or open existing
 db = lancedb.connect(wd + "worldcoverembeddings_db")
