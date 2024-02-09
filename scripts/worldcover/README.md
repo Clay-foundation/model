@@ -19,10 +19,13 @@ This snippet will create the zip package that is used for the fetch-and-run
 instance in our ECR registry.
 
 ```bash
+# Add clay src and scripts to zip file
 zip -FSr batch-fetch-and-run-wc.zip src scripts -x *.pyc -x scripts/worldcover/wandb/**\*
-# Add run to home dir
+
+# Add run to home dir, so that fetch-and-run can see it.
 zip -uj batch-fetch-and-run-wc.zip scripts/worldcover/run.py
 
+# Upload fetch-and-run package to S3
 aws s3api put-object --bucket clay-fetch-and-run-packages --key "batch-fetch-and-run-wc.zip" --body "batch-fetch-and-run-wc.zip"
 ```
 
