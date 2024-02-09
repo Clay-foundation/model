@@ -28,14 +28,13 @@ job = {
             }
         ],
         "resourceRequirements": [
-            {"type": "MEMORY", "value": "8000"},
+            {"type": "MEMORY", "value": "7500"},
             {"type": "VCPU", "value": "4"},
             # {"type": "GPU", "value": "1"},
         ],
     },
     "arrayProperties": {
-        # "size": int((125 - 67) * 12000 / 512)
-        "size": 3
+        "size": int((125 - 67) * 12000 / 512)
     },
     "retryStrategy": {
       "attempts": 5,
