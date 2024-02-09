@@ -40,7 +40,7 @@ CKPT_PATH = "s3://clay-model-ckpt/v0/mae_epoch-24_val-loss-0.46.ckpt"
 # CKPT_PATH = "https://huggingface.co/made-with-clay/Clay/resolve/main/Clay_v0.1_epoch-24_val-loss-0.46.ckpt"
 VERSION = "002"
 BUCKET = "clay-worldcover-embeddings"
-URL = "https://esa-worldcover-s2.s3.amazonaws.com/rgbnir/2021/N{yidx}/ESA_WorldCover_10m_2021_v200_N{yidx}W{xidx}_S2RGBNIR.tif"
+URL = "https://esa-worldcover-s2.s3.amazonaws.com/rgbnir/{YEAR}/N{yidx}/ESA_WorldCover_10m_{YEAR}_v200_N{yidx}W{xidx}_S2RGBNIR.tif"
 
 MEAN = [
     1369.03,  # red
@@ -140,7 +140,7 @@ def make_batch(result):
         "latlon": torch.as_tensor(
             data=[ds.normalize_latlon(transform[0], transform[3])]
         ).to(rgb_model.device),
-        "timestep": torch.as_tensor(data=[ds.normalize_timestamp("2021-06-01")]).to(
+        "timestep": torch.as_tensor(data=[ds.normalize_timestamp(f"{YEAR}-06-01")]).to(
             rgb_model.device
         ),
     }
