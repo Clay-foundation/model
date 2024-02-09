@@ -21,7 +21,7 @@ from torchvision.transforms import v2
 from src.datamodule import ClayDataset
 from src.model_clay import CLAYModule
 
-YEAR = int(os.environ.get("YEAR", 2021))
+YEAR = int(os.environ.get("YEAR", 2020))
 DATE = f"{YEAR}-06-01"
 TILE_SIZE = 12000
 CHIP_SIZE = 512
@@ -36,11 +36,16 @@ PXSIZE = 8.333333333333333e-05
 RASTER_X_SIZE = (E_W_INDEX_END - E_W_INDEX_START) * TILE_SIZE
 RASTER_Y_SIZE = (N_S_INDEX_END - N_S_INDEX_START) * TILE_SIZE
 NODATA = 0
-CKPT_PATH = "s3://clay-model-ckpt/v0/mae_epoch-24_val-loss-0.46.ckpt"
-# CKPT_PATH = "https://huggingface.co/made-with-clay/Clay/resolve/main/Clay_v0.1_epoch-24_val-loss-0.46.ckpt"
+# CKPT_PATH = "s3://clay-model-ckpt/v0/mae_epoch-24_val-loss-0.46.ckpt"
+CKPT_PATH = "https://huggingface.co/made-with-clay/Clay/resolve/main/Clay_v0.1_epoch-24_val-loss-0.46.ckpt"
 VERSION = "002"
 BUCKET = "clay-worldcover-embeddings"
-URL = "https://esa-worldcover-s2.s3.amazonaws.com/rgbnir/{year}/N{yidx}/ESA_WorldCover_10m_{year}_v200_N{yidx}W{xidx}_S2RGBNIR.tif"
+URL = "https://esa-worldcover-s2.s3.amazonaws.com/rgbnir/{year}/N{yidx}/ESA_WorldCover_10m_{year}_v{version}_N{yidx}W{xidx}_S2RGBNIR.tif"
+WC_VERSION_LOOKUP = {
+    2020: 100,
+    2021: 200,
+}
+
 
 MEAN = [
     1369.03,  # red
@@ -79,7 +84,12 @@ def tiles_and_windows(input: Window):
 
     result = [
         (
-            URL.format(yidx=y_tile_index, xidx=str(x_tile_index).zfill(3), year=YEAR),
+            URL.format(
+                yidx=y_tile_index,
+                xidx=str(x_tile_index).zfill(3),
+                year=YEAR,
+                version=WC_VERSION_LOOKUP[YEAR],
+            ),
             Window(x_local_off, y_local_off, x_size, y_size),
         )
     ]
@@ -88,7 +98,10 @@ def tiles_and_windows(input: Window):
         result.append(
             (
                 URL.format(
-                    yidx=y_tile_index, xidx=str(x_tile_index - 1).zfill(3), year=YEAR
+                    yidx=y_tile_index,
+                    xidx=str(x_tile_index - 1).zfill(3),
+                    year=YEAR,
+                    version=WC_VERSION_LOOKUP[YEAR],
                 ),
                 Window(0, y_local_off, CHIP_SIZE - x_size, y_size),
             )
@@ -97,7 +110,10 @@ def tiles_and_windows(input: Window):
         result.append(
             (
                 URL.format(
-                    yidx=y_tile_index - 1, xidx=str(x_tile_index).zfill(3), year=YEAR
+                    yidx=y_tile_index - 1,
+                    xidx=str(x_tile_index).zfill(3),
+                    year=YEAR,
+                    version=WC_VERSION_LOOKUP[YEAR],
                 ),
                 Window(x_local_off, 0, x_size, CHIP_SIZE - y_size),
             )
@@ -109,6 +125,7 @@ def tiles_and_windows(input: Window):
                     yidx=y_tile_index - 1,
                     xidx=str(x_tile_index - 1).zfill(3),
                     year=YEAR,
+                    version=WC_VERSION_LOOKUP[YEAR],
                 ),
                 Window(0, 0, CHIP_SIZE - x_size, CHIP_SIZE - y_size),
             )
