@@ -9,6 +9,7 @@ References:
 - https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html
 - https://pytorch-lightning.medium.com/introducing-lightningcli-v2-supercharge-your-training-c070d43c7dd6
 """
+
 from lightning.pytorch.callbacks import (
     LearningRateMonitor,  # noqa: F401
     ModelCheckpoint,
@@ -24,8 +25,6 @@ from src.callbacks_wandb import (  # noqa: F401
 from src.datamodule import ClayDataModule, GeoTIFFDataPipeModule  # noqa: F401
 from src.model_clay import CLAYModule
 from src.model_vit import ViTLitModule  # noqa: F401
-import tracemalloc
-
 
 
 # %%
@@ -74,16 +73,14 @@ def cli_main(
     return cli
 
 
-
-
 # %%
 if __name__ == "__main__":
-    #tracemalloc.start()
+    # tracemalloc.start()
     cli_main()
-    
-    #snapshot = tracemalloc.take_snapshot()
-    #top_stats = snapshot.statistics('lineno')
-    #print("[ Top 10 ]")
-    #for stat in top_stats[:10]:
+
+    # snapshot = tracemalloc.take_snapshot()
+    # top_stats = snapshot.statistics('lineno')
+    # print("[ Top 10 ]")
+    # for stat in top_stats[:10]:
     #    print(stat)
     print("Done!")
