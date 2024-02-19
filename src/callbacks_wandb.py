@@ -235,3 +235,4 @@ class LogIntermediatePredictions(L.Callback):
                 axs[1, i].axis("off")
 
             self.logger.experiment.log({"Images": wandb.Image(fig)})
+            plt.close('all')
