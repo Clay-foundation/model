@@ -24,6 +24,8 @@ from src.callbacks_wandb import (  # noqa: F401
 from src.datamodule import ClayDataModule, GeoTIFFDataPipeModule  # noqa: F401
 from src.model_clay import CLAYModule
 from src.model_vit import ViTLitModule  # noqa: F401
+import tracemalloc
+
 
 
 # %%
@@ -72,7 +74,16 @@ def cli_main(
     return cli
 
 
+
+
 # %%
 if __name__ == "__main__":
+    #tracemalloc.start()
     cli_main()
+    
+    #snapshot = tracemalloc.take_snapshot()
+    #top_stats = snapshot.statistics('lineno')
+    #print("[ Top 10 ]")
+    #for stat in top_stats[:10]:
+    #    print(stat)
     print("Done!")
