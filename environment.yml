@@ -18,6 +18,7 @@ dependencies:
   - python=3.11
   - rioxarray~=0.15.0
   - scikit-image~=0.22.0
+  - scikit-learn~=1.4.0
   - stackstac~=0.5.0
   - torchdata~=0.7.1
   - transformers~=4.35.2
