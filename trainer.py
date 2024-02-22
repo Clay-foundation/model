@@ -26,6 +26,7 @@ from src.datamodule import ClayDataModule, GeoTIFFDataPipeModule  # noqa: F401
 from src.model_clay import CLAYModule
 from src.model_vit import ViTLitModule  # noqa: F401
 
+
 # %%
 def cli_main(
     save_config_callback=None,
