@@ -114,7 +114,7 @@ We store each chip as geotiff, along with their coordinate & timestamp informati
 
 ### Normalization parameters
 
-To normalize the data before passing it to the model, we computed the following normalization parameters from a random sample of the the training data. The normalization parameters are used in the [Data Module](https://github.com/Clay-foundation/model/blob/main/src/datamodule.py#L108), for partial
+To normalize the data before passing it to the model, we computed the following normalization parameters from a random sample of the training data. The normalization parameters are used in the [Data Module](https://github.com/Clay-foundation/model/blob/v0.0.1/src/datamodule.py#L108), for partial
 inputs it will be necessary to subset these as shown in the partial input tutorial.
 
 | Band |  Mean    | Standard deviation |
