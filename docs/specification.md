@@ -117,21 +117,21 @@ We store each chip as geotiff, along with their coordinate & timestamp informati
 To normalize the data before passing it to the model, we computed the following normalization parameters from a random sample of the training data. The normalization parameters are used in the [Data Module](https://github.com/Clay-foundation/model/blob/v0.0.1/src/datamodule.py#L108), for partial
 inputs it will be necessary to subset these as shown in the partial input tutorial.
 
-| Band |  Mean    | Standard deviation |
-| -----|----------|--------------------|
-| B02  |  1369.03 | 2026.96            |
-| B03  |  1597.68 | 2011.88            |
-| B04  |  1741.10 | 2146.35            |
-| B05  |  2053.58 | 2138.96            |
-| B06  |  2569.82 | 2003.27            |
-| B07  |  2763.01 | 1962.45            |
-| B08  |  2858.43 | 2016.38            |
-| B8A  |  2893.86 | 1917.12            |
-| B11  |  2303.00 | 1679.88            |
-| B12  |  1807.79 | 1568.06            |
-| VV   |  0.026   | 0.118              |
-| VH   |  0.118   | 0.873              |
-| DEM  |  499.46  | 880.35             |
+| Band           | Mean    | Standard deviation |
+|----------------|---------|--------------------|
+| Sentinel-2 B02 | 1369.03 | 2026.96            |
+| Sentinel-2 B03 | 1597.68 | 2011.88            |
+| Sentinel-2 B04 | 1741.10 | 2146.35            |
+| Sentinel-2 B05 | 2053.58 | 2138.96            |
+| Sentinel-2 B06 | 2569.82 | 2003.27            |
+| Sentinel-2 B07 | 2763.01 | 1962.45            |
+| Sentinel-2 B08 | 2858.43 | 2016.38            |
+| Sentinel-2 B8A | 2893.86 | 1917.12            |
+| Sentinel-2 B11 | 2303.00 | 1679.88            |
+| Sentinel-2 B12 | 1807.79 | 1568.06            |
+| Sentinel-1 VV  | 0.026   | 0.118              |
+| Sentinel-1 VH  | 0.118   | 0.873              |
+| Copernicus DEM | 499.46  | 880.35             |
 
 ## Training Card
 
