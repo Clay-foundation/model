@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
       args: 
         - platform=linux/amd64 # Specify the target platform for build
-    platform: linux/amd64 # Specify the target platform for run
+    platform: linux/amd64 # Specify the target platform for run 
     ports:
       - "8888:8888" # Expose port 8888 on the host and bind it to port 8888 in the container
     volumes:
