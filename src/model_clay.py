@@ -791,6 +791,7 @@ class CLAYModule(L.LightningModule):
         b1=0.9,
         b2=0.95,
         embeddings_level: Literal["mean", "patch", "group"] = "mean",
+        band_groups=None,
     ):
         super().__init__()
         self.save_hyperparameters(logger=True)
@@ -801,11 +802,14 @@ class CLAYModule(L.LightningModule):
             "large": clay_large,
         }
         if model_size in model_map:
-            self.model = model_map[model_size](
-                mask_ratio=mask_ratio,
-                image_size=image_size,
-                patch_size=patch_size,
-            )
+            model_args = {
+                "mask_ratio": mask_ratio,
+                "image_size": image_size,
+                "patch_size": patch_size,
+            }
+            if band_groups:
+                model_args["band_groups"] = band_groups
+            self.model = model_map[model_size](**model_args)
         else:
             raise ValueError(
                 f"Invalid model size {model_size}. Expected one of {model_map.keys()}"

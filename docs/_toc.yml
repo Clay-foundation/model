@@ -40,6 +40,8 @@ parts:
       file: clay-v0-location-embeddings
     - title: Interpolating images in embedding space
       file: clay-v0-interpolation
+    - title: Generate embeddings from partial inputs
+      file: partial-inputs
 - caption: About Clay
   chapters:
     - title: GitHub
