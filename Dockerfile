@@ -1,4 +1,4 @@
-FROM mambaorg/micromamba:1.5.6 
+FROM mambaorg/micromamba:1.5.6
 
 WORKDIR /model
 
