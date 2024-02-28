@@ -32,6 +32,8 @@ parts:
       file: model_embeddings
     - title: Finetuning
       file: model_finetuning
+    - title: Embeddings for Contiguous US
+      file: worldcover-embeddings
 - caption: Tutorials
   chapters:
     - title: Generative AI for pixel reconstruction
