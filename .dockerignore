@@ -1,0 +1,6 @@
+*
+!environment.yml
+!conda-lock.yml
+!**/*.py
+!**/*.ipynb
+!**/*.sh
