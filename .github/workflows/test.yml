@@ -42,4 +42,4 @@ jobs:
             micromamba install python=${{ matrix.python-version }} pytest
             python -m pytest --verbose src/tests/
         env:
-          PYTORCH_MPS_HIGH_WATERMARK_RATIO: 0.0
+          PYTORCH_MPS_PREFER_METAL: 0
