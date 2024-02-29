@@ -28,7 +28,7 @@ Build the docker image and push it to a ecr repository.
 
 ```bash
 ecr_repo_id=12345
-cd batch
+cd scripts/pipeline/batch
 docker build -t $ecr_repo_iud.dkr.ecr.us-east-1.amazonaws.com/fetch-and-run .
 
 aws ecr get-login-password --profile clay --region us-east-1 | docker login --username AWS --password-stdin $ecr_repo_iud.dkr.ecr.us-east-1.amazonaws.com
@@ -57,7 +57,7 @@ Put the scripts in a zip file and upload the zip package into S3 so that
 the batch fetch and run can use it.
 
 ```bash
-zip -FSrj "batch-fetch-and-run.zip" ./scripts/* -x "scripts/*.pyc"
+zip -FSrj "batch-fetch-and-run.zip" ./scripts/pipeline* -x "scripts/pipeline*.pyc"
 
 aws s3api put-object --bucket clay-fetch-and-run-packages --key "batch-fetch-and-run.zip" --body "batch-fetch-and-run.zip"
 ```
