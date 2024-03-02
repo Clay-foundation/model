@@ -30,6 +30,9 @@ import skimage
 import torch
 from einops import rearrange
 
+from itertools import islice
+
+
 try:
     import wandb
 except ImportError:
@@ -174,6 +177,7 @@ class LogIntermediatePredictions(L.Callback):
         Instantiates with wandb-logger.
         """
         super().__init__()
+        self.selected_image = None
 
     def on_validation_end(
         self,
@@ -190,8 +194,31 @@ class LogIntermediatePredictions(L.Callback):
             # Get WandB logger
             self.logger = get_wandb_logger(trainer=trainer)
 
-            # get the first batch from trainer
-            batch = next(iter(trainer.val_dataloaders))
+            # pick input most likely item to have a good visual reconstruction
+            def select_image_with_max_variance(trainer):
+                print("Selecting image with max variance")
+                batches = islice(iter(trainer.val_dataloaders), 3)
+                max_variance = -1
+                for batch in batches:
+                    batch = {k: v.to(pl_module.device) for k, v in batch.items() if isinstance(v, torch.Tensor)}
+                    images = batch['pixels']  # Shape: [batch_size, channels, height, width]
+                    variances = images.var(dim=[1, 2, 3], keepdim=False)  # Calculate variance across C, H, W dimensions
+                    max_var_index = torch.argmax(variances).item()  
+                    if variances[max_var_index] > max_variance:
+                        max_variance = variances[max_var_index]
+                        self.selected_image = max_var_index
+                assert self.selected_image is not None
+                print(f"Selected image with max variance: {self.selected_image}")
+                return self.selected_image
+
+            if self.selected_image is None:
+                self.selected_image = select_image_with_max_variance(trainer)    
+
+            #If selected image is bigger than batch, load the needed batch
+            if self.selected_image >= trainer.val_dataloaders.batch_size:
+                batch = next(islice(iter(trainer.val_dataloaders), self.selected_image//trainer.val_dataloaders.batch_size, None))
+            else:
+                batch = next(iter(trainer.val_dataloaders))
             batch = {
                 k: v.to(pl_module.device)
                 for k, v in batch.items()
@@ -218,21 +245,56 @@ class LogIntermediatePredictions(L.Callback):
 
             assert pixels.shape == batch["pixels"].shape
 
-            n_rows = 2
-            n_cols = 8
+            band_groups = {
+                "rgb": (2, 1, 0),
+                "<rededge>": (3, 4, 5, 7),
+                "<ir>": (6, 8, 9),
+                "<sar>": (10, 11),
+                "dem": (12,),
+            }
 
-            fig, axs = plt.subplots(n_rows, n_cols, figsize=(20, 4))
+            n_rows, n_cols = 3, len(band_groups)  # Rows for Input, Prediction, Difference
+            fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 5))
 
-            for i in range(n_cols):
-                axs[0, i].imshow(
-                    batch["pixels"][i][0].detach().cpu().numpy(), cmap="viridis"
-                )
-                axs[0, i].set_title(f"Image {i}")
-                axs[0, i].axis("off")
+            def normalize_img(img):
+                lower_percentile, upper_percentile = 1, 99
+                lower_bound = np.percentile(img, lower_percentile)
+                upper_bound = np.percentile(img, upper_percentile)
+                img_clipped = np.clip(img, lower_bound, upper_bound)
+                return (img_clipped - img_clipped.min()) / (img_clipped.max() - img_clipped.min())
 
-                axs[1, i].imshow(pixels[i][0].detach().cpu().numpy(), cmap="viridis")
-                axs[1, i].set_title(f"Preds {i}")
-                axs[1, i].axis("off")
 
+            for col, (group_name, bands) in enumerate(band_groups.items()):
+                input_img = batch["pixels"][:, bands, :, :]
+                pred_img = pixels[:, bands, :, :]
+                input_img = input_img[self.selected_image].detach().cpu().numpy().transpose(1, 2, 0)
+                pred_img = pred_img[self.selected_image].detach().cpu().numpy().transpose(1, 2, 0)
+                
+                if group_name == "rgb":
+                    # Normalize RGB images
+                    input_norm = normalize_img(input_img)
+                    pred_norm = normalize_img(pred_img)
+                    # Calculate absolute difference for RGB
+                    diff_rgb = np.abs(input_norm - pred_norm)
+                else:
+                    # Calculate mean for non-RGB bands if necessary
+                    input_mean = input_img.mean(axis=2) if input_img.ndim > 2 else input_img
+                    pred_mean = pred_img.mean(axis=2) if pred_img.ndim > 2 else pred_img
+                    # Normalize and calculate difference
+                    input_norm = normalize_img(input_mean)
+                    pred_norm = normalize_img(pred_mean)
+                    diff_rgb = np.abs(input_norm - pred_norm)
+                
+                axs[0, col].imshow(input_norm, cmap="gray" if group_name != "rgb" else None)
+                axs[1, col].imshow(pred_norm, cmap="gray" if group_name != "rgb" else None)
+                axs[2, col].imshow(diff_rgb, cmap="gray" if group_name != "rgb" else None)
+
+                for ax in axs[:, col]:
+                    ax.set_title(f"{group_name} {'Input' if ax == axs[0, col] else 'Pred' if ax == axs[1, col] else 'Diff'}")
+                    ax.axis("off")
+
+            plt.tight_layout()
             self.logger.experiment.log({"Images": wandb.Image(fig)})
             plt.close(fig)
+
+# %%
