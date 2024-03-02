@@ -194,11 +194,10 @@ class LogIntermediatePredictions(L.Callback):
             self.logger = get_wandb_logger(trainer=trainer)
 
             if self.selected_image is None:
-                self.selected_image = self.select_image(trainer,pl_module)
-            self.log_images(trainer,pl_module)
+                self.selected_image = self.select_image(trainer, pl_module)
+            self.log_images(trainer, pl_module)
 
-
-    def select_image(self,trainer,pl_module):
+    def select_image(self, trainer, pl_module):
         print("Selecting image with max variance")
         batches = islice(iter(trainer.val_dataloaders), 3)
         max_variance = -1
@@ -208,9 +207,7 @@ class LogIntermediatePredictions(L.Callback):
                 for k, v in ibatch.items()
                 if isinstance(v, torch.Tensor)
             }
-            images = batch[
-                "pixels"
-            ]  # Shape: [batch_size, channels, height, width]
+            images = batch["pixels"]  # Shape: [batch_size, channels, height, width]
             variances = images.var(
                 dim=[1, 2, 3], keepdim=False
             )  # Calculate variance across C, H, W dimensions
@@ -222,7 +219,7 @@ class LogIntermediatePredictions(L.Callback):
         print(f"Selected image with max variance: {self.selected_image}")
         return self.selected_image
 
-    def log_images(self,trainer,pl_module):
+    def log_images(self, trainer, pl_module):
         if self.selected_image >= trainer.val_dataloaders.batch_size:
             batch = next(
                 islice(
@@ -287,18 +284,10 @@ class LogIntermediatePredictions(L.Callback):
             input_img = batch["pixels"][:, bands, :, :]
             pred_img = pixels[:, bands, :, :]
             input_img = (
-                input_img[self.selected_image]
-                .detach()
-                .cpu()
-                .numpy()
-                .transpose(1, 2, 0)
+                input_img[self.selected_image].detach().cpu().numpy().transpose(1, 2, 0)
             )
             pred_img = (
-                pred_img[self.selected_image]
-                .detach()
-                .cpu()
-                .numpy()
-                .transpose(1, 2, 0)
+                pred_img[self.selected_image].detach().cpu().numpy().transpose(1, 2, 0)
             )
 
             if group_name == "rgb":
@@ -318,15 +307,9 @@ class LogIntermediatePredictions(L.Callback):
                 pred_norm = normalize_img(pred_mean)
                 diff_rgb = np.abs(input_norm - pred_norm)
 
-            axs[0, col].imshow(
-                input_norm, cmap="gray" if group_name != "rgb" else None
-            )
-            axs[1, col].imshow(
-                pred_norm, cmap="gray" if group_name != "rgb" else None
-            )
-            axs[2, col].imshow(
-                diff_rgb, cmap="gray" if group_name != "rgb" else None
-            )
+            axs[0, col].imshow(input_norm, cmap="gray" if group_name != "rgb" else None)
+            axs[1, col].imshow(pred_norm, cmap="gray" if group_name != "rgb" else None)
+            axs[2, col].imshow(diff_rgb, cmap="gray" if group_name != "rgb" else None)
 
             for ax in axs[:, col]:
                 ax.set_title(
