@@ -5,7 +5,8 @@ repos:
   rev: v4.5.0
   hooks:
     - id: check-added-large-files
-      args: [ '--maxkb=768', '--enforce-all' ]
+      args: [ '--maxkb=512', '--enforce-all' ]
+      exclude: conda-lock.yml
     - id: check-yaml
     - id: end-of-file-fixer
     - id: trailing-whitespace
