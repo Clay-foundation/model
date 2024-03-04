@@ -32,6 +32,8 @@ parts:
       file: model_embeddings
     - title: Finetuning
       file: model_finetuning
+    - title: Embeddings for Contiguous US
+      file: worldcover-embeddings
 - caption: Tutorials
   chapters:
     - title: Generative AI for pixel reconstruction
@@ -40,6 +42,8 @@ parts:
       file: clay-v0-location-embeddings
     - title: Interpolating images in embedding space
       file: clay-v0-interpolation
+    - title: Generate embeddings from partial inputs
+      file: partial-inputs
 - caption: About Clay
   chapters:
     - title: GitHub

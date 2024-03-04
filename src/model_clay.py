@@ -1,5 +1,6 @@
 import os
 import re
+from typing import Literal
 
 import geopandas as gpd
 import lightning as L
@@ -61,7 +62,6 @@ class Encoder(nn.Module):
         heads,
         dim_head,
         mlp_ratio,
-        bands,
         band_groups,
         dropout,
         emb_dropout,
@@ -74,7 +74,6 @@ class Encoder(nn.Module):
         self.image_size = image_size
         self.patch_size = patch_size
         self.dim = dim
-        self.bands = bands
         self.band_groups = band_groups
         self.num_spatial_patches = (image_size // patch_size) ** 2
         self.num_group_patches = len(band_groups)
@@ -351,7 +350,6 @@ class Decoder(nn.Module):
         heads,
         dim_head,
         mlp_ratio,
-        bands,
         band_groups,
         dropout,
     ):
@@ -578,7 +576,6 @@ class CLAY(nn.Module):
         decoder_mlp_ratio,
         decoder_dropout,
         # EO
-        bands=13,
         band_groups={
             "rgb": (2, 1, 0),
             "rededge": (3, 4, 5, 7),
@@ -593,7 +590,6 @@ class CLAY(nn.Module):
         self.mask_ratio = mask_ratio
         self.image_size = image_size
         self.patch_size = patch_size
-        self.bands = bands
         self.band_groups = band_groups
 
         self.encoder = Encoder(
@@ -605,7 +601,6 @@ class CLAY(nn.Module):
             heads=heads,
             dim_head=dim_head,
             mlp_ratio=mlp_ratio,
-            bands=bands,
             band_groups=band_groups,
             dropout=dropout,
             emb_dropout=emb_dropout,
@@ -621,7 +616,6 @@ class CLAY(nn.Module):
             heads=decoder_heads,
             dim_head=decoder_dim_head,
             mlp_ratio=decoder_mlp_ratio,
-            bands=bands,
             band_groups=band_groups,
             dropout=decoder_dropout,
         )
@@ -796,6 +790,8 @@ class CLAYModule(L.LightningModule):
         wd=0.05,
         b1=0.9,
         b2=0.95,
+        embeddings_level: Literal["mean", "patch", "group"] = "mean",
+        band_groups=None,
     ):
         super().__init__()
         self.save_hyperparameters(logger=True)
@@ -806,11 +802,14 @@ class CLAYModule(L.LightningModule):
             "large": clay_large,
         }
         if model_size in model_map:
-            self.model = model_map[model_size](
-                mask_ratio=mask_ratio,
-                image_size=image_size,
-                patch_size=patch_size,
-            )
+            model_args = {
+                "mask_ratio": mask_ratio,
+                "image_size": image_size,
+                "patch_size": patch_size,
+            }
+            if band_groups:
+                model_args["band_groups"] = band_groups
+            self.model = model_map[model_size](**model_args)
         else:
             raise ValueError(
                 f"Invalid model size {model_size}. Expected one of {model_map.keys()}"
@@ -887,13 +886,44 @@ class CLAYModule(L.LightningModule):
         )
         assert not torch.isnan(embeddings_raw).any()  # ensure no NaNs in embedding
 
-        # Take the mean of the embeddings along the sequence_length dimension
-        # excluding the last two latlon_ and time_ embeddings, i.e. compute
-        # mean over patch embeddings only
-        embeddings_mean: torch.Tensor = embeddings_raw[:, :-2, :].mean(dim=1)
-        assert embeddings_mean.shape == torch.Size(
-            [self.model.encoder.B, 768]  # (batch_size, hidden_size)
-        )
+        if self.hparams.embeddings_level == "mean":
+            # Take the mean of the embeddings along the sequence_length dimension
+            # excluding the last two latlon_ and time_ embeddings, i.e. compute
+            # mean over patch embeddings only
+            embeddings_output: torch.Tensor = embeddings_raw[:, :-2, :].mean(dim=1)
+            expected_size = [self.model.encoder.B, 768]  # (batch_size, hidden_size)
+        elif self.hparams.embeddings_level in ["patch", "group"]:
+            # Take the mean of the embeddings along the group dimension
+            # excluding the last two latlon_ and time_ embeddings. This
+            # results in one embedding per patch.
+            embeddings_output = rearrange(
+                embeddings_raw[:, :-2, :], "b (g h w) d -> b g h w d", w=16, h=16, g=6
+            )
+            if self.hparams.embeddings_level == "patch":
+                embeddings_output = reduce(
+                    embeddings_output, "b g h w d -> b h w d", "mean"
+                )
+                expected_size = [
+                    self.model.encoder.B,
+                    16,
+                    16,
+                    768,
+                ]
+            else:
+                expected_size = [
+                    self.model.encoder.B,
+                    6,
+                    16,
+                    16,
+                    768,
+                ]
+        else:
+            raise ValueError(
+                f"Value {self.hparams.embeddings_level} no allowed. "
+                "Choose one from mean, patch, or group"
+            )
+
+        assert embeddings_output.shape == torch.Size(expected_size)
 
         # Create table to store the embeddings with spatiotemporal metadata
         unique_epsg_codes = set(int(epsg) for epsg in epsgs)
@@ -911,7 +941,7 @@ class CLAYModule(L.LightningModule):
                     dtype="date32[day][pyarrow]"
                 ),
                 "embeddings": pa.FixedShapeTensorArray.from_numpy_ndarray(
-                    embeddings_mean.cpu().detach().__array__()
+                    np.ascontiguousarray(embeddings_output.cpu().detach().__array__())
                 ),
             },
             geometry=shapely.box(
