@@ -379,6 +379,10 @@ def process(
         resolution,
     )
 
+    if 0 in (dat.shape[0] for dat in result):
+        print("S2/S1 pixel coverages do not overlap although bounds do")
+        return None, None
+
     return date, result
 
 
@@ -493,7 +497,7 @@ def main(sample, index, subset, bucket, localpath, dateranges):
             break
 
     if not match_count:
-        raise ValueError("No matching data found")
+        print("No matching data found")
 
 
 if __name__ == "__main__":
