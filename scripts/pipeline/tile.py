@@ -120,21 +120,21 @@ def tile_to_dir(stack, date, mgrs, bucket, dir):
             with rasterio.open(name, "r+") as rst:
                 rst.colorinterp = color
                 rst.update_tags(date=date)
-        if bucket:
-            logger.info(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
-            subprocess.run(
-                [
-                    "aws",
-                    "s3",
-                    "sync",
-                    dir,
-                    f"s3://{bucket}/{VERSION}/{mgrs}/{date}",
-                    "--quiet",
-                ],
-                check=True,
-            )
-        else:
-            logger.info("No bucket specified, skipping S3 sync.")
+    if bucket:
+        logger.info(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
+        subprocess.run(
+            [
+                "aws",
+                "s3",
+                "sync",
+                dir,
+                f"s3://{bucket}/{VERSION}/{mgrs}/{date}",
+                "--quiet",
+            ],
+            check=True,
+        )
+    else:
+        logger.info("No bucket specified, skipping S3 sync.")
 
 
 def tiler(stack, date, mgrs, bucket, dir):
