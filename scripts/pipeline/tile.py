@@ -126,7 +126,7 @@ def tile_to_dir(stack, date, mgrs, bucket, dir):
                     "sync",
                     dir,
                     f"s3://{bucket}/{VERSION}/{mgrs}/{date}",
-                    "--no-progress",
+                    "--quiet",
                 ],
                 check=True,
             )
