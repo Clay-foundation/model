@@ -8,21 +8,15 @@ or no-data pixels.
 It includes functions to filter tiles based on cloud coverage and no-data pixels,
 and a tiling function that generates smaller tiles from the input stack.
 """
-import subprocess
-import tempfile
-
 import numpy as np
-import rasterio
 import rioxarray  # noqa: F401
 import xarray as xr
-from rasterio.enums import ColorInterp
 
 NODATA = 0
 TILE_SIZE = 512
 PIXELS_PER_TILE = TILE_SIZE * TILE_SIZE
 BAD_PIXEL_MAX_PERCENTAGE = 0.3
 SCL_FILTER = [0, 1, 3, 8, 9, 10]
-VERSION = "02"
 
 
 def filter_clouds_nodata(tile):
@@ -55,7 +49,7 @@ def filter_clouds_nodata(tile):
     return True  # If both conditions pass
 
 
-def tile_to_dir(stack, date, mgrs, bucket, dir):
+def tiler(stack, date):
     """
     Function to tile a multi-dimensional imagery stack while filtering out
     tiles with high cloud coverage or no-data pixels.
@@ -63,11 +57,7 @@ def tile_to_dir(stack, date, mgrs, bucket, dir):
     Args:
     - stack (xarray.Dataset): The input multi-dimensional imagery stack.
     - date (str): Date string yyyy-mm-dd
-    - mgrs (str): MGRS Tile id
-    - bucket(str): AWS S3 bucket to write tiles to
     """
-    print("Writing tempfiles to ", dir)
-
     # Calculate the number of full tiles in x and y directions
     num_x_tiles = stack[0].x.size // TILE_SIZE
     num_y_tiles = stack[0].y.size // TILE_SIZE
@@ -98,45 +88,11 @@ def tile_to_dir(stack, date, mgrs, bucket, dir):
 
             tile = tile.drop_sel(band="SCL")
 
-            # Track band names and color interpretation
-            tile.attrs["long_name"] = [str(x.values) for x in tile.band]
-            color = [ColorInterp.blue, ColorInterp.green, ColorInterp.red] + [
-                ColorInterp.gray
-            ] * (len(tile.band) - 3)
+            bounds = tile.rio.transform_bounds("EPSG:4326")
 
-            # Write tile to tempdir
-            name = "{dir}/claytile_{mgrs}_{date}_v{version}_{counter}.tif".format(
-                dir=dir,
-                mgrs=mgrs,
-                date=date.replace("-", ""),
-                version=VERSION,
-                counter=str(counter).zfill(4),
-            )
-            tile.rio.to_raster(name, compress="deflate")
-
-            with rasterio.open(name, "r+") as rst:
-                rst.colorinterp = color
-                rst.update_tags(date=date)
-        if bucket:
-            print(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
-            subprocess.run(
-                [
-                    "aws",
-                    "s3",
-                    "sync",
-                    dir,
-                    f"s3://{bucket}/{VERSION}/{mgrs}/{date}",
-                    "--no-progress",
-                ],
-                check=True,
-            )
-        else:
-            print("No bucket specified, skipping S3 sync.")
-
-
-def tiler(stack, date, mgrs, bucket, dir):
-    if dir:
-        tile_to_dir(stack, date, mgrs, bucket, dir)
-    else:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tile_to_dir(stack, date, mgrs, bucket, tmpdir)
+            yield {
+                "pixels": tile.to_numpy(),
+                "date": date,
+                "lat": bounds[1] + (bounds[1] - bounds[3]) / 2,
+                "lon": bounds[0] + (bounds[0] - bounds[2]) / 2,
+            }

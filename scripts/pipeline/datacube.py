@@ -26,8 +26,10 @@ Functions:
       Process Sentinel-2, Sentinel-1, and DEM data for a specified time range,
       area of interest, and resolution.
 """
+import os
 import random
 from datetime import timedelta
+from pathlib import Path
 
 import click
 import geopandas as gpd
@@ -38,6 +40,7 @@ import stackstac
 import xarray as xr
 from pystac import ItemCollection
 from shapely.geometry import box
+from streaming.base import MDSWriter
 from tile import tiler
 
 STAC_API = "https://planetarycomputer.microsoft.com/api/stac/v1"
@@ -48,6 +51,11 @@ NODATA_PIXEL_PERCENTAGE = 20
 NODATA = 0
 S1_MATCH_ATTEMPTS = 20
 DATES_PER_LOCATION = 3
+VERSION = "03"
+MDS_COLUMNS = {"lat": "float32", "lon": "float32", "date": "str", "pixels": "ndarray"}
+MDS_COMPRESSION = "zstd:9"
+MDS_HASHES = ["sha1"]
+MDS_LIMIT = "100MB"
 
 
 def get_surrounding_days(reference, interval_days):
@@ -379,6 +387,10 @@ def process(
         resolution,
     )
 
+    if 0 in (dat.shape[0] for dat in result):
+        print("Pixels coverage does not overlap although bboxes do")
+        return None, None
+
     return date, result
 
 
@@ -464,33 +476,48 @@ def main(sample, index, subset, bucket, localpath, dateranges):
         random.seed(index)
         random.shuffle(date_ranges)
 
-    match_count = 0
-    for date_range in date_ranges:
-        print(f"Processing data for date range {date_range}")
-        date, pixels = process(
-            tile.geometry,
-            date_range,
-            SPATIAL_RESOLUTION,
-            CLOUD_COVER_PERCENTAGE,
-            NODATA_PIXEL_PERCENTAGE,
-        )
-        if date is None:
-            continue
-        else:
-            match_count += 1
+    if not localpath:
+        outpath = f"s3://{bucket}/{VERSION}/{mgrs}"
+    else:
+        outpath = str(Path(localpath) / Path(f"{VERSION}/{mgrs}"))
+        os.makedirs(localpath, exist_ok=True)
 
-        if subset:
-            print(f"Subsetting to {subset}")
-            pixels = [
-                part[:, subset[1] : subset[3], subset[0] : subset[2]] for part in pixels
-            ]
+    with MDSWriter(
+        out=outpath,
+        columns=MDS_COLUMNS,
+        compression=MDS_COMPRESSION,
+        hashes=MDS_HASHES,
+        size_limit=MDS_LIMIT,
+    ) as writer:
+        match_count = 0
+        for date_range in date_ranges:
+            print(f"Processing data for date range {date_range}")
+            date, pixels = process(
+                tile.geometry,
+                date_range,
+                SPATIAL_RESOLUTION,
+                CLOUD_COVER_PERCENTAGE,
+                NODATA_PIXEL_PERCENTAGE,
+            )
+            if date is None:
+                continue
+            else:
+                match_count += 1
 
-        pixels = [part.compute() for part in pixels]
+            if subset:
+                print(f"Subsetting to {subset}")
+                pixels = [
+                    part[:, subset[1] : subset[3], subset[0] : subset[2]]
+                    for part in pixels
+                ]
 
-        tiler(pixels, date, mgrs, bucket, localpath)
+            pixels = [part.compute() for part in pixels]
 
-        if match_count == DATES_PER_LOCATION:
-            break
+            for sample in tiler(pixels, date):
+                writer.write(sample)
+
+            if match_count == DATES_PER_LOCATION:
+                break
 
     if not match_count:
         raise ValueError("No matching data found")
