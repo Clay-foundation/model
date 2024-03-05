@@ -75,7 +75,12 @@ def test_model_vit_fit(datapipe):
     with tempfile.TemporaryDirectory() as tmpdirname:
         # Training
         trainer: L.Trainer = L.Trainer(
-            accelerator="auto",
+            accelerator=(
+                "cpu"  # fallback to CPU on osx-arm64 CI
+                if os.getenv("PYTORCH_MPS_PREFER_METAL") == 0
+                and torch.backends.mps.is_available()
+                else "auto"
+            ),
             devices=1,
             precision="16-mixed",
             fast_dev_run=True,
@@ -113,7 +118,12 @@ def test_model_predict(datapipe, litmodule, precision, embeddings_level):
     with tempfile.TemporaryDirectory() as tmpdirname:
         # Training
         trainer: L.Trainer = L.Trainer(
-            accelerator="auto",
+            accelerator=(
+                "cpu"  # fallback to CPU on osx-arm64 CI
+                if os.getenv("PYTORCH_MPS_PREFER_METAL") == 0
+                and torch.backends.mps.is_available()
+                else "auto"
+            ),
             devices="auto",
             precision=precision,
             fast_dev_run=True,
