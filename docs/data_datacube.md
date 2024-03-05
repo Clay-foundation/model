@@ -29,11 +29,11 @@ Build the docker image and push it to a ecr repository.
 ```bash
 ecr_repo_id=12345
 cd scripts/pipeline/batch
-docker build -t $ecr_repo_iud.dkr.ecr.us-east-1.amazonaws.com/fetch-and-run .
+docker build -t $ecr_repo_id.dkr.ecr.us-east-1.amazonaws.com/fetch-and-run .
 
-aws ecr get-login-password --profile clay --region us-east-1 | docker login --username AWS --password-stdin $ecr_repo_iud.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --profile clay --region us-east-1 | docker login --username AWS --password-stdin $ecr_repo_id.dkr.ecr.us-east-1.amazonaws.com
 
-docker push $ecr_repo_iud.dkr.ecr.us-east-1.amazonaws.com/fetch-and-run:latest
+docker push $ecr_repo_id.dkr.ecr.us-east-1.amazonaws.com/fetch-and-run
 ```
 
 ### Prepare AWS batch
