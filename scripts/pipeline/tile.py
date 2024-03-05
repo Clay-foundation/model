@@ -8,6 +8,7 @@ or no-data pixels.
 It includes functions to filter tiles based on cloud coverage and no-data pixels,
 and a tiling function that generates smaller tiles from the input stack.
 """
+import logging
 import subprocess
 import tempfile
 
@@ -24,6 +25,8 @@ BAD_PIXEL_MAX_PERCENTAGE = 0.3
 SCL_FILTER = [0, 1, 3, 8, 9, 10]
 VERSION = "04"
 
+logger = logging.getLogger("datacube")
+
 
 def filter_clouds_nodata(tile):
     """
@@ -37,19 +40,19 @@ def filter_clouds_nodata(tile):
     """
     # Check for nodata pixels
     if int(tile.sel(band="B02").isin([NODATA]).sum()):
-        print("Too much no-data in B02")
+        logger.debug("Too much no-data in B02")
         return False
 
     bands_to_check = ["vv", "vh", "dem"]
     for band in bands_to_check:
         if int(np.isnan(tile.sel(band=band)).sum()):
-            print(f"Too much no-data in {band}")
+            logger.debug(f"Too much no-data in {band}")
             return False
 
     # Check for cloud coverage
     cloudy_pixel_count = int(tile.sel(band="SCL").isin(SCL_FILTER).sum())
     if cloudy_pixel_count / PIXELS_PER_TILE >= BAD_PIXEL_MAX_PERCENTAGE:
-        print("Too much cloud coverage")
+        logger.debug("Too much cloud coverage")
         return False
 
     return True  # If both conditions pass
@@ -66,7 +69,7 @@ def tile_to_dir(stack, date, mgrs, bucket, dir):
     - mgrs (str): MGRS Tile id
     - bucket(str): AWS S3 bucket to write tiles to
     """
-    print("Writing tempfiles to ", dir)
+    logger.debug(f"Writing tempfiles to {dir}")
 
     # Calculate the number of full tiles in x and y directions
     num_x_tiles = stack[0].x.size // TILE_SIZE
@@ -90,8 +93,8 @@ def tile_to_dir(stack, date, mgrs, bucket, dir):
             tile = xr.concat(parts, dim="band").rename("tile")
 
             counter += 1
-            if counter % 100 == 0:
-                print(f"Counted {counter} tiles")
+            if counter % 250 == 0:
+                logger.info(f"Counted {counter} tiles")
 
             if not filter_clouds_nodata(tile):
                 continue
@@ -118,7 +121,7 @@ def tile_to_dir(stack, date, mgrs, bucket, dir):
                 rst.colorinterp = color
                 rst.update_tags(date=date)
         if bucket:
-            print(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
+            logger.info(f"Syncing {dir} with s3://{bucket}/{VERSION}/{mgrs}/{date}")
             subprocess.run(
                 [
                     "aws",
@@ -131,7 +134,7 @@ def tile_to_dir(stack, date, mgrs, bucket, dir):
                 check=True,
             )
         else:
-            print("No bucket specified, skipping S3 sync.")
+            logger.info("No bucket specified, skipping S3 sync.")
 
 
 def tiler(stack, date, mgrs, bucket, dir):
