@@ -26,6 +26,7 @@ Functions:
       Process Sentinel-2, Sentinel-1, and DEM data for a specified time range,
       area of interest, and resolution.
 """
+import os
 import random
 from datetime import timedelta
 
@@ -414,7 +415,7 @@ def convert_attrs_and_coords_objects_to_str(data):
 @click.option(
     "--index",
     required=False,
-    default=0,
+    default=None,
     help="Index of MGRS tile from sample file that should be processed",
 )
 @click.option(
@@ -446,7 +447,10 @@ def convert_attrs_and_coords_objects_to_str(data):
     help="Comma separated list of date ranges, each provided as YYYY-MM-DD/YYYY-MM-DD.",
 )
 def main(sample, index, subset, bucket, localpath, dateranges):
-    index = int(index)
+    if index is None:
+        index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 0))
+    else:
+        index = int(index)
     tiles = gpd.read_file(sample)
     tile = tiles.iloc[index]
     mgrs = tile["name"]
