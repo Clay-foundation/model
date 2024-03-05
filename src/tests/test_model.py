@@ -74,14 +74,10 @@ def test_model_vit_fit(datapipe):
     # Run tests in a temporary folder
     with tempfile.TemporaryDirectory() as tmpdirname:
         # Training
-        print(
-            f"PYTORCH_MPS_PREFER_METAL={os.getenv('PYTORCH_MPS_PREFER_METAL')}, "
-            f"is_mps_available: {torch.backends.mps.is_available()}"
-        )
         trainer: L.Trainer = L.Trainer(
             accelerator=(
                 "cpu"  # fallback to CPU on osx-arm64 CI
-                if os.getenv("PYTORCH_MPS_PREFER_METAL") == 0
+                if os.getenv("PYTORCH_MPS_PREFER_METAL") == "0"
                 and torch.backends.mps.is_available()
                 else "auto"
             ),
@@ -124,7 +120,7 @@ def test_model_predict(datapipe, litmodule, precision, embeddings_level):
         trainer: L.Trainer = L.Trainer(
             accelerator=(
                 "cpu"  # fallback to CPU on osx-arm64 CI
-                if os.getenv("PYTORCH_MPS_PREFER_METAL") == 0
+                if os.getenv("PYTORCH_MPS_PREFER_METAL") == "0"
                 and torch.backends.mps.is_available()
                 else "auto"
             ),
