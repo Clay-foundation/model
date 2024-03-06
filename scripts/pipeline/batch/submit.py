@@ -14,7 +14,13 @@ job = {
     "jobQueue": "fetch-and-run",
     "jobDefinition": "fetch-and-run",
     "containerOverrides": {
-        "command": ["datacube.py", "--bucket", "clay-tiles-04"],
+        "command": [
+            "datacube.py",
+            "--bucket",
+            "clay-tiles-04-sample-v02",
+            "--sample",
+            "https://clay-mgrs-samples.s3.amazonaws.com/mgrs_sample_v02.fgb",
+        ],
         "environment": [
             {"name": "BATCH_FILE_TYPE", "value": "zip"},
             {
@@ -24,8 +30,8 @@ job = {
             {"name": "PC_SDK_SUBSCRIPTION_KEY", "value": f"{PC_KEY}"},
         ],
         "resourceRequirements": [
-            {"type": "MEMORY", "value": "8000"},
-            {"type": "VCPU", "value": "2"},
+            {"type": "MEMORY", "value": "15500"},
+            {"type": "VCPU", "value": "4"},
         ],
     },
     "arrayProperties": {"size": NR_OF_TILES_IN_SAMPLE_FILE},
