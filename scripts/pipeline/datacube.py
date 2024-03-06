@@ -417,7 +417,7 @@ def convert_attrs_and_coords_objects_to_str(data):
 @click.option(
     "--sample",
     required=False,
-    default="https://clay-mgrs-samples.s3.amazonaws.com/mgrs_sample.fgb",
+    default="https://clay-mgrs-samples.s3.amazonaws.com/mgrs_sample_v02.fgb",
     help="Location of MGRS tile sample",
 )
 @click.option(
