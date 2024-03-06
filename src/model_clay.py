@@ -790,7 +790,7 @@ class CLAYModule(L.LightningModule):
         wd=0.05,
         b1=0.9,
         b2=0.95,
-        embeddings_level: Literal["mean", "patch", "group"] = "mean",
+        embeddings_level: Literal["mean", "patch", "group"] = "patch",
         band_groups=None,
     ):
         super().__init__()
