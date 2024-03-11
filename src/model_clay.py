@@ -826,7 +826,7 @@ class CLAYModule(L.LightningModule):
             betas=(self.hparams.b1, self.hparams.b2),
         )
         scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer, T_0=1000, T_mult=2, eta_min=self.hparams.lr * 10, last_epoch=-1
+            optimizer, T_0=1000, T_mult=2, eta_min=self.hparams.lr * 100, last_epoch=-1
         )
 
         return {

@@ -36,19 +36,20 @@ def cli_main(
         "devices": "auto",
         "strategy": "ddp",
         "precision": "bf16-mixed",
-        "log_every_n_steps": 1,
+        "log_every_n_steps": 50,
         "max_epochs": 100,
         "accumulate_grad_batches": 5,
+        "default_root_dir": "s3://clay-model-ckpt/v0.2/",
         "callbacks": [
             ModelCheckpoint(
-                dirpath="checkpoints/",
+                dirpath=None,
                 auto_insert_metric_name=False,
-                filename="mae_epoch-{epoch:02d}_val-loss-{val/loss:.2f}",
+                filename="mae_epoch-{epoch:02d}_val-loss-{val/loss:.4f}",
                 monitor="val/loss",
                 mode="min",
                 save_last=True,
                 save_top_k=2,
-                save_weights_only=True,
+                save_weights_only=False,    
                 verbose=True,
             ),
             LearningRateMonitor(logging_interval="step"),
@@ -63,8 +64,18 @@ def cli_main(
     Command-line inteface to run CLAYModule with ClayDataModule.
     """
     cli = LightningCLI(
-        model_class=CLAYModule,
-        datamodule_class=ClayDataModule,
+        model_class=CLAYModule(
+            model_size="small",
+            mask_ratio=0.75,
+            image_size=256,
+            patch_size=16,
+            lr=1e-5,
+        ),
+        datamodule_class=ClayDataModule(
+            data_dir="data",
+            batch_size=10,
+            num_workers=8,
+        ),
         save_config_callback=save_config_callback,
         seed_everything_default=seed_everything_default,
         trainer_defaults=trainer_defaults,
