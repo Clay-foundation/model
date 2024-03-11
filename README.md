@@ -42,6 +42,27 @@ Finally, double-check that the libraries have been installed.
 
     mamba list
 
+### Advanced
+
+This is for those who want full reproducibility of the virtual environment.
+Create a virtual environment with just Python and conda-lock installed first.
+
+    mamba create --name claymodel python=3.11 conda-lock=2.5.1
+    mamba activate claymodel
+
+Generate a unified [`conda-lock.yml`](https://github.com/conda/conda-lock) file
+based on the dependency specification in `environment.yml`. Use only when
+creating a new `conda-lock.yml` file or refreshing an existing one.
+
+    conda-lock lock --mamba --file environment.yml --with-cuda=12.0
+
+Installing/Updating a virtual environment from a lockile. Use this to sync your
+dependencies to the exact versions in the `conda-lock.yml` file.
+
+    conda-lock install --mamba --name claymodel conda-lock.yml
+
+See also https://conda.github.io/conda-lock/output/#unified-lockfile for more
+usage details.
 
 ## Usage
 
