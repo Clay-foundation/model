@@ -42,4 +42,4 @@ jobs:
             micromamba install python=${{ matrix.python-version }} pytest
             python -m pytest --verbose src/tests/
         env:
-          PYTORCH_MPS_PREFER_METAL: 0  # disable MPS which doesn't work on macos-14 runner
+          PYTORCH_MPS_PREFER_METAL: 0  # disable MPS which runs out of memory on macos-14 runner
