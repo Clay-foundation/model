@@ -27,5 +27,3 @@ curl https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/
 curl https://earth-search.aws.element84.com/v1/collections/sentinel-2-c1-l2a/items/S2A_T20HNJ_20240311T140636_L2A | jq > items/sentinel-2-l2a-S2A_T20HNJ_20240311T140636_L2A.json
 curl https://earth-search.aws.element84.com/v1/collections/sentinel-2-c1-l2a/items/S2B_T13RFJ_20240312T173512_L2A | jq > items/sentinel-2-l2a-S2B_T13RFJ_20240312T173512_L2A.json
 curl https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2B_38NLM_20240312_0_L2A | jq > items/sentinel-2-l2a-S2B_38NLM_20240312_0_L2A.json
-
-python edit_stac.py
