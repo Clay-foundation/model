@@ -23,14 +23,18 @@ Launch into a [JupyterLab](https://jupyterlab.readthedocs.io) environment on
 To help out with development, start by cloning this [repo-url](/../../)
 
     git clone <repo-url>
+    cd model
 
 Then we recommend [using mamba](https://mamba.readthedocs.io/en/latest/installation.html)
-to install the dependencies.
-A virtual environment will also be created with Python and
+to install the dependencies. A virtual environment will also be created with Python and
 [JupyterLab](https://github.com/jupyterlab/jupyterlab) installed.
 
-    cd model
     mamba env create --file environment.yml
+
+> [!NOTE]
+> The command above will only work for Linux devices with CUDA GPUs. For installation
+> on macOS devices (either Intel or ARM chips), follow the 'Advanced' section in
+> https://clay-foundation.github.io/model/installation.html#advanced
 
 Activate the virtual environment first.
 
@@ -40,27 +44,6 @@ Finally, double-check that the libraries have been installed.
 
     mamba list
 
-### Advanced
-
-This is for those who want full reproducibility of the virtual environment.
-Create a virtual environment with just Python and conda-lock installed first.
-
-    mamba create --name claymodel python=3.11 conda-lock=2.5.1
-    mamba activate claymodel
-
-Generate a unified [`conda-lock.yml`](https://github.com/conda/conda-lock) file
-based on the dependency specification in `environment.yml`. Use only when
-creating a new `conda-lock.yml` file or refreshing an existing one.
-
-    conda-lock lock --mamba --file environment.yml --platform linux-64 --with-cuda=12.0
-
-Installing/Updating a virtual environment from a lockile. Use this to sync your
-dependencies to the exact versions in the `conda-lock.yml` file.
-
-    conda-lock install --mamba --name claymodel conda-lock.yml
-
-See also https://conda.github.io/conda-lock/output/#unified-lockfile for more
-usage details.
 
 ## Usage
 

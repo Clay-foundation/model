@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.11"]
-        os: [ubuntu-22.04, macos-12]
+        os: [ubuntu-22.04, macos-12, macos-14]
     defaults:
       run:
         shell: bash -l {0}
@@ -41,3 +41,5 @@ jobs:
         run: |
             micromamba install python=${{ matrix.python-version }} pytest
             python -m pytest --verbose src/tests/
+        env:
+          PYTORCH_MPS_PREFER_METAL: 0  # disable MPS which runs out of memory on macos-14 runner
