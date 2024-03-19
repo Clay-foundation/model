@@ -44,6 +44,8 @@ parts:
       file: clay-v0-interpolation
     - title: Generate embeddings from partial inputs
       file: partial-inputs
+    - title: Digital Earth Pacific
+      file: tutorial_digital_earth_pacific
 - caption: About Clay
   chapters:
     - title: GitHub
