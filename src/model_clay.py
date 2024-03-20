@@ -57,6 +57,7 @@ class Encoder(nn.Module):
         mask_ratio,
         image_size,
         patch_size,
+        shuffle,
         dim,
         depth,
         heads,
@@ -73,6 +74,7 @@ class Encoder(nn.Module):
         self.mask_ratio = mask_ratio
         self.image_size = image_size
         self.patch_size = patch_size
+        self.shuffle = shuffle
         self.dim = dim
         self.band_groups = band_groups
         self.num_spatial_patches = (image_size // patch_size) ** 2
@@ -243,7 +245,7 @@ class Encoder(nn.Module):
             GL == self.num_patches
         ), f"Expected {self.num_patches} patches, got {GL} patches."
 
-        if self.training:  # Shuffle the patches
+        if self.shuffle:  # Shuffle the patches
             noise = torch.randn((B, GL), device=patches.device)  # [B GL]
         else:  # Don't shuffle useful for interpolation & inspection of embeddings
             noise = rearrange(
@@ -560,6 +562,7 @@ class CLAY(nn.Module):
         mask_ratio,
         image_size,
         patch_size,
+        shuffle,
         # ENCODER
         dim,
         depth,
@@ -590,12 +593,14 @@ class CLAY(nn.Module):
         self.mask_ratio = mask_ratio
         self.image_size = image_size
         self.patch_size = patch_size
+        self.shuffle = shuffle
         self.band_groups = band_groups
 
         self.encoder = Encoder(
             mask_ratio=mask_ratio,
             image_size=image_size,
             patch_size=patch_size,
+            shuffle=shuffle,
             dim=dim,
             depth=depth,
             heads=heads,
@@ -786,12 +791,20 @@ class CLAYModule(L.LightningModule):
         mask_ratio=0.75,
         image_size=512,
         patch_size=32,
+        shuffle=False,
         lr=1e-4,
         wd=0.05,
         b1=0.9,
         b2=0.95,
         embeddings_level: Literal["mean", "patch", "group"] = "mean",
-        band_groups=None,
+        band_groups={
+            "rgb": (2, 1, 0),
+            "rededge": (3, 4, 5, 7),
+            "nir": (6,),
+            "swir": (8, 9),
+            "sar": (10, 11),
+            "dem": (12,),
+        },
     ):
         super().__init__()
         self.save_hyperparameters(logger=True)
@@ -806,6 +819,7 @@ class CLAYModule(L.LightningModule):
                 "mask_ratio": mask_ratio,
                 "image_size": image_size,
                 "patch_size": patch_size,
+                "shuffle": shuffle,
             }
             if band_groups:
                 model_args["band_groups"] = band_groups
