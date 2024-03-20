@@ -42,7 +42,7 @@ def cli_main(
         "default_root_dir": "s3://clay-model-ckpt/v0.2/",
         "callbacks": [
             ModelCheckpoint(
-                dirpath=None,
+                dirpath="s3://clay-model-ckpt/v0.2/",
                 auto_insert_metric_name=False,
                 filename="mae_epoch-{epoch:02d}_val-loss-{val/loss:.4f}",
                 monitor="val/loss",
@@ -55,7 +55,7 @@ def cli_main(
             LearningRateMonitor(logging_interval="step"),
             LogIntermediatePredictions(),
         ],
-        "logger": [WandbLogger(project="CLAY-v0", log_model=False)],
+        "logger": [WandbLogger(entity="devseed-gaia", project="clay", log_model=False)],
         "plugins": [AsyncCheckpointIO()],
     },
     args: ArgsType = None,
@@ -64,18 +64,8 @@ def cli_main(
     Command-line inteface to run CLAYModule with ClayDataModule.
     """
     cli = LightningCLI(
-        model_class=CLAYModule(
-            model_size="small",
-            mask_ratio=0.75,
-            image_size=256,
-            patch_size=16,
-            lr=1e-5,
-        ),
-        datamodule_class=ClayDataModule(
-            data_dir="data",
-            batch_size=10,
-            num_workers=8,
-        ),
+        model_class=CLAYModule,
+        datamodule_class=ClayDataModule,
         save_config_callback=save_config_callback,
         seed_everything_default=seed_everything_default,
         trainer_defaults=trainer_defaults,
