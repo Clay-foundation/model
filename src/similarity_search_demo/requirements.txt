@@ -1,0 +1,4 @@
+streamlit==1.32.2
+geopandas==0.14.3
+lancedb==0.6.4
+scikit-image==0.22.0
