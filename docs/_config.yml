@@ -14,6 +14,7 @@ execute:
     - clay-v0-*.ipynb
     - partial-inputs.ipynb
     - tutorial_digital_earth_pacific_patch_level.ipynb
+    - patch_level_cloud_cover.ipynb
 
 # Define the name of the latex output file for PDF builds
 latex:
