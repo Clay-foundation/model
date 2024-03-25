@@ -13,6 +13,7 @@ execute:
   exclude_patterns:
     - clay-v0-*.ipynb
     - partial-inputs.ipynb
+    - tutorial_digital_earth_pacific_patch_level.ipynb
 
 # Define the name of the latex output file for PDF builds
 latex:
