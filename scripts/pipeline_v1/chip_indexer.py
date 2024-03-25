@@ -6,6 +6,7 @@ import numpy as np
 import pyarrow as pa
 import stackstac
 from pystac import Item
+from rasterio.crs import CRS
 
 warnings.filterwarnings(
     "ignore",
@@ -25,13 +26,33 @@ class ChipIndexer:
         self,
         item: Item,
         chip_size: int = 256,
-        needs_stats=True,
     ) -> None:
         self.item = item
         self.chip_size = chip_size
-        self.needs_stats = needs_stats
 
-    def get_item_shape(self) -> list:
+        assert self.item.ext.has("proj")
+        self.assert_units_metre()
+
+    def assert_units_metre(self) -> None:
+        crs = CRS(init=f"EPSG:{self.item.properties['proj:epsg']}")
+        assert crs.linear_units == "metre"
+
+    def get_resolution(self) -> float:
+        if "proj:transform" in self.item.properties:
+            return float(abs(self.item.properties["proj:transform"][0]))
+
+        resolutions = []
+        for asset in self.item.assets.values():
+            if "proj:transform" not in asset.extra_fields:
+                continue
+            resolutions.append(float(abs(asset.extra_fields["proj:transform"][0])))
+
+        if not len(resolutions):
+            raise ValueError("Could not determine resolution of assets")
+
+        return min(resolutions)
+
+    def get_shape(self) -> list:
         """
         Get shape of hightest resolution band.
         """
@@ -52,24 +73,25 @@ class ChipIndexer:
         return shape
 
     def get_stats(self, chip_index_x: int, chip_index_y: int) -> Tuple[float, float]:
-        if self.needs_stats:
-            raise NotImplementedError()
-        return 0.0, 0.0
+        raise NotImplementedError()
 
     def create_index(self) -> None:
         index = []
         chipid = 0
-
-        shape = self.get_item_shape()
+        resolution = self.get_resolution()
+        shape = self.get_shape()
 
         for y in range(0, shape[1], self.chip_size):
             for x in range(0, shape[0], self.chip_size):
                 cloud_cover_percentage, nodata_percentage = self.get_stats(x, y)
                 row = [
-                    Path(self.item.get_self_href()).name,
                     f"{self.item.id}-{chipid}",
+                    Path(self.item.get_self_href()).name,
+                    str(self.item.datetime.date()),
+                    *self.item.bbox,
                     x,
                     y,
+                    resolution,
                     cloud_cover_percentage,
                     nodata_percentage,
                 ]
@@ -80,20 +102,37 @@ class ChipIndexer:
             [
                 pa.array([dat[0] for dat in index], type=pa.string()),
                 pa.array([dat[1] for dat in index], type=pa.string()),
-                pa.array([dat[2] for dat in index], type=pa.int16()),
-                pa.array([dat[3] for dat in index], type=pa.int16()),
+                pa.array([dat[2] for dat in index], type=pa.string()),
+                pa.array([dat[3] for dat in index], type=pa.float32()),
                 pa.array([dat[4] for dat in index], type=pa.float32()),
                 pa.array([dat[5] for dat in index], type=pa.float32()),
+                pa.array([dat[6] for dat in index], type=pa.float32()),
+                pa.array([dat[7] for dat in index], type=pa.int16()),
+                pa.array([dat[8] for dat in index], type=pa.int16()),
+                pa.array([dat[9] for dat in index], type=pa.float32()),
+                pa.array([dat[10] for dat in index], type=pa.float32()),
+                pa.array([dat[11] for dat in index], type=pa.float32()),
             ],
             names=[
-                "stac_item",
                 "chipid",
+                "stac_item",
+                "date",
+                "longitude_min",
+                "latitude_min",
+                "longitude_max",
+                "latitude_max",
                 "chip_index_x",
                 "chip_index_y",
+                "resolution",
                 "cloud_cover_percentage",
                 "nodata_percentage",
             ],
         )
+
+
+class NoStatsChipIndexer(ChipIndexer):
+    def get_stats(self, chip_index_x: int, chip_index_y: int) -> Tuple[float, float]:
+        return 0.0, 0.0
 
 
 class LandsatIndexer(ChipIndexer):
