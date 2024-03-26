@@ -26,6 +26,8 @@ Functions:
       Process Sentinel-2, Sentinel-1, and DEM data for a specified time range,
       area of interest, and resolution.
 """
+import logging
+import os
 import random
 from datetime import timedelta
 
@@ -46,8 +48,15 @@ SPATIAL_RESOLUTION = 10
 CLOUD_COVER_PERCENTAGE = 50
 NODATA_PIXEL_PERCENTAGE = 20
 NODATA = 0
-S1_MATCH_ATTEMPTS = 20
-DATES_PER_LOCATION = 3
+S1_MATCH_ATTEMPTS = 40
+DATES_PER_LOCATION = 4
+
+logger = logging.getLogger("datacube")
+hdr = logging.StreamHandler()
+formatter = logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s")
+hdr.setFormatter(formatter)
+logger.addHandler(hdr)
+logger.setLevel(logging.INFO)
 
 
 def get_surrounding_days(reference, interval_days):
@@ -123,7 +132,7 @@ def search_sentinel2(
     )
 
     s2_items = search.item_collection()
-    print(f"Found {len(s2_items)} Sentinel-2 items")
+    logger.info(f"Found {len(s2_items)} Sentinel-2 items")
     if not len(s2_items):
         return None, None
 
@@ -143,7 +152,7 @@ def search_sentinel2(
     bbox = least_clouds.geometry.bounds
 
     epsg = s2_item.properties["proj:epsg"]
-    print("EPSG code based on Sentinel-2 item: ", epsg)
+    logger.info(f"EPSG code based on Sentinel-2 item: {epsg}")
 
     return s2_item, bbox
 
@@ -187,7 +196,7 @@ def search_sentinel1(bbox, catalog, date_range):
         },
     )
     s1_items = search.item_collection()
-    print(f"Found {len(s1_items)} Sentinel-1 items")
+    logger.info(f"Found {len(s1_items)} Sentinel-1 items")
 
     if not len(s1_items):
         return
@@ -203,7 +212,7 @@ def search_sentinel1(bbox, catalog, date_range):
         s1_gdf = s1_gdf.sort_values(by="overlap", ascending=False)
 
         most_overlap_orbit = s1_gdf.iloc[0]["sat:orbit_state"]
-        print("Most overlapped orbit: ", most_overlap_orbit)
+        logger.info(f"Most overlapped orbit: {most_overlap_orbit}")
         selected_item_ids = []
         intersection = None
         orbit = None
@@ -246,7 +255,7 @@ def search_dem(bbox, catalog):
     """
     search = catalog.search(collections=["cop-dem-glo-30"], bbox=bbox)
     dem_items = search.item_collection()
-    print(f"Found {len(dem_items)} DEM items")
+    logger.info(f"Found {len(dem_items)} DEM items")
 
     return dem_items
 
@@ -354,7 +363,7 @@ def process(
             continue
 
         surrounding_days = get_surrounding_days(s2_item.datetime, interval_days=3)
-        print("Searching S1 in date range", surrounding_days)
+        logger.info(f"Searching S1 in date range {surrounding_days}")
 
         s1_items = search_sentinel1(bbox, catalog, surrounding_days)
 
@@ -362,7 +371,7 @@ def process(
             break
 
     if i == S1_MATCH_ATTEMPTS - 1:
-        print(
+        logger.info(
             "No match for S1 scenes found for date range "
             f"{date_range} after {S1_MATCH_ATTEMPTS} attempts."
         )
@@ -378,6 +387,10 @@ def process(
         dem_items,
         resolution,
     )
+
+    if 0 in (dat.shape[0] for dat in result):
+        logger.info("S2/S1 pixel coverages do not overlap although bounds do")
+        return None, None
 
     return date, result
 
@@ -404,13 +417,13 @@ def convert_attrs_and_coords_objects_to_str(data):
 @click.option(
     "--sample",
     required=False,
-    default="https://clay-mgrs-samples.s3.amazonaws.com/mgrs_sample.fgb",
+    default="https://clay-mgrs-samples.s3.amazonaws.com/mgrs_sample_v02.fgb",
     help="Location of MGRS tile sample",
 )
 @click.option(
     "--index",
     required=False,
-    default=0,
+    default=None,
     help="Index of MGRS tile from sample file that should be processed",
 )
 @click.option(
@@ -441,13 +454,20 @@ def convert_attrs_and_coords_objects_to_str(data):
     type=str,
     help="Comma separated list of date ranges, each provided as YYYY-MM-DD/YYYY-MM-DD.",
 )
-def main(sample, index, subset, bucket, localpath, dateranges):
-    index = int(index)
+@click.option("-v", "--verbose", is_flag=True)
+def main(sample, index, subset, bucket, localpath, dateranges, verbose):  # noqa: PLR0913
+    if verbose:
+        logger.setLevel(logging.DEBUG)
+
+    if index is None:
+        index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 0))
+    else:
+        index = int(index)
     tiles = gpd.read_file(sample)
     tile = tiles.iloc[index]
     mgrs = tile["name"]
 
-    print(f"Starting algorithm for MGRS tile {tile['name']} with index {index}")
+    logger.info(f"Starting algorithm for MGRS tile {tile['name']} with index {index}")
 
     if subset:
         subset = [int(dat) for dat in subset.split(",")]
@@ -466,7 +486,7 @@ def main(sample, index, subset, bucket, localpath, dateranges):
 
     match_count = 0
     for date_range in date_ranges:
-        print(f"Processing data for date range {date_range}")
+        logger.info(f"Processing data for date range {date_range}")
         date, pixels = process(
             tile.geometry,
             date_range,
@@ -480,7 +500,7 @@ def main(sample, index, subset, bucket, localpath, dateranges):
             match_count += 1
 
         if subset:
-            print(f"Subsetting to {subset}")
+            logger.info(f"Subsetting to {subset}")
             pixels = [
                 part[:, subset[1] : subset[3], subset[0] : subset[2]] for part in pixels
             ]
@@ -493,7 +513,7 @@ def main(sample, index, subset, bucket, localpath, dateranges):
             break
 
     if not match_count:
-        raise ValueError("No matching data found")
+        logger.info("No matching data found")
 
 
 if __name__ == "__main__":

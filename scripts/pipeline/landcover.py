@@ -13,9 +13,7 @@ from shapely.geometry import shape
 WGS84 = CRS.from_epsg(4326)
 NODATA = 0
 WATER = 80
-WATER_LOWER_TH = 0.2
-WATER_UPPER_TH = 0.7
-RANDOM_SEED = 42
+RANDOM_SEED = 23
 CLASSES = {
     10: "Tree cover",
     20: "Shrubland",
@@ -156,31 +154,25 @@ def percentages(data):
 def sample(wd):
     """
     Sample the mgrs tiles based on landcover statistics.
-
-    Target: ~1000 tiles
-    Set very small counts to zero. Exclude high latitudes.
-    200 samples from the 2000 most diverse
-    50 samples from the 1000 highest for all other categories except water
-    100 samples from all tiles with water between 30% an 70% (making sure we
-    capture some, but exclude only purely water so we catch coasts)
     """
     data = geopandas.read_file(Path(wd, "mgrs_stats.fgb"))
 
     data_norm = percentages(data.loc[:, data.columns != "count"])
     data[data_norm.columns] = data_norm
 
-    diversity = split_highest(data, "count", 500, 3000)
-    urban = split_highest(data, "Built-up", 400)
+    diversity = split_highest(data, "count", 400, 2000)
+    urban = split_highest(data, "Built-up", 300, 300)
+    urban = split_highest(data, "Built-up", 1000, 1500)
     wetland = split_highest(data, "Herbaceous wetland", 50, 500)
     mangroves = split_highest(data, "Mangroves", 50, 500)
     moss = split_highest(data, "Moss and lichen", 50, 500)
-    cropland = split_highest(data, "Cropland", 100, 500)
-    trees = split_highest(data, "Tree cover", 100, 500)
-    shrubland = split_highest(data, "Shrubland", 50, 500)
-    grassland = split_highest(data, "Grassland", 50, 500)
+    cropland = split_highest(data, "Cropland", 800, 3600)
+    trees = split_highest(data, "Tree cover", 150, 750)
+    shrubland = split_highest(data, "Shrubland", 100, 500)
+    grassland = split_highest(data, "Grassland", 200, 500)
     bare = split_highest(data, "Bare / sparse vegetation", 50, 500)
-    snow = split_highest(data, "Snow and Ice", 50, 500)
-    water = split_highest(data, "Permanent water bodies", 100, 1000)
+    snow = split_highest(data, "Snow and Ice", 25, 250)
+    water = split_highest(data, "Permanent water bodies", 50, 1000)
 
     result = pandas.concat(
         [
@@ -200,6 +192,7 @@ def sample(wd):
     )
 
     result = result.drop_duplicates(subset=["name"])
+    print(f"Found {len(result)} MGRS tiles")
 
     result.to_file(Path(wd, "mgrs_sample.fgb", driver="FlatGeobuf"))
 
