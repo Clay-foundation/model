@@ -48,7 +48,7 @@ def cli_main(
                 mode="min",
                 save_last=True,
                 save_top_k=2,
-                save_weights_only=True,
+                save_weights_only=False,
                 verbose=True,
             ),
             LearningRateMonitor(logging_interval="step"),
