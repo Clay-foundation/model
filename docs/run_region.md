@@ -95,7 +95,7 @@ be downloaded for each MGRS tile.
 ```bash
 for i in {0..5}; do
 
-python scripts/datacube.py \
+python scripts/pipeline/datacube.py \
     --sample data/mgrs/mgrs_aoi.fgb \
     --localpath data/chips  \
     --index $i \
