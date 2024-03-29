@@ -43,8 +43,8 @@ from tile import tiler
 STAC_API = "https://planetarycomputer.microsoft.com/api/stac/v1"
 S2_BANDS = ["B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B11", "B12", "SCL"]
 SPATIAL_RESOLUTION = 10
-CLOUD_COVER_PERCENTAGE = 50
-NODATA_PIXEL_PERCENTAGE = 20
+CLOUD_COVER_PERCENTAGE = 30
+NODATA_PIXEL_PERCENTAGE = 10
 NODATA = 0
 S1_MATCH_ATTEMPTS = 20
 DATES_PER_LOCATION = 3
@@ -353,7 +353,7 @@ def process(
         if not s2_item:
             continue
 
-        surrounding_days = get_surrounding_days(s2_item.datetime, interval_days=3)
+        surrounding_days = get_surrounding_days(s2_item.datetime, interval_days=6)
         print("Searching S1 in date range", surrounding_days)
 
         s1_items = search_sentinel1(bbox, catalog, surrounding_days)

@@ -148,7 +148,7 @@ class ClayDataModule(L.LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.split_ratio = 0.8
+        self.split_ratio = 0.9
         self.tfm = v2.Compose([v2.Normalize(mean=self.MEAN, std=self.STD)])
 
     def setup(self, stage: Literal["fit", "predict"] | None = None) -> None:

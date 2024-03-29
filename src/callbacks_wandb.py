@@ -199,7 +199,7 @@ class LogIntermediatePredictions(L.Callback):
 
     def select_image(self, trainer, pl_module):
         print("Selecting image with max variance")
-        batches = islice(iter(trainer.val_dataloaders), 3)
+        batches = islice(iter(trainer.val_dataloaders), 1)
         max_variance = -1
         for ibatch in batches:
             batch = {
