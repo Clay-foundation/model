@@ -1,3 +1,4 @@
+import math
 import os
 import re
 from typing import Literal
@@ -854,8 +855,21 @@ class CLAYModule(L.LightningModule):
     def training_step(self, batch: dict[str, torch.Tensor], batch_idx: int):
         return self.shared_step(batch, batch_idx, phase="train")
 
-    def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int):
-        return self.shared_step(batch, batch_idx, phase="val")
+    def validation_step(self, batch, batch_idx):
+        student_out = self.student.model.encoder(batch)[0][
+            :, :-2, :
+        ]  # Extract raw patch embeddings
+        teacher_out = self.teacher.model.encoder(batch)[0][:, :-2, :]
+
+        if self.use_mean:
+            student_out = student_out.mean(dim=1)
+            teacher_out = teacher_out.mean(dim=1)
+
+        val_loss = self.dino_loss(student_out, teacher_out)
+
+        self.log("val/loss", val_loss, on_step=False, on_epoch=True, prog_bar=True)
+
+        return val_loss
 
     def predict_step(
         self, batch: dict[str, torch.Tensor | list[str]], batch_idx: int
@@ -1006,3 +1020,161 @@ class CLAYModule(L.LightningModule):
             )
 
         return gdf
+
+
+class DINOLoss(nn.Module):
+    def __init__(self, output_dim, teacher_temp, student_temp, center_momentum):
+        super().__init__()
+        self.output_dim = output_dim
+        self.teacher_temp = teacher_temp
+        self.student_temp = student_temp
+        self.center_momentum = center_momentum
+        self.register_buffer("center", torch.zeros(1, output_dim))
+
+    def forward(self, student_output, teacher_output):
+        student_out = student_output / self.student_temp
+        teacher_out = F.softmax(
+            (teacher_output - self.center) / self.teacher_temp, dim=-1
+        )
+
+        loss = torch.sum(
+            -teacher_out * F.log_softmax(student_out, dim=-1), dim=-1
+        ).mean()
+
+        self.update_center(teacher_output)
+        return loss
+
+    @torch.no_grad()
+    def update_center(self, teacher_output):
+        batch_center = torch.sum(teacher_output, dim=0, keepdim=True)
+        self.center = self.center * self.center_momentum + batch_center * (
+            1 - self.center_momentum
+        )
+
+
+class CLAYDino(L.LightningModule):
+    def __init__(
+        self,
+        student_clay,
+        teacher_clay,
+        output_dim,
+        momentum_teacher,
+        teacher_temp,
+        student_temp,
+        center_momentum,
+        use_mean=False,
+        lr=1e-4,
+        warmup_epochs=50,
+        max_epochs=1000,
+        weight_decay=1e-6,
+        **kwargs,
+    ):
+        super().__init__()
+        self.save_hyperparameters()
+        self.student = self._get_augmented_student(student_clay)
+        self.teacher = teacher_clay
+
+        # Initialize teacher with student weights
+        self.teacher.load_state_dict(self.student.state_dict())
+        for p in self.teacher.parameters():
+            p.requires_grad = False
+
+        self.momentum_teacher = momentum_teacher
+        self.dino_loss = DINOLoss(
+            output_dim, teacher_temp, student_temp, center_momentum
+        )
+
+    def _get_augmented_student(self, student_model):
+        student_model.model.encoder.mask_ratio = 0.75
+        student_model.model.encoder.dropout = nn.Dropout(p=0.1)
+        student_model.model.encoder.emb_dropout = nn.Dropout(p=0.1)
+        student_model.model.decoder.dropout = nn.Dropout(p=0.1)
+
+        return student_model
+
+    def forward(self, x):
+        # ENCODER
+        (
+            encoded_unmasked_patches,
+            unmasked_indices,
+            masked_indices,
+            masked_matrix,
+        ) = self.student.model.encoder(x)
+
+        # DECODER
+        pixels = self.student.model.decoder(
+            encoded_unmasked_patches, unmasked_indices, masked_indices
+        )
+
+        return pixels
+
+    def shared_step(self, batch, batch_idx):
+        x = batch
+        student_out = self.student.model.encoder(x)[0][
+            :, :-2, :
+        ]  # Raw patch embeddings
+        teacher_out = self.teacher.model.encoder(x)[0][:, :-2, :]
+
+        if self.use_mean:
+            student_out = student_out.mean(dim=1)  # Mean across patch embeddings
+            teacher_out = teacher_out.mean(dim=1)
+
+        loss = self.dino_loss(student_out, teacher_out)
+
+        return loss
+
+    def training_step(self, batch, batch_idx):
+        loss = self.shared_step(batch, batch_idx)
+        self.log("train/loss", loss)
+
+        self.momentum_teacher = (
+            1
+            - (1 - self.hparams.momentum_teacher)
+            * (
+                math.cos(
+                    math.pi
+                    * self.global_step
+                    / (
+                        self.hparams.max_epochs
+                        * len(self.trainer.datamodule.train_dataloader())
+                    )
+                )
+                + 1
+            )
+            / 2
+        )
+
+        # Update teacher weights with exponential moving average of student weights
+        for student_p, teacher_p in zip(
+            self.student.parameters(), self.teacher.parameters()
+        ):
+            teacher_p.data = (
+                self.momentum_teacher * teacher_p.data
+                + (1 - self.momentum_teacher) * student_p.data
+            )
+
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        loss = self.shared_step(batch, batch_idx)
+        self.log("val/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        return loss
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.AdamW(
+            self.student.parameters(),
+            lr=self.hparams.lr,
+            weight_decay=self.hparams.weight_decay,
+            betas=(0.9, 0.95),
+        )
+
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+            optimizer,
+            T_0=self.hparams.warmup_epochs,
+            T_mult=2,
+            eta_min=self.hparams.lr * 0.1,
+            last_epoch=-1,
+        )
+        scheduler = {"scheduler": scheduler, "interval": "epoch"}
+
+        return [optimizer], [scheduler]
