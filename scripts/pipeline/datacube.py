@@ -26,6 +26,7 @@ Functions:
       Process Sentinel-2, Sentinel-1, and DEM data for a specified time range,
       area of interest, and resolution.
 """
+
 import logging
 import os
 import random

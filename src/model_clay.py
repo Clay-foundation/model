@@ -481,12 +481,12 @@ class Decoder(nn.Module):
         decoder_patches = torch.zeros(
             (B, self.num_patches, self.dim), device=unmasked_patches.device
         )  # [B GL D]
-        decoder_patches[
-            batch_indices, unmasked_indices, :
-        ] = unmasked_patches  # [B GL:(1 - mask_ratio) D]
-        decoder_patches[
-            batch_indices, masked_indices, :
-        ] = masked_patches  # [B GL:mask_ratio D]
+        decoder_patches[batch_indices, unmasked_indices, :] = (
+            unmasked_patches  # [B GL:(1 - mask_ratio) D]
+        )
+        decoder_patches[batch_indices, masked_indices, :] = (
+            masked_patches  # [B GL:mask_ratio D]
+        )
 
         return decoder_patches  # [B GL D]
 
