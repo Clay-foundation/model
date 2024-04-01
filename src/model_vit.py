@@ -4,6 +4,7 @@ Model architecture code.
 Code structure adapted from Lightning project seed at
 https://github.com/Lightning-AI/deep-learning-project-template
 """
+
 import os
 import re
 

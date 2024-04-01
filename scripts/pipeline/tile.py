@@ -8,6 +8,7 @@ or no-data pixels.
 It includes functions to filter tiles based on cloud coverage and no-data pixels,
 and a tiling function that generates smaller tiles from the input stack.
 """
+
 import logging
 import subprocess
 import tempfile

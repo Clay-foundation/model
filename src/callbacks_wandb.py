@@ -23,6 +23,7 @@ References:
 - https://wandb.ai/wandb/wandb-lightning/reports/Image-Classification-using-PyTorch-Lightning--VmlldzoyODk1NzY
 - https://github.com/ashleve/lightning-hydra-template/blob/wandb-callbacks/src/callbacks/wandb_callbacks.py#L245
 """
+
 import lightning as L
 import matplotlib.pyplot as plt
 import numpy as np

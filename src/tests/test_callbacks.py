@@ -4,6 +4,7 @@ Tests for custom Callback plugins.
 Checks to ensure that the hooks in callbacks can be triggered and produce the
 correct output results.
 """
+
 import tempfile
 
 import lightning as L

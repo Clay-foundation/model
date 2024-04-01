@@ -4,6 +4,7 @@ Tests for command-line interface to execute ChaBuDNet.
 Based on advanced usage of running LightningCLI from Python at
 https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli_advanced_3.html#run-from-python
 """
+
 import pytest
 
 from trainer import cli_main
