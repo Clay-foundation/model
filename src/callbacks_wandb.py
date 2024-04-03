@@ -63,8 +63,9 @@ class LogDINOPredictions(L.Callback):
             # Update the model weights after batch accumulation and backpropagation
             pl_module.student.load_state_dict(pl_module.teacher.state_dict())
 
-            if batch_idx % trainer.log_every_n_steps == 0:
-                self.log_images(trainer, pl_module)
+            
+            #if batch_idx % trainer.log_every_n_steps == 0:
+            self.log_images(trainer, pl_module)
 
     def select_image(self, trainer, pl_module):
         print("Selecting image with max variance")
@@ -118,13 +119,13 @@ class LogDINOPredictions(L.Callback):
             encoded_unmasked_patches, unmasked_indices, masked_indices
         )
         pixels = rearrange(
-            pixels,
-            "b c (h w) (p1 p2) -> b c (h p1) (w p2)",
-            h=pl_module.student.model.image_size // pl_module.student.model.patch_size,
-            p1=pl_module.student.model.patch_size,
+        pixels,
+        "b c (h p1) (w p2) -> b c (h p1) (w p2)",
+        h=pl_module.student.model.image_size // pl_module.student.model.patch_size,
+        w=pl_module.student.model.image_size // pl_module.student.model.patch_size,
+        p1=pl_module.student.model.patch_size,
+        p2=pl_module.student.model.patch_size,
         )
-
-        assert pixels.shape == batch["pixels"].shape
 
         band_groups = {
             "rgb": (2, 1, 0),
@@ -134,10 +135,7 @@ class LogDINOPredictions(L.Callback):
             "dem": (12,),
         }
 
-        n_rows, n_cols = (
-            3,
-            len(band_groups),
-        )  # Rows for Input, Prediction, Difference
+        n_rows, n_cols = 3, len(band_groups)
         fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 5))
 
         def normalize_img(img):
@@ -145,20 +143,15 @@ class LogDINOPredictions(L.Callback):
             lower_bound = np.percentile(img, lower_percentile)
             upper_bound = np.percentile(img, upper_percentile)
             img_clipped = np.clip(img, lower_bound, upper_bound)
-            return (img_clipped - img_clipped.min()) / (
-                img_clipped.max() - img_clipped.min()
-            )
+            return (img_clipped - img_clipped.min()) / (img_clipped.max() - img_clipped.min())
 
         for col, (group_name, bands) in enumerate(band_groups.items()):
-            input_img = batch["pixels"][:, bands, :, :]
-            pred_img = pixels[:, bands, :, :]
-            input_img = (
-                input_img[self.selected_image].detach().cpu().numpy().transpose(1, 2, 0)
-            )
-            pred_img = (
-                pred_img[self.selected_image].detach().cpu().numpy().transpose(1, 2, 0)
-            )
-
+            input_img = batch["pixels"][0, bands, :, :].cpu().numpy().transpose(1, 2, 0)
+            pred_img = pixels[0, bands, :, :].cpu().numpy().transpose(1, 2, 0)
+            
+            # Reshape the predicted image to match the input image shape
+            pred_img = pred_img.reshape(input_img.shape)
+            
             if group_name == "rgb":
                 # Normalize RGB images
                 input_norm = normalize_img(input_img)
@@ -179,13 +172,10 @@ class LogDINOPredictions(L.Callback):
             axs[2, col].imshow(diff_rgb, cmap="gray" if group_name != "rgb" else None)
 
             for ax in axs[:, col]:
-                ax.set_title(
-                    f"""{group_name} {'Input' if ax == axs[0, col] else
-                                     'Pred' if ax == axs[1, col] else
-                                     'Diff'}"""
-                )
+                ax.set_title(f"""{group_name} {'Input' if ax == axs[0, col] else
+                                            'Pred' if ax == axs[1, col] else
+                                            'Diff'}""")
                 ax.axis("off")
 
         plt.tight_layout()
-        self.logger.experiment.log({"Images": wandb.Image(fig)})
-        plt.close(fig)
+        plt.show()

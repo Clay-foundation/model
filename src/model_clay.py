@@ -368,7 +368,6 @@ class Decoder(nn.Module):
         self.enc_to_dec = (
             nn.Linear(encoder_dim, dim) if encoder_dim != dim else nn.Identity()
         )
-        self.mask_patch = nn.Parameter(torch.randn(dim))
         self.transformer = Transformer(
             dim=dim,
             depth=depth,
@@ -466,9 +465,8 @@ class Decoder(nn.Module):
         # Reconstruct the masked patches from the random mask patch &
         # add position & band encoding to them
         num_masked_patches = int(self.mask_ratio * self.num_patches)
-        masked_patches = repeat(
-            self.mask_patch, "D -> B GL D", B=B, GL=num_masked_patches
-        )  # [B GL:mask_ratio D]
+        masked_patches = nn.Parameter(torch.randn(B, num_masked_patches, self.dim))
+
         masked_patches = (
             masked_patches + masked_pos_band_encoding
         )  # [B GL:mask_ratio D] + [B GL:mask_ratio D]
@@ -818,6 +816,8 @@ class CLAYModule(L.LightningModule):
 
     def forward(self, cube: dict[str, torch.Tensor]):
         return self.model(cube)
+
+    
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
@@ -1178,3 +1178,24 @@ class CLAYDino(L.LightningModule):
         scheduler = {"scheduler": scheduler, "interval": "epoch"}
 
         return [optimizer], [scheduler]
+
+
+class CLAYDinoWrapper(CLAYDino):
+    def __init__(self, use_mean=False, **kwargs):
+        self.use_mean = use_mean
+        student = CLAYModule(**kwargs)
+        teacher = CLAYModule(**kwargs)
+        teacher.load_state_dict(student.state_dict())
+        for p in teacher.parameters():
+            p.requires_grad = False
+        super().__init__(
+            student_clay=student,
+            teacher_clay=teacher,
+            output_dim=768,
+            momentum_teacher=0.996,
+            teacher_temp=0.04,
+            student_temp=0.1,
+            center_momentum=0.9,
+            use_mean=self.use_mean,
+            **kwargs,
+        )

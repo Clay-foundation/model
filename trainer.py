@@ -11,7 +11,7 @@ References:
 """
 
 from lightning.pytorch.callbacks import (
-    LearningRateMonitor,  # noqa: F401
+    LearningRateMonitor,
     ModelCheckpoint,
 )
 from lightning.pytorch.cli import ArgsType, LightningCLI
@@ -19,30 +19,8 @@ from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.plugins.io import AsyncCheckpointIO
 
 from src.callbacks_wandb import LogDINOPredictions
-from src.datamodule import ClayDataModule, GeoTIFFDataPipeModule  # noqa: F401
-from src.model_clay import CLAYDino, CLAYModule
-from src.model_vit import ViTLitModule  # noqa: F401
-
-
-class CLAYDinoWrapper(CLAYDino):
-    def __init__(self, use_mean=False, **kwargs):
-        self.use_mean = use_mean
-        student = CLAYModule(**kwargs)
-        teacher = CLAYModule(**kwargs)
-        teacher.load_state_dict(student.state_dict())
-        for p in teacher.parameters():
-            p.requires_grad = False
-        super().__init__(
-            student_clay=student,
-            teacher_clay=teacher,
-            output_dim=768,
-            momentum_teacher=0.996,
-            teacher_temp=0.04,
-            student_temp=0.1,
-            center_momentum=0.9,
-            use_mean=self.use_mean,
-            **kwargs,
-        )
+from src.datamodule import ClayDataModule
+from src.model_clay import CLAYDinoWrapper
 
 
 def cli_main(
@@ -60,7 +38,7 @@ def cli_main(
             ModelCheckpoint(
                 dirpath="checkpoints/",
                 auto_insert_metric_name=False,
-                filename="Bali-DINO_epoch-{epoch:02d}_val-loss-{val/loss:.2f}",
+                filename="test-Bali-DINO_epoch-{epoch:02d}_val-loss-{val/loss:.2f}",
                 monitor="val/loss",
                 mode="min",
                 save_last=True,
