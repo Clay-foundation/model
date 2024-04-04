@@ -935,7 +935,11 @@ class CLAYModule(L.LightningModule):
         # Calculate the loss for each patch if save_loss is "Patch"
         if self.hparams.save_loss == "Patch":
             patch_losses = self.model.per_pixel_loss(
-                batch["pixels"], self.model.decoder(outputs_encoder[0], outputs_encoder[1], outputs_encoder[2]), outputs_encoder[3]
+                batch["pixels"],
+                self.model.decoder(
+                    outputs_encoder[0], outputs_encoder[1], outputs_encoder[2]
+                ),
+                outputs_encoder[3],
             )
             patch_losses = patch_losses.detach().cpu().numpy()
         else:
@@ -951,14 +955,14 @@ class CLAYModule(L.LightningModule):
             )
 
         data = {
-                "source_url": pd.Series(data=source_urls, dtype="string[pyarrow]"),
-                "date": pd.to_datetime(arg=dates, format="%Y-%m-%d").astype(
-                    dtype="date32[day][pyarrow]"
-                ),
-                "embeddings": pa.FixedShapeTensorArray.from_numpy_ndarray(
-                    np.ascontiguousarray(embeddings_output.cpu().detach().__array__())
-                ),
-            }
+            "source_url": pd.Series(data=source_urls, dtype="string[pyarrow]"),
+            "date": pd.to_datetime(arg=dates, format="%Y-%m-%d").astype(
+                dtype="date32[day][pyarrow]"
+            ),
+            "embeddings": pa.FixedShapeTensorArray.from_numpy_ndarray(
+                np.ascontiguousarray(embeddings_output.cpu().detach().__array__())
+            ),
+        }
 
         if loss is not None:
             data["loss"] = loss.item()
