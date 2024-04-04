@@ -9,11 +9,13 @@ import random
 from pathlib import Path
 from typing import List, Literal
 
+import geoarrow.pyarrow.dataset as gads
 import lightning as L
 import numpy as np
 import rasterio
 import torch
 import torchdata
+from stacchip.chipper import Chipper
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
 
@@ -104,6 +106,84 @@ class ClayDataset(Dataset):
 
     def __len__(self):
         return len(self.chips_path)
+
+
+class ClayDatasetV1(ClayDataset):
+    def __init__(self, index_path: Path, transform=None):
+        super().__init__()
+        self.index = gads.dataset(index_path, format="parquet")
+        self.table = self.index.to_table()
+        self.transform = transform
+
+    def read_chip(self, row: int):
+        chip_index_x = self.table.column("chip_index_x")[row].as_py()
+        chip_index_y = self.table.column("chip_index_y")[row].as_py()
+
+        chipper = Chipper(
+            bucket="clay-v1-data",
+            platform=self.table.column("platform")[row],
+            item_id=self.table.column("item")[row],
+            chip_index_x=chip_index_x,
+            chip_index_y=chip_index_y,
+        )
+        chip = chipper.chip
+
+        pixels = np.vstack(
+            (
+                chip["blue"],
+                chip["green"],
+                chip["red"],
+                chip["rededge1"],
+                chip["rededge2"],
+                chip["rededge3"],
+                chip["nir"],
+                chip["nir08"],
+                chip["swir16"],
+                chip["swir22"],
+            )
+        )
+
+        # read timestep & normalize
+        date = chip_index_x = str(
+            self.table.column("date")[row].as_py().date()
+        )  # YYYY-MM-DD
+        year, month, day = self.normalize_timestamp(date)
+
+        # read lat,lon from UTM to WGS84 & normalize
+        bounds = chipper.indexer.get_chip_bbox(chip_index_x, chip_index_y)
+        epsg = chipper.indexer.item.properties["proj:epsg"]
+        lon = bounds[0] + (bounds[2] - bounds[0]) / 2
+        lat = bounds[1] + (bounds[3] - bounds[1]) / 2
+        lon, lat = self.normalize_latlon(lon, lat)
+
+        return {
+            "pixels": pixels,
+            # Raw values
+            "bbox": bounds,
+            "epsg": epsg,
+            "date": date,
+            # Normalized values
+            "latlon": (lat, lon),
+            "timestep": (year, month, day),
+        }
+
+    def __getitem__(self, idx):
+        cube = self.read_chip(idx)
+
+        # remove nans and convert to tensor
+        cube["pixels"] = torch.as_tensor(data=cube["pixels"], dtype=torch.float32)
+        cube["bbox"] = torch.as_tensor(data=cube["bbox"], dtype=torch.float64)
+        cube["epsg"] = torch.as_tensor(data=cube["epsg"], dtype=torch.int32)
+        cube["date"] = str(cube["date"])
+        cube["latlon"] = torch.as_tensor(data=cube["latlon"])
+        cube["timestep"] = torch.as_tensor(data=cube["timestep"])
+        cube["source_url"] = str(idx)  # Workaround for now
+
+        if self.transform:
+            # Normalize data
+            cube["pixels"] = self.transform(cube["pixels"])
+
+        return cube
 
 
 class ClayDataModule(L.LightningDataModule):
