@@ -27,6 +27,9 @@ dependencies:
   - vit-pytorch~=1.6.4
   - wandb~=0.15.12
   - zarr~=2.16.1
+  - pip
+  - pip:
+     - https://github.com/Clay-foundation/stacchip/archive/refs/tags/0.1.7.zip
 platforms:
   - linux-64
   - osx-64
