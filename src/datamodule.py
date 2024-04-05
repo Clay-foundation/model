@@ -108,9 +108,10 @@ class ClayDataset(Dataset):
         return len(self.chips_path)
 
 
-class ClayDatasetV1(ClayDataset):
-    def __init__(self, index_path: Path, transform=None):
+class ClayDatasetV1(Dataset, ClayDataset):
+    def __init__(self, mountpath: str, index_path: Path, transform=None):
         super().__init__()
+        self.mountpath = mountpath
         self.index = gads.dataset(index_path, format="parquet")
         self.table = self.index.to_table()
         self.transform = transform
@@ -120,7 +121,7 @@ class ClayDatasetV1(ClayDataset):
         chip_index_y = self.table.column("chip_index_y")[row].as_py()
 
         chipper = Chipper(
-            bucket="clay-v1-data",
+            mountpath=self.mountpath,
             platform=self.table.column("platform")[row],
             item_id=self.table.column("item")[row],
             chip_index_x=chip_index_x,
@@ -144,9 +145,7 @@ class ClayDatasetV1(ClayDataset):
         )
 
         # read timestep & normalize
-        date = chip_index_x = str(
-            self.table.column("date")[row].as_py().date()
-        )  # YYYY-MM-DD
+        date = str(self.table.column("date")[row].as_py().date())  # YYYY-MM-DD
         year, month, day = self.normalize_timestamp(date)
 
         # read lat,lon from UTM to WGS84 & normalize
