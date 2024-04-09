@@ -26,7 +26,7 @@ The Clay model can be used in three main ways:
   License: [ODC-BY](https://opendatacommons.org/licenses/by/).
 
 CLAY is a fiscal sponsored project of the 501c3 non-profit
-[Radiant Earth Foundation](https://www.radiant.earth).
+[Radiant Earth](https://www.radiant.earth).
 
 ---
 ### Table of Contents
