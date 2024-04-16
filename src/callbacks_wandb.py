@@ -63,8 +63,7 @@ class LogDINOPredictions(L.Callback):
             # Update the model weights after batch accumulation and backpropagation
             pl_module.student.load_state_dict(pl_module.teacher.state_dict())
 
-            
-            #if batch_idx % trainer.log_every_n_steps == 0:
+            # if batch_idx % trainer.log_every_n_steps == 0:
             self.log_images(trainer, pl_module)
 
     def select_image(self, trainer, pl_module):
@@ -119,12 +118,10 @@ class LogDINOPredictions(L.Callback):
             encoded_unmasked_patches, unmasked_indices, masked_indices
         )
         pixels = rearrange(
-        pixels,
-        "b c (h p1) (w p2) -> b c (h p1) (w p2)",
-        h=pl_module.student.model.image_size // pl_module.student.model.patch_size,
-        w=pl_module.student.model.image_size // pl_module.student.model.patch_size,
-        p1=pl_module.student.model.patch_size,
-        p2=pl_module.student.model.patch_size,
+            pixels,
+            "b c (h w) (p1 p2) -> b c (h p1) (w p2)",
+            h=pl_module.student.model.image_size // pl_module.student.model.patch_size,
+            p1=pl_module.student.model.patch_size,
         )
 
         band_groups = {
@@ -143,15 +140,19 @@ class LogDINOPredictions(L.Callback):
             lower_bound = np.percentile(img, lower_percentile)
             upper_bound = np.percentile(img, upper_percentile)
             img_clipped = np.clip(img, lower_bound, upper_bound)
-            return (img_clipped - img_clipped.min()) / (img_clipped.max() - img_clipped.min())
+            return (img_clipped - img_clipped.min()) / (
+                img_clipped.max() - img_clipped.min()
+            )
 
         for col, (group_name, bands) in enumerate(band_groups.items()):
-            input_img = batch["pixels"][0, bands, :, :].cpu().numpy().transpose(1, 2, 0)
-            pred_img = pixels[0, bands, :, :].cpu().numpy().transpose(1, 2, 0)
-            
-            # Reshape the predicted image to match the input image shape
-            pred_img = pred_img.reshape(input_img.shape)
-            
+            input_img = batch["pixels"][:, bands, :, :]
+            pred_img = pixels[:, bands, :, :]
+            input_img = (
+                input_img[self.selected_image].detach().cpu().numpy().transpose(1, 2, 0)
+            )
+            pred_img = (
+                pred_img[self.selected_image].detach().cpu().numpy().transpose(1, 2, 0)
+            )
             if group_name == "rgb":
                 # Normalize RGB images
                 input_norm = normalize_img(input_img)
@@ -160,8 +161,17 @@ class LogDINOPredictions(L.Callback):
                 diff_rgb = np.abs(input_norm - pred_norm)
             else:
                 # Calculate mean for non-RGB bands if necessary
-                input_mean = input_img.mean(axis=2) if input_img.ndim > 2 else input_img
-                pred_mean = pred_img.mean(axis=2) if pred_img.ndim > 2 else pred_img
+                dim_imgs = 2
+                input_mean = (
+                    input_img.mean(axis=dim_imgs)
+                    if input_img.ndim > dim_imgs
+                    else input_img
+                )
+                pred_mean = (
+                    pred_img.mean(axis=dim_imgs)
+                    if pred_img.ndim > dim_imgs
+                    else pred_img
+                )
                 # Normalize and calculate difference
                 input_norm = normalize_img(input_mean)
                 pred_norm = normalize_img(pred_mean)
@@ -172,9 +182,11 @@ class LogDINOPredictions(L.Callback):
             axs[2, col].imshow(diff_rgb, cmap="gray" if group_name != "rgb" else None)
 
             for ax in axs[:, col]:
-                ax.set_title(f"""{group_name} {'Input' if ax == axs[0, col] else
+                ax.set_title(
+                    f"""{group_name} {'Input' if ax == axs[0, col] else
                                             'Pred' if ax == axs[1, col] else
-                                            'Diff'}""")
+                                            'Diff'}"""
+                )
                 ax.axis("off")
 
         plt.tight_layout()

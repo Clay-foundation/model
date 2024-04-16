@@ -27,7 +27,7 @@ def cli_main(
     save_config_callback=None,
     seed_everything_default=42,
     trainer_defaults: dict = {
-        "accelerator": "auto",
+        "accelerator": "cuda",
         "devices": "auto",  # "strategy": "ddp_find_unused_parameters_true",
         "precision": "bf16-mixed",
         "log_every_n_steps": 1,

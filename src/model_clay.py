@@ -368,6 +368,7 @@ class Decoder(nn.Module):
         self.enc_to_dec = (
             nn.Linear(encoder_dim, dim) if encoder_dim != dim else nn.Identity()
         )
+        self.mask_patch = nn.Parameter(torch.randn(dim))
         self.transformer = Transformer(
             dim=dim,
             depth=depth,
@@ -465,7 +466,9 @@ class Decoder(nn.Module):
         # Reconstruct the masked patches from the random mask patch &
         # add position & band encoding to them
         num_masked_patches = int(self.mask_ratio * self.num_patches)
-        masked_patches = nn.Parameter(torch.randn(B, num_masked_patches, self.dim))
+        masked_patches = repeat(
+            self.mask_patch, "D -> B GL D", B=B, GL=num_masked_patches
+        )  # [B GL:mask_ratio D]
 
         masked_patches = (
             masked_patches + masked_pos_band_encoding
@@ -817,8 +820,6 @@ class CLAYModule(L.LightningModule):
     def forward(self, cube: dict[str, torch.Tensor]):
         return self.model(cube)
 
-    
-
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
             self.parameters(),
@@ -1053,7 +1054,7 @@ class DINOLoss(nn.Module):
 
 
 class CLAYDino(L.LightningModule):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         student_clay,
         teacher_clay,
