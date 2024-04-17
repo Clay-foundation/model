@@ -3,10 +3,7 @@ Code from https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/simple
 
 """
 
-import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 
 def posemb_sincos_2d(h, w, dim, temperature: int = 10000, dtype=torch.float32):

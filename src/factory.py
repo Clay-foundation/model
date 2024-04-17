@@ -1,13 +1,14 @@
-""" Dynamic Embedding from DOFA paper.
-    Reference:
-    - https://arxiv.org/abs/2403.15356
-    - https://github.com/zhu-xlab/DOFA
+"""Dynamic Embedding from DOFA paper.
+Reference:
+- https://arxiv.org/abs/2403.15356
+- https://github.com/zhu-xlab/DOFA
 """
 
 import torch
 import torch.nn.functional as F
 from einops import rearrange
 from torch import nn
+
 from src.utils import posemb_sincos_1d
 
 

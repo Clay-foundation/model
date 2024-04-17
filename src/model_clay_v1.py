@@ -1,13 +1,14 @@
 import math
+
 import numpy as np
 import torch
 import torch.nn.functional as F
-from einops import rearrange, repeat, reduce
+from einops import rearrange, reduce, repeat
 from torch import nn
 from vit_pytorch.simple_vit import Transformer
 
-from src.utils import posemb_sincos_2d_with_gsd
 from src.factory import DynamicEmbedding
+from src.utils import posemb_sincos_2d_with_gsd
 
 
 def encode_metadata(time, latlon, has_time=True, has_lat_lon=True):
