@@ -60,6 +60,7 @@ class Encoder(nn.Module):
         self.mask_ratio = mask_ratio
         self.patch_size = patch_size
         self.dim = dim
+        self.cls_token = nn.Parameter(torch.randn(1, 1, dim) * 0.02)
 
         self.patch_embedding = DynamicEmbedding(
             wave_dim=128,
@@ -106,11 +107,11 @@ class Encoder(nn.Module):
             .detach()
         )  # [B 8]
 
-        pos_encoding = repeat(pos_encoding, "L D -> B L D", B=B)  # [B L D]
-        metadata = repeat(metadata, "B D -> B L D", L=L)  # [B L D]
+        pos_encoding = repeat(pos_encoding, "L D -> B L D", B=B)  # [B L (D - 8)]
+        metadata = repeat(metadata, "B D -> B L D", L=L)  # [B L 8]
         pos_metadata_encoding = torch.cat((pos_encoding, metadata), dim=-1)  # [B L D]
 
-        patches = patches + pos_metadata_encoding  # [B L D] + [L D] -> [B L D]
+        patches = patches + pos_metadata_encoding  # [B L D] + [B L D] -> [B L D]
         return patches  # [B L D]
 
     def mask_out(self, patches):
@@ -215,17 +216,23 @@ class Encoder(nn.Module):
             patches
         )  # [B L:(1 - mask_ratio) D], [(1-mask_ratio)], [mask_ratio], [B L]
 
+        # Add class tokens
+        cls_tokens = repeat(self.cls_token, "1 1 D -> B 1 D", B=B)  # [B 1 D]
+        unmasked_patches = torch.cat(
+            (cls_tokens, unmasked_patches), dim=1
+        )  # [B (1 + L) D]
+
         # pass the unmasked patches through the transformer
         encoded_unmasked_patches = self.transformer(
             unmasked_patches
-        )  # [B (L:(1 - mask_ratio)) D]
+        )  # [B ((1 + L)):(1 - mask_ratio)) D]
 
         return (
             encoded_unmasked_patches,
             unmasked_indices,
             masked_indices,
             masked_matrix,
-        )  # [B (L:(1 - mask_ratio)) D], [(1-mask_ratio)], [mask_ratio], [B L]
+        )  # [B ((1 + L):(1 - mask_ratio)) D], [(1-mask_ratio)], [mask_ratio], [B L]
 
 
 class Decoder(nn.Module):
@@ -278,6 +285,10 @@ class Decoder(nn.Module):
         B, L = masked_matrix.shape
         grid_size = int(math.sqrt(L))
         self.num_patches = grid_size**2
+        cls_tokens, unmasked_patches = (
+            unmasked_patches[:, :1, :],
+            unmasked_patches[:, 1:, :],
+        )  # [B 1 D], [B L:(1 - mask_ratio) D]
 
         pos_encoding = (
             posemb_sincos_2d_with_gsd(
@@ -292,8 +303,8 @@ class Decoder(nn.Module):
             .detach()
         )  # [B 8]
 
-        pos_encoding = repeat(pos_encoding, "L D -> B L D", B=B)  # [B L D]
-        metadata = repeat(metadata, "B D -> B L D", L=L)  # [B L D]
+        pos_encoding = repeat(pos_encoding, "L D -> B L D", B=B)  # [B L (D - 8)]
+        metadata = repeat(metadata, "B D -> B L D", L=L)  # [B L 8]
         pos_metadata_encoding = torch.cat((pos_encoding, metadata), dim=-1)  # [B L D]
 
         batch_indices = rearrange(
@@ -324,7 +335,11 @@ class Decoder(nn.Module):
             masked_patches  # [B L:mask_ratio D])
         )
 
-        return decoder_patches  # [B L D]
+        decoder_patches = torch.cat(
+            (cls_tokens, decoder_patches), dim=1
+        )  # [B (1 + L) D]
+
+        return decoder_patches  # [B (1 + L) D]
 
     def pixelify(self, patches):
         patches = rearrange(
@@ -356,7 +371,9 @@ class Decoder(nn.Module):
         waves,
     ):
         # Change the embedding dimension from encoder to decoder
-        encoded_unmasked_patches = self.enc_to_dec(encoded_unmasked_patches)
+        encoded_unmasked_patches = self.enc_to_dec(
+            encoded_unmasked_patches
+        )  # [B (1 + L) D]
 
         # Reconstruct the patches to feed into the decoder transformer
         decoder_patches = self.reconstruct_and_add_encoding(
@@ -367,16 +384,20 @@ class Decoder(nn.Module):
             time,
             latlon,
             gsd[0],
-        )  # [B L D]
+        )  # [B (1 + L) D]
 
         # Pass the decoder patches through the transformer
-        decoded_patches = self.transformer(decoder_patches)  # [B L D]
+        decoded_patches = self.transformer(decoder_patches)  # [B (1 + L) D]
 
-        pixels = self.embed_to_pixels(decoded_patches, waves[0])  # [B L (C P P)]
-        return pixels
+        pixels, waves = self.embed_to_pixels(
+            decoded_patches, waves[0]
+        )  # [B (1 + L) (C P P)]
+        # Remove the class token
+        pixels = pixels[:, 1:, :]
+        return pixels, waves  # [B L (C P P)], [B N]
 
 
-class CLAYModel(nn.Module):
+class ClayMAE(nn.Module):
     def __init__(  # noqa: PLR0913
         self,
         mask_ratio,
@@ -460,13 +481,11 @@ class CLAYModel(nn.Module):
         """
         # ENCODER
         (
-            encoded_unmasked_patches,
-            unmasked_indices,
-            masked_indices,
-            masked_matrix,
-        ) = self.encoder(
-            datacube
-        )  # [B (L:(1 - mask_ratio)) D], [(1-mask_ratio)], [mask_ratio], [B L]
+            encoded_unmasked_patches,  # [B (1 + L):(1 - mask_ratio) D]
+            unmasked_indices,  # [(1-mask_ratio)]
+            masked_indices,  # [mask_ratio]
+            masked_matrix,  # [B L]
+        ) = self.encoder(datacube)
 
         # DECODER
         pixels, waves = self.decoder(

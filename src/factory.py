@@ -94,7 +94,7 @@ class DynamicEmbedding(nn.Module):
                 k2=self.patch_size,
                 cout=self.embed_dim,
             )
-            dynamic_out = F.linear(batch, dynamic_weight * 0.01, bias=None)
+            dynamic_out = F.linear(batch, dynamic_weight * 0.02, bias=None)
             x = dynamic_out
         else:
             dynamic_weight = rearrange(
@@ -106,7 +106,7 @@ class DynamicEmbedding(nn.Module):
             if bias is not None:
                 bias = rearrange(bias, "b -> (b)")
             dynamic_out = F.conv2d(
-                batch, dynamic_weight * 0.01, bias=bias, stride=self.patch_size
+                batch, dynamic_weight * 0.02, bias=bias, stride=self.patch_size
             )
             x = rearrange(dynamic_out, "b c h w -> b (h w) c")
 
