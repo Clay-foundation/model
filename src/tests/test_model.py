@@ -4,6 +4,7 @@ Tests for neural network model architecture.
 Based loosely on Lightning's testing method described at
 https://github.com/Lightning-AI/lightning/blob/2.1.0/.github/CONTRIBUTING.md#how-to-add-new-tests
 """
+
 import os
 import tempfile
 
