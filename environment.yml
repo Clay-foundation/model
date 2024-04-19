@@ -18,6 +18,7 @@ dependencies:
   - pytorch~=2.1.0 *cuda12*  # [linux]
   - python~=3.11.0
   - rioxarray~=0.15.0
+  - s3fs~=2024.3.1
   - scikit-image~=0.22.0
   - scikit-learn~=1.4.0
   - stackstac~=0.5.0
