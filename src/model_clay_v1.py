@@ -342,24 +342,6 @@ class Decoder(nn.Module):
 
         return decoder_patches  # [B (1 + L) D]
 
-    def pixelify(self, patches):
-        patches = rearrange(
-            patches, "B (G L) D -> B G L D", G=len(self.band_groups)
-        )  # [B G L D]
-        pixels = []
-        for i, (name, bands) in enumerate(self.band_groups.items()):
-            group_embeddings = patches[:, i, :, :]  # [B L D]
-            group_pixels = self.embed_to_pixels[name](group_embeddings)  # [B L (P P C)]
-            group_pixels = rearrange(
-                group_pixels,
-                "B L (PP C) -> B C L PP",
-                PP=(self.patch_size**2),
-            )  # [B C L PP]
-            pixels.append(group_pixels)  # [B C L PP]
-
-        pixels = torch.cat(pixels, dim=1)  # [B C L PP]
-        return pixels  # [B C L PP]
-
     def forward(
         self,
         encoded_unmasked_patches,
