@@ -22,7 +22,11 @@ In addition to the landcover classes, we also added diversity by selecting 500
 tiles out of the 3000 tiles with the highest count of land cover classes present
 in the tile.
 
+After selecting MGRS tiles for each of these criteria, we removed duplicates.
+
 The following table summarizes the selection criteria for each class.
+
+## For model version v0.1
 
 | Class | Nr of Tiles | From highest |
 |---|---|---|
@@ -39,9 +43,32 @@ Bare / sparse vegetation | 50 | 500
 Snow and Ice | 50 | 500
 Permanent water bodies | 100 | 1000
 
-After selecting MGRS tiles for each of these criteria, we removed duplicates.
 This resulted in a sample of 1517 MGRS tiles total in our sample.
 
 The resulting sample file can be downloaded from the following link
 
 https://clay-mgrs-samples.s3.amazonaws.com/mgrs_sample.fgb
+
+## For model version v0.2
+
+| Class | Nr of Tiles | From highest |
+|---|---|---|
+Diversity | 400 | 2000
+Built-up | 300 | 300
+Built-up | 1000 | 1500
+Herbaceous wetland | 50 | 500
+Mangroves | 50 | 500
+Moss and lichen | 50 | 500
+Cropland | 800 | 3600
+Tree cover | 150 | 750
+Shrubland | 100 | 500
+Grassland | 200 | 500
+Bare / sparse vegetation | 50 | 500
+Snow and Ice | 25 | 500
+Permanent water bodies | 50 | 1000
+
+This resulted in a sample of 2728 MGRS tiles total in our sample.
+
+The resulting sample file can be downloaded from the following link
+
+https://clay-mgrs-samples.s3.amazonaws.com/mgrs_sample_v02.fgb
