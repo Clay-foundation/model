@@ -521,6 +521,7 @@ class ClayMAEModule(L.LightningModule):
         mask_ratio=0.75,
         norm_pix_loss=False,
         patch_size=16,
+        shuffle=False,
         lr=1e-4,
         wd=0.05,
         b1=0.9,

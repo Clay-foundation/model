@@ -1,0 +1,54 @@
+# lightning.pytorch==2.1.2
+seed_everything: 42
+data:
+  data_dir: data
+  batch_size: 10
+  num_workers: 8
+model:
+  model_size: tiny
+  mask_ratio: 0.75
+  norm_pix_loss: false
+  patch_size: 16
+  shuffle: True
+  lr: 0.0001
+  wd: 0.05
+  b1: 0.9
+  b2: 0.95
+  embeddings_level: mean
+trainer:
+  accelerator: auto
+  strategy: ddp
+  devices: auto
+  num_nodes: 1
+  precision: bf16-mixed
+  log_every_n_steps: 50
+  max_epochs: 100
+  accumulate_grad_batches: 5
+  default_root_dir: testv0.3
+  val_check_interval: 0.25
+  fast_dev_run: True
+  # logger:
+  #   - class_path: lightning.pytorch.loggers.WandbLogger
+  #     init_args:
+  #       entity: devseed-gaia
+  #       project: clay
+  #       log_model: false
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        dirpath: testv0.3
+        auto_insert_metric_name: False
+        filename: mae_v0.3_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
+        monitor: val/loss
+        mode: min
+        save_last: True
+        save_top_k: 2
+        save_weights_only: False
+        verbose: True
+    - class_path: lightning.pytorch.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: step
+    # - class_path: src.callbacks.LogIntermediatePredictions
+  plugins:
+  - class_path: lightning.pytorch.plugins.io.AsyncCheckpointIO
+ckpt_path: null
