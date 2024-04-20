@@ -1,0 +1,69 @@
+s2a_l2a:
+  gsd: 20
+  bands:
+    mean:
+      blue: 1200
+      green: 1400
+      red: 1500
+      rededge1: 1800
+      rededge2: 1900
+      rededge3: 2000
+      nir: 2200
+      nir08: 2300
+      swir16: 2400
+      swir22: 2500
+    std:
+      blue: 200
+      green: 250
+      red: 300
+      rededge1: 330
+      rededge2: 340
+      rededge3: 360
+      nir: 400
+      nir08: 420
+      swir16: 450
+      swir22: 480
+    wavelength:
+      blue: 0.4905
+      green: 0.5605
+      red: 0.665
+      rededge1: 0.7055
+      rededge2: 0.7405
+      rededge3: 0.783
+      nir: 0.8425
+      nir08: 0.865
+      swir16: 1.61
+      swir22: 2.19
+naip:
+  gsd: 1.0
+  bands:
+    mean:
+      blue: 100
+      green: 100
+      red: 100
+      nir: 180
+    std:
+      blue: 30
+      green: 30
+      red: 30
+      nir: 45
+    wavelength:
+      blue: 0.48
+      green: 0.53
+      red: 0.66
+      nir: 0.86
+linz:
+  gsd: 0.1
+  bands:
+    mean:
+      blue: 100
+      green: 100
+      red: 100
+    std:
+      blue: 25
+      green: 25
+      red: 25
+    wavelength:
+      blue: 0.48
+      green: 0.53
+      red: 0.66

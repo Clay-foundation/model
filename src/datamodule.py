@@ -6,6 +6,7 @@ rasterio.
 import math
 import os
 import random
+import yaml
 from pathlib import Path
 from typing import List, Literal
 
@@ -14,11 +15,9 @@ import numpy as np
 import rasterio
 import torch
 import torchdata
+from box import Box
 from torch.utils.data import DataLoader, Dataset
-from torchvision.transforms import v2
-
-os.environ["GDAL_DISABLE_READDIR_ON_OPEN"] = "EMPTY_DIR"
-os.environ["GDAL_HTTP_MERGE_CONSECUTIVE_RANGES"] = "YES"
+from torchvision import transforms
 
 
 # %%
@@ -106,70 +105,89 @@ class ClayDataset(Dataset):
         return len(self.chips_path)
 
 
+class EODataset(Dataset):
+    """Reads different Earth Observation data sources from a directory."""
+
+    def __init__(
+        self, chips_path: List[Path], platform: str, metadata_path: str
+    ) -> None:
+        super().__init__()
+        self.chips_path = chips_path
+        self.platform = platform
+        self.metadata = Box(yaml.safe_load(open(metadata_path, "r"))[platform])
+        self.tfm = transforms.Compose(
+            [
+                transforms.Normalize(
+                    mean=list(self.metadata.bands.mean.values()),
+                    std=list(self.metadata.bands.std.values()),
+                ),
+            ]
+        )
+
+    def __len__(self):
+        return len(self.chips_path)
+
+    def __getitem__(self, idx):
+        chip_path = self.chips_path[idx]
+        chip = np.load(chip_path, allow_pickle=True)
+        return {
+            "pixels": self.tfm(torch.from_numpy(chip["pixels"].astype(np.float32))),
+            "platform": str(chip["platform"]),
+            "date": str(chip["date"]),
+            "hour": torch.as_tensor(chip["hour_norm"], dtype=torch.float16),
+            "week": torch.as_tensor(chip["week_norm"], dtype=torch.float16),
+            "lat": torch.as_tensor(chip["lat_norm"], dtype=torch.float16),
+            "lon": torch.as_tensor(chip["lon_norm"], dtype=torch.float16),
+        }
+
+
 class ClayDataModule(L.LightningDataModule):
-    MEAN = [
-        1369.03,
-        1597.68,
-        1741.10,
-        2053.58,
-        2569.82,
-        2763.01,
-        2858.43,
-        2893.86,
-        2303.00,
-        1807.79,
-        0.026,
-        0.118,
-        499.46,
-    ]
-
-    STD = [
-        2026.96,
-        2011.88,
-        2146.35,
-        2138.96,
-        2003.27,
-        1962.45,
-        2016.38,
-        1917.12,
-        1679.88,
-        1568.06,
-        0.118,
-        0.873,
-        880.35,
-    ]
-
     def __init__(
         self,
         data_dir: str = "data",
+        platform: str = "naip",
+        metadata_path: str = "configs/metadata.yaml",
         batch_size: int = 10,
         num_workers: int = 8,
     ):
         super().__init__()
         self.data_dir = data_dir
+        self.platform = platform
+        self.metadata_path = metadata_path
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.split_ratio = 0.8
-        self.tfm = v2.Compose([v2.Normalize(mean=self.MEAN, std=self.STD)])
 
     def setup(self, stage: Literal["fit", "predict"] | None = None) -> None:
         # Get list of GeoTIFF filepaths from s3 bucket or data/ folder
         if self.data_dir.startswith("s3://"):
             dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_dir])
-            chips_path = list(dp.list_files_by_s3(masks="*.tif"))
+            chips_path = list(dp.list_files_by_s3(masks="*.npz"))
         else:  # if self.data_dir is a local data path
-            chips_path = sorted(list(Path(self.data_dir).glob("**/*.tif")))
+            chips_path = sorted(list(Path(self.data_dir).glob("**/*.npz")))
         print(f"Total number of chips: {len(chips_path)}")
 
         if stage == "fit":
             random.shuffle(chips_path)
             split = int(len(chips_path) * self.split_ratio)
 
-            self.trn_ds = ClayDataset(chips_path=chips_path[:split], transform=self.tfm)
-            self.val_ds = ClayDataset(chips_path=chips_path[split:], transform=self.tfm)
+            self.trn_ds = EODataset(
+                chips_path=chips_path[:split],
+                platform=self.platform,
+                metadata_path=self.metadata_path,
+            )
+            self.val_ds = EODataset(
+                chips_path=chips_path[split:],
+                platform=self.platform,
+                metadata_path=self.metadata_path,
+            )
 
         elif stage == "predict":
-            self.prd_ds = ClayDataset(chips_path=chips_path, transform=self.tfm)
+            self.prd_ds = EODataset(
+                chips_path=chips_path,
+                platform=self.platform,
+                metadata_path=self.metadata_path,
+            )
 
     def train_dataloader(self):
         return DataLoader(
