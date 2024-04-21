@@ -54,5 +54,5 @@ trainer:
         logging_interval: step
     # - class_path: src.callbacks.LogIntermediatePredictions
   plugins:
-  - class_path: lightning.pytorch.plugins.io.AsyncCheckpointIO
+    - class_path: lightning.pytorch.plugins.io.AsyncCheckpointIO
 ckpt_path: null

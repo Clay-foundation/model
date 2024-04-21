@@ -504,8 +504,7 @@ class ClayMAE(nn.Module):
             - 1.0  # change range from [-1, 1] to [-2, 0]
         )  # negative cosine similarity, [0, 2] -> 0 is similar & 2 is opposite
 
-        print(f"rec: {reconstruction_loss:.4f}, rep: {representation_loss:.4f}")
-        loss = 0.5 * reconstruction_loss + 0.5 * representation_loss
+        loss = 0.75 * reconstruction_loss + 0.25 * representation_loss
         return loss
 
 
