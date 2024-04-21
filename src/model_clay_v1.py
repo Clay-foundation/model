@@ -483,13 +483,13 @@ def clay_mae_tiny(**kwargs):
     args = {
         # ENCODER
         "dim": 192,
-        "depth": 4,
+        "depth": 6,
         "heads": 4,
         "dim_head": 48,
         "mlp_ratio": 2,
         # DECODER
         "decoder_dim": 96,
-        "decoder_depth": 2,
+        "decoder_depth": 3,
         "decoder_heads": 2,
         "decoder_dim_head": 48,
         "decoder_mlp_ratio": 2,
@@ -498,10 +498,67 @@ def clay_mae_tiny(**kwargs):
     return ClayMAE(**args)
 
 
+def clay_mae_small(**kwargs):
+    args = {
+        # ENCODER
+        "dim": 384,
+        "depth": 6,
+        "heads": 6,
+        "dim_head": 64,
+        "mlp_ratio": 2,
+        # DECODER
+        "decoder_dim": 192,
+        "decoder_depth": 4,
+        "decoder_heads": 4,
+        "decoder_dim_head": 64,
+        "decoder_mlp_ratio": 2,
+    }
+    args.update(kwargs)
+    return ClayMAE(**args)
+
+
+def clay_mae_base(**kwargs):
+    args = {
+        # ENCODER
+        "dim": 768,
+        "depth": 12,
+        "heads": 12,
+        "dim_head": 64,
+        "mlp_ratio": 4,
+        # DECODER
+        "decoder_dim": 512,
+        "decoder_depth": 6,
+        "decoder_heads": 6,
+        "decoder_dim_head": 64,
+        "decoder_mlp_ratio": 4,
+    }
+    args.update(kwargs)
+    return ClayMAE(**args)
+
+
+def clay_mae_large(**kwargs):
+    args = {
+        # ENCODER
+        "dim": 1024,
+        "depth": 24,
+        "heads": 16,
+        "dim_head": 64,
+        "mlp_ratio": 4,
+        # DECODER
+        "decoder_dim": 512,
+        "decoder_depth": 8,
+        "decoder_heads": 8,
+        "decoder_dim_head": 64,
+        "decoder_mlp_ratio": 4,
+    }
+    args.update(kwargs)
+    return ClayMAE(**args)
+
+
 class ClayMAEModule(L.LightningModule):
     def __init__(  # noqa: PLR0913
         self,
-        model_size="tiny",
+        model_size="base",
         mask_ratio=0.75,
         norm_pix_loss=False,
         patch_size=16,
@@ -518,6 +575,9 @@ class ClayMAEModule(L.LightningModule):
         self.metadata = Box(yaml.safe_load(open(metadata_path, "r")))
         model_map = {
             "tiny": clay_mae_tiny,
+            "small": clay_mae_small,
+            "base": clay_mae_base,
+            "large": clay_mae_large,
         }
         if model_size in model_map:
             model_args = {
