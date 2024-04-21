@@ -8,9 +8,10 @@ import pandas as pd
 import pyarrow as pa
 import shapely
 import lightning as L
+import timm
 import torch
-import yaml
 import torch.nn.functional as F
+import yaml
 from box import Box
 from einops import rearrange, reduce, repeat
 from torch import nn
@@ -362,6 +363,7 @@ class ClayMAE(nn.Module):
         norm_pix_loss,
         shuffle,
         metadata,
+        teacher,
         # ENCODER
         dim,
         depth,
@@ -382,6 +384,8 @@ class ClayMAE(nn.Module):
         self.norm_pix_loss = norm_pix_loss
         self.shuffle = shuffle
         self.metadata = metadata
+        self.teacher = timm.create_model(teacher, pretrained=True)
+        self.proj = nn.Linear(dim, self.teacher.num_features)
 
         self.encoder = Encoder(
             mask_ratio=mask_ratio,
@@ -405,6 +409,13 @@ class ClayMAE(nn.Module):
             mlp_ratio=decoder_mlp_ratio,
         )
 
+        self.freeze_teacher()
+
+    def freeze_teacher(self):
+        for param in self.teacher.parameters():
+            param.requires_grad = False
+        self.teacher.eval()
+
     def per_pixel_loss(self, cube, pixels, masked_matrix):
         """
         cube: [B C H W]
@@ -423,7 +434,7 @@ class ClayMAE(nn.Module):
             var = patches.var(dim=-1, keepdim=True)
             patches = (patches - mean) / (var + 1e-6) ** 0.5
 
-        loss = F.mse_loss(patches, pixels, reduction="none")  # loss per pixel
+        loss = F.l1_loss(patches, pixels, reduction="none")  # loss per pixel
         loss = reduce(loss, "B L D -> B L", reduction="mean")  # loss per patch
 
         loss = (
@@ -445,6 +456,7 @@ class ClayMAE(nn.Module):
             list(self.metadata[datacube["platform"][0]].bands.wavelength.values())
         )
         gsd = torch.tensor(self.metadata[datacube["platform"][0]].gsd)
+
         # ENCODER
         (
             encoded_unmasked_patches,  # [B (1 + L):(1 - mask_ratio) D]
@@ -474,8 +486,20 @@ class ClayMAE(nn.Module):
         )  # [B L (C P P)]
 
         # LOSS
-        loss = self.per_pixel_loss(datacube["pixels"], pixels, masked_matrix)
+        reconstruction_loss = self.per_pixel_loss(
+            datacube["pixels"], pixels, masked_matrix
+        )
 
+        # TEACHER
+        encoder_output = self.proj(encoded_unmasked_patches[:, 0, :])  # [B D']
+        with torch.no_grad():
+            teacher_output = self.teacher(datacube["pixels"])
+
+        representation_loss = -(
+            F.cosine_similarity(encoder_output, teacher_output).mean()
+        )  # negative cosine similarity
+
+        loss = reconstruction_loss + representation_loss
         return loss
 
 
@@ -604,7 +628,7 @@ class ClayMAEModule(L.LightningModule):
             betas=(self.hparams.b1, self.hparams.b2),
         )
         scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer, T_0=1000, T_mult=2, eta_min=self.hparams.lr * 10, last_epoch=-1
+            optimizer, T_0=1000, T_mult=2, eta_min=self.hparams.lr * 100, last_epoch=-1
         )
 
         return {
