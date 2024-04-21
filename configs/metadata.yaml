@@ -1,4 +1,15 @@
 s2a_l2a:
+  band_order:
+    - blue
+    - green
+    - red
+    - rededge1
+    - rededge2
+    - rededge3
+    - nir
+    - nir08
+    - swir16
+    - swir22
   gsd: 20
   bands:
     mean:
@@ -35,6 +46,11 @@ s2a_l2a:
       swir16: 1.61
       swir22: 2.19
 naip:
+  band_order:
+    - blue
+    - green
+    - red
+    - nir
   gsd: 1.0
   bands:
     mean:
@@ -53,6 +69,11 @@ naip:
       red: 0.66
       nir: 0.86
 linz:
+  band_order:
+    - blue
+    - green
+    - red
+    - nir
   gsd: 0.1
   bands:
     mean:

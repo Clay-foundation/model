@@ -7,12 +7,13 @@ data:
   batch_size: 10
   num_workers: 8
 model:
-  model_size: base
+  model_size: tiny
   mask_ratio: 0.75
   norm_pix_loss: True
   patch_size: 16
   shuffle: True
   metadata_path: configs/metadata.yaml
+  teacher: vit_base_patch16_224.dino
   lr: 1e-3
   wd: 0.05
   b1: 0.9

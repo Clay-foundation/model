@@ -17,7 +17,7 @@ import torch
 import torchdata
 from box import Box
 from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms
+from torchvision.transforms import v2
 
 
 # %%
@@ -111,9 +111,12 @@ class EODataset(Dataset):
     def __init__(self, chips_path: List[Path], metadata: Box) -> None:
         super().__init__()
         self.chips_path = chips_path
-        self.tfm = transforms.Compose(
+        self.tfm = v2.Compose(
             [
-                transforms.Normalize(
+                v2.RandomHorizontalFlip(p=0.5),
+                v2.RandomVerticalFlip(p=0.5),
+                v2.RandomCrop(size=(224, 224)),
+                v2.Normalize(
                     mean=list(metadata.bands.mean.values()),
                     std=list(metadata.bands.std.values()),
                 ),
@@ -126,8 +129,9 @@ class EODataset(Dataset):
     def __getitem__(self, idx):
         chip_path = self.chips_path[idx]
         chip = np.load(chip_path, allow_pickle=True)
+        pixels = self.tfm(torch.from_numpy(chip["pixels"].astype(np.float32)))
         return {
-            "pixels": self.tfm(torch.from_numpy(chip["pixels"].astype(np.float32))),
+            "pixels": pixels,
             "platform": str(chip["platform"]),
             "date": str(chip["date"]),
             "time": torch.as_tensor(

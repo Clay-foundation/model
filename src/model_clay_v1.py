@@ -384,7 +384,7 @@ class ClayMAE(nn.Module):
         self.norm_pix_loss = norm_pix_loss
         self.shuffle = shuffle
         self.metadata = metadata
-        self.teacher = timm.create_model(teacher, pretrained=True)
+        self.teacher = timm.create_model(teacher, pretrained=True, num_classes=0)
         self.proj = nn.Linear(dim, self.teacher.num_features)
 
         self.encoder = Encoder(
@@ -492,14 +492,20 @@ class ClayMAE(nn.Module):
 
         # TEACHER
         encoder_output = self.proj(encoded_unmasked_patches[:, 0, :])  # [B D']
+        # Read RGB bands from the sensor to feed the teacher model
+        desired_bands = ["red", "green", "blue"]
+        bands = self.metadata[datacube["platform"][0]].band_order
+        indices = [bands.index(band) for band in desired_bands]
         with torch.no_grad():
-            teacher_output = self.teacher(datacube["pixels"])
+            teacher_output = self.teacher(datacube["pixels"][:, indices, :, :])
 
         representation_loss = -(
             F.cosine_similarity(encoder_output, teacher_output).mean()
-        )  # negative cosine similarity
+            - 1.0  # change range from [-1, 1] to [-2, 0]
+        )  # negative cosine similarity, [0, 2] -> 0 is similar & 2 is opposite
 
-        loss = reconstruction_loss + representation_loss
+        print(f"rec: {reconstruction_loss:.4f}, rep: {representation_loss:.4f}")
+        loss = 0.5 * reconstruction_loss + 0.5 * representation_loss
         return loss
 
 
@@ -588,6 +594,7 @@ class ClayMAEModule(L.LightningModule):
         patch_size=16,
         shuffle=False,
         metadata_path="configs/metadata.yaml",
+        teacher="vit_base_patch16_224.dino",
         lr=1e-4,
         wd=0.05,
         b1=0.9,
@@ -610,6 +617,7 @@ class ClayMAEModule(L.LightningModule):
                 "norm_pix_loss": norm_pix_loss,
                 "shuffle": shuffle,
                 "metadata": self.metadata,
+                "teacher": teacher,
             }
             self.model = model_map[model_size](**model_args)
         else:
