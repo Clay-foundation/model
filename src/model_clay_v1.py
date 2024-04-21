@@ -361,6 +361,7 @@ class ClayMAE(nn.Module):
         patch_size,
         norm_pix_loss,
         shuffle,
+        metadata,
         # ENCODER
         dim,
         depth,
@@ -380,7 +381,7 @@ class ClayMAE(nn.Module):
         self.patch_size = patch_size
         self.norm_pix_loss = norm_pix_loss
         self.shuffle = shuffle
-        self.metadata = Box(yaml.safe_load(open("../configs/metadata.yaml")))
+        self.metadata = metadata
 
         self.encoder = Encoder(
             mask_ratio=mask_ratio,
@@ -505,6 +506,7 @@ class ClayMAEModule(L.LightningModule):
         norm_pix_loss=False,
         patch_size=16,
         shuffle=False,
+        metadata_path="configs/metadata.yaml",
         lr=1e-4,
         wd=0.05,
         b1=0.9,
@@ -513,6 +515,7 @@ class ClayMAEModule(L.LightningModule):
     ):
         super().__init__()
         self.save_hyperparameters(logger=True)
+        self.metadata = Box(yaml.safe_load(open(metadata_path, "r")))
         model_map = {
             "tiny": clay_mae_tiny,
         }
@@ -522,6 +525,7 @@ class ClayMAEModule(L.LightningModule):
                 "patch_size": patch_size,
                 "norm_pix_loss": norm_pix_loss,
                 "shuffle": shuffle,
+                "metadata": self.metadata,
             }
             self.model = model_map[model_size](**model_args)
         else:

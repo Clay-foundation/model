@@ -2,6 +2,8 @@
 seed_everything: 42
 data:
   data_dir: data
+  platform: naip
+  metadata_path: configs/metadata.yaml
   batch_size: 10
   num_workers: 8
 model:
@@ -10,6 +12,7 @@ model:
   norm_pix_loss: True
   patch_size: 16
   shuffle: True
+  metadata_path: configs/metadata.yaml 
   lr: 0.0001
   wd: 0.05
   b1: 0.9
