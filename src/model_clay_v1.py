@@ -9,7 +9,9 @@ import pyarrow as pa
 import shapely
 import lightning as L
 import torch
+import yaml
 import torch.nn.functional as F
+from box import Box
 from einops import rearrange, reduce, repeat
 from torch import nn
 from vit_pytorch.simple_vit import Transformer
@@ -18,46 +20,12 @@ from src.factory import DynamicEmbedding
 from src.utils import posemb_sincos_2d_with_gsd
 
 
-def encode_metadata(time, latlon, has_time=True, has_lat_lon=True):
-    """Encode metadata in batch
-    time: [B 2] hour week
-    latlon: [B 2] lat lon
-    """
-    B = time.size(0)
-    encoded_values = torch.zeros(B, 8, dtype=torch.float32)
-
-    if has_lat_lon:
-        lat, lon = latlon[:, 0], latlon[:, 1]
-        lat = lat * np.pi / 180
-        lon = lon * np.pi / 180
-
-        encoded_values[:, 0] = torch.sin(lat)
-        encoded_values[:, 1] = torch.cos(lat)
-        encoded_values[:, 2] = torch.sin(lon)
-        encoded_values[:, 3] = torch.cos(lon)
-    else:
-        encoded_values[:, :4] = 0
-
-    if not has_time:
-        hour, week = time[:, 0], time[:, 1]
-        hour = hour * 2 * np.pi / 24
-        week = week * 2 * np.pi / 52
-
-        encoded_values[:, 4] = torch.sin(hour)
-        encoded_values[:, 5] = torch.cos(hour)
-        encoded_values[:, 6] = torch.sin(week)
-        encoded_values[:, 7] = torch.cos(week)
-    else:
-        encoded_values[:, 4:] = 0
-
-    return encoded_values
-
-
 class Encoder(nn.Module):
     def __init__(  # noqa: PLR0913
         self,
         mask_ratio,
         patch_size,
+        shuffle,
         dim,
         depth,
         heads,
@@ -67,6 +35,7 @@ class Encoder(nn.Module):
         super().__init__()
         self.mask_ratio = mask_ratio
         self.patch_size = patch_size
+        self.shuffle = shuffle
         self.dim = dim
         self.cls_token = nn.Parameter(torch.randn(1, 1, dim) * 0.02)
 
@@ -103,21 +72,19 @@ class Encoder(nn.Module):
                 h=grid_size,
                 w=grid_size,
                 dim=(self.dim - 8),
-                gsd=gsd[0],
+                gsd=gsd,
             )
             .to(patches.device)
             .detach()
         )  # [L (D - 8)]
 
-        metadata = (
-            encode_metadata(time, latlon, has_time=True, has_lat_lon=True)
-            .to(patches.device)
-            .detach()
-        )  # [B 8]
+        time_latlon = torch.hstack((time, latlon)).to(patches.device).detach()  # [B 8]
 
         pos_encoding = repeat(pos_encoding, "L D -> B L D", B=B)  # [B L (D - 8)]
-        metadata = repeat(metadata, "B D -> B L D", L=L)  # [B L 8]
-        pos_metadata_encoding = torch.cat((pos_encoding, metadata), dim=-1)  # [B L D]
+        time_latlon = repeat(time_latlon, "B D -> B L D", L=L)  # [B L 8]
+        pos_metadata_encoding = torch.cat(
+            (pos_encoding, time_latlon), dim=-1
+        )  # [B L D]
 
         patches = patches + pos_metadata_encoding  # [B L D] + [B L D] -> [B L D]
         return patches  # [B L D]
@@ -150,7 +117,7 @@ class Encoder(nn.Module):
         #     L == self.num_patches
         # ), f"Expected {self.num_patches} patches, got {L} patches."
 
-        if self.training:  # Shuffle the patches
+        if self.shuffle:  # Shuffle the patches
             noise = torch.randn((B, L), device=patches.device)  # [B L]
         else:  # Don't shuffle, useful for interpolation & inspection of embeddings
             noise = rearrange(
@@ -197,14 +164,14 @@ class Encoder(nn.Module):
             datacube["pixels"],  # [B C H W]
             datacube["time"],  # [B 2]
             datacube["latlon"],  # [B 2]
-            datacube["gsd"],  # [B, 1]
-            datacube["waves"],  # [B N]
+            datacube["gsd"],  # 1
+            datacube["waves"],  # [N]
         )  # [B C H W]
 
         B, C, H, W = cube.shape
 
         patches, waves_encoded = self.to_patch_embed(
-            cube, waves[0]
+            cube, waves
         )  # [B L D] - patchify & create embeddings per patch
         # TODO: Add time & latlon as encoding to patches
         patches = self.add_encodings(
@@ -300,20 +267,20 @@ class Decoder(nn.Module):
 
         pos_encoding = (
             posemb_sincos_2d_with_gsd(
-                h=grid_size, w=grid_size, dim=(self.dim - 8), gsd=gsd[0]
+                h=grid_size, w=grid_size, dim=(self.dim - 8), gsd=gsd
             )
             .to(unmasked_patches.device)
             .detach()
         )  # [L D]
-        metadata = (
-            encode_metadata(time, latlon, has_time=True, has_lat_lon=True)
-            .to(unmasked_patches.device)
-            .detach()
+        time_latlon = (
+            torch.hstack((time, latlon)).to(unmasked_patches.device).detach()
         )  # [B 8]
 
         pos_encoding = repeat(pos_encoding, "L D -> B L D", B=B)  # [B L (D - 8)]
-        metadata = repeat(metadata, "B D -> B L D", L=L)  # [B L 8]
-        pos_metadata_encoding = torch.cat((pos_encoding, metadata), dim=-1)  # [B L D]
+        time_latlon = repeat(time_latlon, "B D -> B L D", L=L)  # [B L 8]
+        pos_metadata_encoding = torch.cat(
+            (pos_encoding, time_latlon), dim=-1
+        )  # [B L D]
 
         batch_indices = rearrange(
             torch.arange(B, device=unmasked_patches.device), "B -> B 1"
@@ -373,14 +340,14 @@ class Decoder(nn.Module):
             masked_matrix,
             time,
             latlon,
-            gsd[0],
+            gsd,
         )  # [B (1 + L) D]
 
         # Pass the decoder patches through the transformer
         decoded_patches = self.transformer(decoder_patches)  # [B (1 + L) D]
 
         pixels, waves = self.embed_to_pixels(
-            decoded_patches, waves[0]
+            decoded_patches, waves
         )  # [B (1 + L) (C P P)]
         # Remove the class token
         pixels = pixels[:, 1:, :]
@@ -393,6 +360,7 @@ class ClayMAE(nn.Module):
         mask_ratio,
         patch_size,
         norm_pix_loss,
+        shuffle,
         # ENCODER
         dim,
         depth,
@@ -411,10 +379,13 @@ class ClayMAE(nn.Module):
         self.mask_ratio = mask_ratio
         self.patch_size = patch_size
         self.norm_pix_loss = norm_pix_loss
+        self.shuffle = shuffle
+        self.metadata = Box(yaml.safe_load(open("../configs/metadata.yaml")))
 
         self.encoder = Encoder(
             mask_ratio=mask_ratio,
             patch_size=patch_size,
+            shuffle=shuffle,
             dim=dim,
             depth=depth,
             heads=heads,
@@ -464,18 +435,30 @@ class ClayMAE(nn.Module):
         """
         datacube: dict containing the following keys:
             - pixels: [B C H W]
-            - time: [B 2]
-            - latlon: [B 2]
-            - gsd: [B 1]
-            - waves: [B N]
+            - time: [B 4] # week hour
+            - latlon: [B 4] # lat lon
+            - platform: [B 1]
+            - date: [B 1]
         """
+        waves = torch.tensor(
+            list(self.metadata[datacube["platform"][0]].bands.wavelength.values())
+        )
+        gsd = torch.tensor(self.metadata[datacube["platform"][0]].gsd)
         # ENCODER
         (
             encoded_unmasked_patches,  # [B (1 + L):(1 - mask_ratio) D]
             unmasked_indices,  # [(1-mask_ratio)]
             masked_indices,  # [mask_ratio]
             masked_matrix,  # [B L]
-        ) = self.encoder(datacube)
+        ) = self.encoder(
+            {
+                "pixels": datacube["pixels"],
+                "time": datacube["time"],
+                "latlon": datacube["latlon"],
+                "gsd": gsd,
+                "waves": waves,
+            }
+        )
 
         # DECODER
         pixels, waves = self.decoder(
@@ -485,8 +468,8 @@ class ClayMAE(nn.Module):
             masked_matrix,
             datacube["time"],
             datacube["latlon"],
-            datacube["gsd"],
-            datacube["waves"],
+            gsd,
+            waves,
         )  # [B L (C P P)]
 
         # LOSS
@@ -538,6 +521,7 @@ class ClayMAEModule(L.LightningModule):
                 "mask_ratio": mask_ratio,
                 "patch_size": patch_size,
                 "norm_pix_loss": norm_pix_loss,
+                "shuffle": shuffle,
             }
             self.model = model_map[model_size](**model_args)
         else:

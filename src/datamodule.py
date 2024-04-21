@@ -108,18 +108,14 @@ class ClayDataset(Dataset):
 class EODataset(Dataset):
     """Reads different Earth Observation data sources from a directory."""
 
-    def __init__(
-        self, chips_path: List[Path], platform: str, metadata_path: str
-    ) -> None:
+    def __init__(self, chips_path: List[Path], metadata: Box) -> None:
         super().__init__()
         self.chips_path = chips_path
-        self.platform = platform
-        self.metadata = Box(yaml.safe_load(open(metadata_path, "r"))[platform])
         self.tfm = transforms.Compose(
             [
                 transforms.Normalize(
-                    mean=list(self.metadata.bands.mean.values()),
-                    std=list(self.metadata.bands.std.values()),
+                    mean=list(metadata.bands.mean.values()),
+                    std=list(metadata.bands.std.values()),
                 ),
             ]
         )
@@ -134,10 +130,14 @@ class EODataset(Dataset):
             "pixels": self.tfm(torch.from_numpy(chip["pixels"].astype(np.float32))),
             "platform": str(chip["platform"]),
             "date": str(chip["date"]),
-            "hour": torch.as_tensor(chip["hour_norm"], dtype=torch.float16),
-            "week": torch.as_tensor(chip["week_norm"], dtype=torch.float16),
-            "lat": torch.as_tensor(chip["lat_norm"], dtype=torch.float16),
-            "lon": torch.as_tensor(chip["lon_norm"], dtype=torch.float16),
+            "time": torch.as_tensor(
+                np.hstack((chip["week_norm"], chip["hour_norm"])),
+                dtype=torch.float32,
+            ),
+            "latlon": torch.as_tensor(
+                np.hstack((chip["lat_norm"], chip["lon_norm"])),
+                dtype=torch.float32,
+            ),
         }
 
 
@@ -153,7 +153,7 @@ class ClayDataModule(L.LightningDataModule):
         super().__init__()
         self.data_dir = data_dir
         self.platform = platform
-        self.metadata_path = metadata_path
+        self.metadata = Box(yaml.safe_load(open(metadata_path, "r"))[platform])
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.split_ratio = 0.8
@@ -173,13 +173,11 @@ class ClayDataModule(L.LightningDataModule):
 
             self.trn_ds = EODataset(
                 chips_path=chips_path[:split],
-                platform=self.platform,
-                metadata_path=self.metadata_path,
+                metadata=self.metadata,
             )
             self.val_ds = EODataset(
                 chips_path=chips_path[split:],
-                platform=self.platform,
-                metadata_path=self.metadata_path,
+                metadata=self.metadata,
             )
 
         elif stage == "predict":

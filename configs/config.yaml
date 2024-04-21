@@ -7,7 +7,7 @@ data:
 model:
   model_size: tiny
   mask_ratio: 0.75
-  norm_pix_loss: false
+  norm_pix_loss: True
   patch_size: 16
   shuffle: True
   lr: 0.0001
@@ -17,7 +17,7 @@ model:
   embeddings_level: mean
 trainer:
   accelerator: auto
-  strategy: ddp
+  # strategy: ddp
   devices: auto
   num_nodes: 1
   precision: bf16-mixed
@@ -25,8 +25,8 @@ trainer:
   max_epochs: 100
   accumulate_grad_batches: 5
   default_root_dir: testv0.3
-  val_check_interval: 0.25
-  fast_dev_run: True
+  # val_check_interval: 0.25
+  fast_dev_run: False
   # logger:
   #   - class_path: lightning.pytorch.loggers.WandbLogger
   #     init_args:

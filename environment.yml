@@ -14,6 +14,7 @@ dependencies:
   - lightning~=2.1.0
   - matplotlib-base~=3.8.2
   - planetary-computer~=1.0.0
+  - python-box~=7.1.0
   - pytorch~=2.1.0  # [osx]
   - pytorch~=2.1.0 *cuda12*  # [linux]
   - python~=3.11.0
