@@ -493,9 +493,7 @@ class ClayMAE(nn.Module):
         # TEACHER
         encoder_output = self.proj(encoded_unmasked_patches[:, 0, :])  # [B D']
         # Read RGB bands from the sensor to feed the teacher model
-        desired_bands = ["red", "green", "blue"]
-        bands = self.metadata[datacube["platform"][0]].band_order
-        indices = [bands.index(band) for band in desired_bands]
+        indices = self.metadata[datacube["platform"][0]].rgb_indices
         with torch.no_grad():
             teacher_output = self.teacher(datacube["pixels"][:, indices, :, :])
 

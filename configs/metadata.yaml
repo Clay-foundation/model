@@ -10,6 +10,10 @@ s2a_l2a:
     - nir08
     - swir16
     - swir22
+  rgb_indices:
+    - 2
+    - 1
+    - 0
   gsd: 20
   bands:
     mean:
@@ -47,26 +51,30 @@ s2a_l2a:
       swir22: 2.19
 naip:
   band_order:
-    - blue
-    - green
     - red
+    - green
+    - blue
     - nir
+  rgb_indices:
+    - 0
+    - 1
+    - 2
   gsd: 1.0
   bands:
     mean:
+      red: 120
+      green: 110
       blue: 100
-      green: 100
-      red: 100
-      nir: 180
+      nir: 130
     std:
-      blue: 30
+      red: 40
       green: 30
-      red: 30
-      nir: 45
+      blue: 20
+      nir: 50
     wavelength:
-      blue: 0.48
-      green: 0.53
       red: 0.66
+      green: 0.53
+      blue: 0.48
       nir: 0.86
 linz:
   band_order:
@@ -74,6 +82,10 @@ linz:
     - green
     - red
     - nir
+  rgb_indices:
+    - 2
+    - 1
+    - 0
   gsd: 0.1
   bands:
     mean:
