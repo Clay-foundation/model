@@ -1,13 +1,14 @@
-import os
 import math
+import os
+import re
 from typing import Literal
 
 import geopandas as gpd
+import lightning as L
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import shapely
-import lightning as L
 import timm
 import torch
 import torch.nn.functional as F
@@ -111,7 +112,8 @@ class Encoder(nn.Module):
             A tensor of shape (B, mask_ratio) containing the indices of the
             masked patches.
         masked_matrix : torch.Tensor
-            A tensor of shape (B, L) containing the mask matrix, 1 indicates a masked patch & 0 indicates an unmasked patch.
+            A tensor of shape (B, L) containing the mask matrix, 1 indicates a masked
+            patch & 0 indicates an unmasked patch.
         """
         B, L, D = patches.shape
         # assert (
@@ -248,7 +250,7 @@ class Decoder(nn.Module):
             is_decoder=True,
         )
 
-    def reconstruct_and_add_encoding(
+    def reconstruct_and_add_encoding(  # noqa: PLR0913
         self,
         unmasked_patches,
         unmasked_indices,
@@ -317,7 +319,7 @@ class Decoder(nn.Module):
 
         return decoder_patches  # [B (1 + L) D]
 
-    def forward(
+    def forward(  # noqa: PLR0913
         self,
         encoded_unmasked_patches,
         unmasked_indices,
@@ -600,7 +602,7 @@ class ClayMAEModule(L.LightningModule):
     ):
         super().__init__()
         self.save_hyperparameters(logger=True)
-        self.metadata = Box(yaml.safe_load(open(metadata_path, "r")))
+        self.metadata = Box(yaml.safe_load(open(metadata_path)))
         model_map = {
             "tiny": clay_mae_tiny,
             "small": clay_mae_small,

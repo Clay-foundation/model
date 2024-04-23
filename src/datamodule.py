@@ -4,9 +4,7 @@ rasterio.
 """
 
 import math
-import os
 import random
-import yaml
 from pathlib import Path
 from typing import List, Literal
 
@@ -15,6 +13,7 @@ import numpy as np
 import rasterio
 import torch
 import torchdata
+import yaml
 from box import Box
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
@@ -157,7 +156,7 @@ class ClayDataModule(L.LightningDataModule):
         super().__init__()
         self.data_dir = data_dir
         self.platform = platform
-        self.metadata = Box(yaml.safe_load(open(metadata_path, "r"))[platform])
+        self.metadata = Box(yaml.safe_load(open(metadata_path))[platform])
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.split_ratio = 0.8

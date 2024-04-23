@@ -25,7 +25,7 @@ class FCBlock(nn.Module):
 
 
 class WavesTransformer(nn.Module):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         wave_dim,
         output_dim,
