@@ -21,7 +21,7 @@ model:
   embeddings_level: mean
 trainer:
   accelerator: auto
-  # strategy: ddp
+  strategy: ddp
   devices: auto
   num_nodes: 1
   precision: bf16-mixed
