@@ -414,7 +414,6 @@ class ClayMAE(nn.Module):
     def freeze_teacher(self):
         for param in self.teacher.parameters():
             param.requires_grad = False
-        self.teacher.eval()
 
     def per_pixel_loss(self, cube, pixels, masked_matrix):
         """
@@ -485,6 +484,7 @@ class ClayMAE(nn.Module):
             waves,
         )  # [B L (C P P)]
 
+        print(f"encoder: {self.encoder.training}, teacher: {self.teacher.training}")
         # LOSS
         reconstruction_loss = self.per_pixel_loss(
             datacube["pixels"], pixels, masked_matrix
@@ -621,6 +621,9 @@ class ClayMAEModule(L.LightningModule):
             raise ValueError(
                 f"Invalid model size {model_size}. Expected one of {model_map.keys()}"
             )
+
+    def on_train_epoch_start(self):
+        self.model.teacher.eval()
 
     def forward(self, datacube: dict[str, torch.Tensor]):
         return self.model(datacube)
