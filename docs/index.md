@@ -11,7 +11,7 @@ The Clay model can be used in three main ways:
   - _Find features:_ Locate objects or features, such as surface mines, aquaculture, or concentrated animal feeding operations.
 
 - **Fine-tune the model for downstream tasks such as classification, regression, and generative tasks.** Fine-tuning the model takes advantage of its pre-training to more efficiently classify types, predict values, or detect change than from-scratch methods. Embeddings can also be used to do the following, which require fine-tuning:
-  - _Classify types or predict values of interest:_ Identify the types or classes of a given feature, such as crop type or land cover, or predict values of variables of interest, such as above ground biomass or agricultural productivity. 
+  - _Classify types or predict values of interest:_ Identify the types or classes of a given feature, such as crop type or land cover, or predict values of variables of interest, such as above ground biomass or agricultural productivity.
   - _Detect changes over time:_ Find areas that have experienced changes such as deforestation, wildfires, destruction from human conflict, flooding, or urban development.
   - This can be done by training a downstream model to take embeddings as input and output predicted classes/values. This could also include fine-tuning model weights to update the embeddings themselves.
 
