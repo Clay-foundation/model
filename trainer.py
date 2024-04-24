@@ -21,7 +21,7 @@ def cli_main():
     """
     Command-line inteface to run ClayMAE with ClayDataModule.
     """
-    cli = LightningCLI()
+    cli = LightningCLI(save_config_kwargs={"overwrite": True})
     return cli
 
 

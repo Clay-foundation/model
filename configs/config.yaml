@@ -4,12 +4,12 @@ data:
   data_dir: data
   platform: naip
   metadata_path: configs/metadata.yaml
-  batch_size: 10
-  num_workers: 8
+  batch_size: 64
+  num_workers: 164
 model:
-  model_size: tiny
+  model_size: base
   mask_ratio: 0.75
-  norm_pix_loss: True
+  norm_pix_loss: False
   patch_size: 16
   shuffle: True
   metadata_path: configs/metadata.yaml
@@ -21,28 +21,34 @@ model:
   embeddings_level: mean
 trainer:
   accelerator: auto
-  strategy: ddp
+  strategy: ddp # ddp_find_unused_parameters_true
   devices: auto
   num_nodes: 1
   precision: bf16-mixed
   log_every_n_steps: 50
   max_epochs: 100
-  accumulate_grad_batches: 5
-  default_root_dir: testv0.3
-  # val_check_interval: 0.25
+  accumulate_grad_batches: 2
+  default_root_dir: s3://clay-model-ckpt/v0.3.3/
+  val_check_interval: 0.5
   fast_dev_run: False
+  num_sanity_val_steps: 0
   # logger:
-  #   - class_path: lightning.pytorch.loggers.WandbLogger
+  #   - class_path: lightning.pytorch.loggers.CSVLogger
   #     init_args:
-  #       entity: devseed-gaia
-  #       project: clay
-  #       log_model: false
+  #       save_dir: log_dir
+  #       name: testv0.3.3
+  logger: 
+    - class_path: lightning.pytorch.loggers.WandbLogger
+      init_args:
+        entity: developmentseed
+        project: clay
+        log_model: false
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
-        dirpath: testv0.3
+        dirpath: s3://clay-model-ckpt/v0.3.3/
         auto_insert_metric_name: False
-        filename: mae_v0.3_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
+        filename: mae_v0.3.3_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
         monitor: val/loss
         mode: min
         save_last: True

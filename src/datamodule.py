@@ -110,15 +110,14 @@ class EODataset(Dataset):
     def __init__(self, chips_path: List[Path], metadata: Box) -> None:
         super().__init__()
         self.chips_path = chips_path
+        self.mean = list(metadata.bands.mean.values())
+        self.std = list(metadata.bands.std.values())
         self.tfm = v2.Compose(
             [
                 v2.RandomHorizontalFlip(p=0.5),
                 v2.RandomVerticalFlip(p=0.5),
                 v2.RandomCrop(size=(224, 224)),
-                v2.Normalize(
-                    mean=list(metadata.bands.mean.values()),
-                    std=list(metadata.bands.std.values()),
-                ),
+                v2.Normalize(mean=self.mean, std=self.std),
             ]
         )
 
@@ -127,21 +126,23 @@ class EODataset(Dataset):
 
     def __getitem__(self, idx):
         chip_path = self.chips_path[idx]
-        chip = np.load(chip_path, allow_pickle=True)
-        pixels = self.tfm(torch.from_numpy(chip["pixels"].astype(np.float32)))
-        return {
-            "pixels": pixels,
-            "platform": str(chip["platform"]),
-            "date": str(chip["date"]),
-            "time": torch.as_tensor(
-                np.hstack((chip["week_norm"], chip["hour_norm"])),
-                dtype=torch.float32,
-            ),
-            "latlon": torch.as_tensor(
-                np.hstack((chip["lat_norm"], chip["lon_norm"])),
-                dtype=torch.float32,
-            ),
-        }
+        with np.load(chip_path, allow_pickle=False) as chip:
+            pixels = torch.from_numpy(chip["pixels"].astype(np.float32))
+            pixels = self.tfm(pixels)
+
+            # Prepare additional information
+            additional_info = {
+                "platform": chip_path.parent.parent.name,
+                "time": torch.tensor(
+                    np.hstack((chip["week_norm"], chip["hour_norm"])),
+                    dtype=torch.float32,
+                ),
+                "latlon": torch.tensor(
+                    np.hstack((chip["lat_norm"], chip["lon_norm"])), dtype=torch.float32
+                ),
+            }
+
+        return {"pixels": pixels, **additional_info}
 
 
 class ClayDataModule(L.LightningDataModule):

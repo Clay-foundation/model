@@ -22,7 +22,10 @@ from src.factory import DynamicEmbedding
 from src.utils import posemb_sincos_2d_with_gsd
 
 torch.set_float32_matmul_precision("medium")
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 
 class Encoder(nn.Module):
     def __init__(  # noqa: PLR0913
@@ -488,7 +491,6 @@ class ClayMAE(nn.Module):
             waves,
         )  # [B L (C P P)]
 
-        # print(f"encoder: {self.encoder.training}, teacher: {self.teacher.training}")
         # LOSS
         reconstruction_loss = self.per_pixel_loss(
             datacube["pixels"], pixels, masked_matrix
@@ -507,6 +509,7 @@ class ClayMAE(nn.Module):
         )  # negative cosine similarity, [0, 2] -> 0 is similar & 2 is opposite
 
         loss = 0.75 * reconstruction_loss + 0.25 * representation_loss
+        # print(f"{reconstruction_loss:.4f}, {representation_loss:.4f}, {loss:.4f}")
         return loss
 
 
