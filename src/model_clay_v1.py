@@ -21,6 +21,8 @@ from vit_pytorch.simple_vit import Transformer
 from src.factory import DynamicEmbedding
 from src.utils import posemb_sincos_2d_with_gsd
 
+torch.set_float32_matmul_precision("medium")
+
 
 class Encoder(nn.Module):
     def __init__(  # noqa: PLR0913
@@ -486,7 +488,7 @@ class ClayMAE(nn.Module):
             waves,
         )  # [B L (C P P)]
 
-        print(f"encoder: {self.encoder.training}, teacher: {self.teacher.training}")
+        # print(f"encoder: {self.encoder.training}, teacher: {self.teacher.training}")
         # LOSS
         reconstruction_loss = self.per_pixel_loss(
             datacube["pixels"], pixels, masked_matrix
