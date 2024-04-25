@@ -1,0 +1,25 @@
+name: claymodel
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.10.12
+  - pip
+  - pip:
+    - einops
+    - geopandas
+    - jupyterlab
+    - jsonargparse
+    - lightning
+    - matplotlib
+    - python-box
+    - pyarrow
+    - rasterio
+    - s3fs
+    - scikit-learn
+    - torch~=2.1.0
+    - torchdata
+    - torchvision
+    - timm
+    - vit-pytorch~=1.6.4
+    - wandb
