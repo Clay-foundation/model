@@ -4,8 +4,8 @@ data:
   data_dir: data
   platform: naip
   metadata_path: configs/metadata.yaml
-  batch_size: 64
-  num_workers: 164
+  batch_size: 96
+  num_workers: 192
 model:
   model_size: base
   mask_ratio: 0.75
@@ -14,7 +14,7 @@ model:
   shuffle: True
   metadata_path: configs/metadata.yaml
   teacher: vit_base_patch16_224.dino
-  lr: 1e-3
+  lr: 1e-5
   wd: 0.05
   b1: 0.9
   b2: 0.95
@@ -28,7 +28,7 @@ trainer:
   log_every_n_steps: 50
   max_epochs: 100
   accumulate_grad_batches: 2
-  default_root_dir: s3://clay-model-ckpt/v0.3.3/
+  default_root_dir: s3://clay-model-ckpt/v0.3.4/
   val_check_interval: 0.5
   fast_dev_run: False
   num_sanity_val_steps: 0
@@ -36,7 +36,7 @@ trainer:
   #   - class_path: lightning.pytorch.loggers.CSVLogger
   #     init_args:
   #       save_dir: log_dir
-  #       name: testv0.3.3
+  #       name: testv0.3.4
   logger: 
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
@@ -46,9 +46,9 @@ trainer:
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
-        dirpath: s3://clay-model-ckpt/v0.3.3/
+        dirpath: s3://clay-model-ckpt/v0.3.4/
         auto_insert_metric_name: False
-        filename: mae_v0.3.3_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
+        filename: mae_v0.3.4_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
         monitor: val/loss
         mode: min
         save_last: True
