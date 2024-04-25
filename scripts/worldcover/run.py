@@ -270,11 +270,6 @@ index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 2))
 tfm = v2.Compose([v2.Normalize(mean=MEAN, std=STD)])
 ds = ClayDataset(chips_path=[], transform=tfm)
 
-CKPT_PATH = (
-    "https://huggingface.co/made-with-clay/Clay/resolve/main/"
-    "Clay_v0.1_epoch-24_val-loss-0.46.ckpt"
-)
-
 # Load model
 rgb_model = CLAYModule.load_from_checkpoint(
     CKPT_PATH,
