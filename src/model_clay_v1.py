@@ -22,10 +22,8 @@ from src.factory import DynamicEmbedding
 from src.utils import posemb_sincos_2d_with_gsd
 
 torch.set_float32_matmul_precision("medium")
-<<<<<<< Updated upstream
+os.environ["TORCH_CUDNN_V8_API_DISABLED"] = "1"
 
-=======
->>>>>>> Stashed changes
 
 class Encoder(nn.Module):
     def __init__(  # noqa: PLR0913
@@ -508,9 +506,10 @@ class ClayMAE(nn.Module):
             - 1.0  # change range from [-1, 1] to [-2, 0]
         )  # negative cosine similarity, [0, 2] -> 0 is similar & 2 is opposite
 
-        loss = 0.75 * reconstruction_loss + 0.25 * representation_loss
+        loss = 0.90 * reconstruction_loss + 0.10 * representation_loss
+        return (loss, reconstruction_loss, representation_loss)
         # print(f"{reconstruction_loss:.4f}, {representation_loss:.4f}, {loss:.4f}")
-        return loss
+        # return loss
 
 
 def clay_mae_tiny(**kwargs):
@@ -656,10 +655,28 @@ class ClayMAEModule(L.LightningModule):
 
     def shared_step(self, batch: dict[str, torch.Tensor], batch_idx: int, phase: str):
         datacube = batch
-        loss = self(datacube)
+        loss, reconstruction_loss, representation_loss = self(datacube)
         self.log(
             name=f"{phase}/loss",
             value=loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+            sync_dist=True,
+        )
+        self.log(
+            name=f"{phase}/rec_loss",
+            value=reconstruction_loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+            sync_dist=True,
+        )
+        self.log(
+            name=f"{phase}/rep_loss",
+            value=representation_loss,
             on_step=True,
             on_epoch=True,
             prog_bar=True,
