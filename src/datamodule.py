@@ -5,6 +5,7 @@ rasterio.
 
 import math
 import random
+from collections import defaultdict
 from pathlib import Path
 from typing import List, Literal
 
@@ -15,9 +16,10 @@ import torch
 import torchdata
 import yaml
 from box import Box
+from einops import rearrange
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
-from torch.utils.data.sampler import Sampler
+from torch.utils.data.sampler import Sampler, BatchSampler
 
 
 # %%
@@ -190,10 +192,10 @@ class EODataset(Dataset):
 
 
 class ClaySampler(Sampler):
-    def __init__(self, dataset, batch_size, platforms):
+    def __init__(self, dataset, platforms, batch_size):
         self.dataset = dataset
-        self.batch_size = batch_size
         self.platforms = platforms
+        self.batch_size = batch_size
 
         self.cubes_per_platform = {platform: [] for platform in platforms}
         for idx, chip_path in enumerate(self.dataset.chips_path):
@@ -211,19 +213,26 @@ class ClaySampler(Sampler):
 
         # Create batches such that we return one platform per batch one after other
         # Ignore the last batch if it is incomplete
-        for i in range(0, max_len, self.batch_size):
+        for i in range(0, max_len):
             for platform in self.platforms:
-                batch = self.cubes_per_platform[platform][i : i + self.batch_size]
-                if len(batch) == self.batch_size:
-                    yield batch
+                for j in range(self.batch_size):
+                    yield self.cubes_per_platform[platform][i + j]
 
     def __len__(self):
-        # The length of the iterator is determined by the number of complete batches we can form
-        min_complete_batches = min(
-            len(indices) // self.batch_size
-            for indices in self.cubes_per_platform.values()
-        )
-        return min_complete_batches * len(self.platforms)
+        return len(self.dataset.chips_path)
+
+
+def batch_collate(batch):
+    d = defaultdict(list)
+    for item in batch:
+        d["pixels"].append(item["pixels"])
+        d["time"].append(item["time"])
+        d["latlon"].append(item["latlon"])
+    return {
+        "pixels": rearrange(d["pixels"], "b1 b2 c h w -> (b1 b2) c h w"),
+        "time": rearrange(d["time"], "b1 b2 t -> (b1 b2) t"),
+        "latlon": rearrange(d["latlon"], "b1 b2 ll -> (b1 b2) ll"),
+    }
 
 
 class ClayDataModule(L.LightningDataModule):
@@ -261,9 +270,28 @@ class ClayDataModule(L.LightningDataModule):
                 chips_path=chips_path[:split],
                 metadata=self.metadata,
             )
+            self.trn_sampler = BatchSampler(
+                sampler=ClaySampler(
+                    dataset=self.trn_ds,
+                    platforms=["naip", "linz", "landsat-c2l1", "landsat-c2l2-sr"],
+                    batch_size=self.batch_size,
+                ),
+                batch_size=self.batch_size,
+                drop_last=True,
+            )
+
             self.val_ds = EODataset(
                 chips_path=chips_path[split:],
                 metadata=self.metadata,
+            )
+            self.val_sampler = BatchSampler(
+                sampler=ClaySampler(
+                    dataset=self.val_ds,
+                    platforms=["naip", "linz", "landsat-c2l1", "landsat-c2l2-sr"],
+                    batch_size=self.batch_size,
+                ),
+                batch_size=self.batch_size,
+                drop_last=True,
             )
 
         elif stage == "predict":
@@ -276,18 +304,18 @@ class ClayDataModule(L.LightningDataModule):
     def train_dataloader(self):
         return DataLoader(
             self.trn_ds,
-            batch_size=self.batch_size,
             num_workers=self.num_workers,
-            shuffle=True,
+            batch_sampler=self.trn_sampler,
+            collate_fn=batch_collate,
             pin_memory=True,
         )
 
     def val_dataloader(self):
         return DataLoader(
             self.val_ds,
-            batch_size=self.batch_size,
             num_workers=self.num_workers,
-            shuffle=False,
+            batch_sampler=self.val_sampler,
+            collate_fn=batch_collate,
             pin_memory=True,
         )
 
