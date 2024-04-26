@@ -1,4 +1,4 @@
-s2a_l2a:
+s2:
   band_order:
     - blue
     - green
@@ -49,6 +49,41 @@ s2a_l2a:
       nir08: 0.865
       swir16: 1.61
       swir22: 2.19
+l8:
+  band_order:
+    - blue
+    - green
+    - red
+    - rededge1
+    - rededge2
+    - rededge3
+  rgb_indices:
+    - 2
+    - 1
+    - 0
+  gsd: 20
+  bands:
+    mean:
+      blue: 1200
+      green: 1400
+      red: 1500
+      rededge1: 1800
+      rededge2: 1900
+      rededge3: 2000
+    std:
+      blue: 200
+      green: 250
+      red: 300
+      rededge1: 330
+      rededge2: 340
+      rededge3: 360
+    wavelength:
+      blue: 0.4905
+      green: 0.5605
+      red: 0.665
+      rededge1: 0.7055
+      rededge2: 0.7405
+      rededge3: 0.783
 naip:
   band_order:
     - red

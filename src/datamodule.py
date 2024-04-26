@@ -17,6 +17,7 @@ import yaml
 from box import Box
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
+from torch.utils.data.sampler import Sampler
 
 
 # %%
@@ -110,14 +111,46 @@ class EODataset(Dataset):
     def __init__(self, chips_path: List[Path], metadata: Box) -> None:
         super().__init__()
         self.chips_path = chips_path
-        self.mean = list(metadata.bands.mean.values())
-        self.std = list(metadata.bands.std.values())
-        self.tfm = v2.Compose(
+
+        # Create Transforms for each platform
+        self.naip_mean = list(metadata.naip.bands.mean.values())
+        self.naip_std = list(metadata.naip.bands.std.values())
+        self.naip_tfm = v2.Compose(
             [
                 v2.RandomHorizontalFlip(p=0.5),
                 v2.RandomVerticalFlip(p=0.5),
                 v2.RandomCrop(size=(224, 224)),
-                v2.Normalize(mean=self.mean, std=self.std),
+                v2.Normalize(mean=self.naip_mean, std=self.naip_std),
+            ]
+        )
+        self.s2_mean = list(metadata.s2.bands.mean.values())
+        self.s2_std = list(metadata.s2.bands.std.values())
+        self.s2_tfm = v2.Compose(
+            [
+                v2.RandomHorizontalFlip(p=0.5),
+                v2.RandomVerticalFlip(p=0.5),
+                v2.RandomCrop(size=(224, 224)),
+                v2.Normalize(mean=self.s2_mean, std=self.s2_std),
+            ]
+        )
+        self.l8_mean = list(metadata.l8.bands.mean.values())
+        self.l8_std = list(metadata.l8.bands.std.values())
+        self.l8_tfm = v2.Compose(
+            [
+                v2.RandomHorizontalFlip(p=0.5),
+                v2.RandomVerticalFlip(p=0.5),
+                v2.RandomCrop(size=(224, 224)),
+                v2.Normalize(mean=self.l8_mean, std=self.l8_std),
+            ]
+        )
+        self.linz_mean = list(metadata.linz.bands.mean.values())
+        self.linz_std = list(metadata.linz.bands.std.values())
+        self.linz_tfm = v2.Compose(
+            [
+                v2.RandomHorizontalFlip(p=0.5),
+                v2.RandomVerticalFlip(p=0.5),
+                v2.RandomCrop(size=(224, 224)),
+                v2.Normalize(mean=self.linz_mean, std=self.linz_std),
             ]
         )
 
@@ -128,11 +161,22 @@ class EODataset(Dataset):
         chip_path = self.chips_path[idx]
         with np.load(chip_path, allow_pickle=False) as chip:
             pixels = torch.from_numpy(chip["pixels"].astype(np.float32))
-            pixels = self.tfm(pixels)
+            platform = chip_path.parent.name
+            match platform:
+                case "naip":
+                    pixels = self.naip_tfm(pixels)
+                case "landsat-c2l1":
+                    pixels = self.l8_tfm(pixels)
+                case "landsat-c2l2-sr":
+                    pixels = self.l8_tfm(pixels)
+                case "linz":
+                    pixels = self.linz_tfm(pixels)
+                case _:
+                    raise ValueError(f"Unknown platform: {platform}")
 
             # Prepare additional information
             additional_info = {
-                "platform": chip_path.parent.parent.name,
+                "platform": platform,
                 "time": torch.tensor(
                     np.hstack((chip["week_norm"], chip["hour_norm"])),
                     dtype=torch.float32,
@@ -145,19 +189,56 @@ class EODataset(Dataset):
         return {"pixels": pixels, **additional_info}
 
 
+class ClaySampler(Sampler):
+    def __init__(self, dataset, batch_size, platforms):
+        self.dataset = dataset
+        self.batch_size = batch_size
+        self.platforms = platforms
+
+        self.cubes_per_platform = {platform: [] for platform in platforms}
+        for idx, chip_path in enumerate(self.dataset.chips_path):
+            platform = chip_path.parent.name
+            self.cubes_per_platform[platform].append(idx)
+
+    def __iter__(self):
+        # Shuffle and adjust sizes
+        max_len = max(len(indices) for indices in self.cubes_per_platform.values())
+        for platform in self.platforms:
+            indices = self.cubes_per_platform[platform]
+            np.random.shuffle(indices)
+            repeated_indices = np.tile(indices, (max_len // len(indices) + 1))[:max_len]
+            self.cubes_per_platform[platform] = repeated_indices
+
+        # Create batches such that we return one platform per batch one after other
+        # Ignore the last batch if it is incomplete
+        for i in range(0, max_len, self.batch_size):
+            for platform in self.platforms:
+                batch = self.cubes_per_platform[platform][i : i + self.batch_size]
+                if len(batch) == self.batch_size:
+                    yield batch
+
+    def __len__(self):
+        # The length of the iterator is determined by the number of complete batches we can form
+        min_complete_batches = min(
+            len(indices) // self.batch_size
+            for indices in self.cubes_per_platform.values()
+        )
+        return min_complete_batches * len(self.platforms)
+
+
 class ClayDataModule(L.LightningDataModule):
     def __init__(
         self,
         data_dir: str = "data",
-        platform: str = "naip",
+        # platform: str = "naip",
         metadata_path: str = "configs/metadata.yaml",
         batch_size: int = 10,
         num_workers: int = 8,
     ):
         super().__init__()
         self.data_dir = data_dir
-        self.platform = platform
-        self.metadata = Box(yaml.safe_load(open(metadata_path))[platform])
+        # self.platform = platform
+        self.metadata = Box(yaml.safe_load(open(metadata_path)))
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.split_ratio = 0.8
@@ -169,6 +250,7 @@ class ClayDataModule(L.LightningDataModule):
             chips_path = list(dp.list_files_by_s3(masks="*.npz"))
         else:  # if self.data_dir is a local data path
             chips_path = sorted(list(Path(self.data_dir).glob("**/*.npz")))
+            # chips_platform = [chip.parent.parent.name for chip in chips_path]
         print(f"Total number of chips: {len(chips_path)}")
 
         if stage == "fit":
