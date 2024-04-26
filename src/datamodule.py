@@ -167,9 +167,7 @@ class EODataset(Dataset):
             match platform:
                 case "naip":
                     pixels = self.naip_tfm(pixels)
-                case "landsat-c2l1":
-                    pixels = self.l8_tfm(pixels)
-                case "landsat-c2l2-sr":
+                case "l8":
                     pixels = self.l8_tfm(pixels)
                 case "linz":
                     pixels = self.linz_tfm(pixels)
@@ -228,10 +226,12 @@ def batch_collate(batch):
         d["pixels"].append(item["pixels"])
         d["time"].append(item["time"])
         d["latlon"].append(item["latlon"])
+        d["platform"].append(item["platform"])
     return {
         "pixels": rearrange(d["pixels"], "b1 b2 c h w -> (b1 b2) c h w"),
         "time": rearrange(d["time"], "b1 b2 t -> (b1 b2) t"),
         "latlon": rearrange(d["latlon"], "b1 b2 ll -> (b1 b2) ll"),
+        "platform": d["platform"],
     }
 
 
@@ -273,7 +273,7 @@ class ClayDataModule(L.LightningDataModule):
             self.trn_sampler = BatchSampler(
                 sampler=ClaySampler(
                     dataset=self.trn_ds,
-                    platforms=["naip", "linz", "landsat-c2l1", "landsat-c2l2-sr"],
+                    platforms=["naip", "linz", "l8"],
                     batch_size=self.batch_size,
                 ),
                 batch_size=self.batch_size,
@@ -287,7 +287,7 @@ class ClayDataModule(L.LightningDataModule):
             self.val_sampler = BatchSampler(
                 sampler=ClaySampler(
                     dataset=self.val_ds,
-                    platforms=["naip", "linz", "landsat-c2l1", "landsat-c2l2-sr"],
+                    platforms=["naip", "linz", "l8"],
                     batch_size=self.batch_size,
                 ),
                 batch_size=self.batch_size,
