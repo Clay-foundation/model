@@ -50,14 +50,16 @@ class ClaySampler(Sampler):
         cubes_idx_low = math.floor(
             (platform_batchnr * self.batch_size) / self.cube_size
         )
+        cubes_range_index_low = (platform_batchnr * self.batch_size) % self.cube_size
         cubes_idx_high = math.floor(
             ((platform_batchnr + 1) * self.batch_size) / self.cube_size
         )
+        cubes_range_index_high = cubes_range_index_low + self.batch_size
         # Load cubes data
         cubes = []
         for cube_idx in range(cubes_idx_low, cubes_idx_high + 1):
             cube_path = self.cubes_per_platform[platform][cube_idx]
-            cubes.append[np.load(cube_path)]
+            cubes.append(np.load(cube_path))
         # Combine cubes to batch
         CUBE_KEYS = [
             "pixels",
@@ -68,8 +70,15 @@ class ClaySampler(Sampler):
         ]
         result = []
         for key in CUBE_KEYS:
-            result.append(np.vstack([cube[key] for cube in cubes])[: self.batch_size])
+            result.append(
+                np.vstack([cube[key] for cube in cubes])[
+                    cubes_range_index_low:cubes_range_index_high
+                ]
+            )
         return result
+
+    def __getitem__(self, idx):
+        return self.get_batch(idx)
 
     def __iter__(self) -> Iterator[int]:
         for batchnr in range(self._length):
