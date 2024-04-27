@@ -32,6 +32,7 @@ trainer:
   val_check_interval: 0.5
   fast_dev_run: False
   num_sanity_val_steps: 0
+  use_distributed_sampler: False
   # logger:
   #   - class_path: lightning.pytorch.loggers.CSVLogger
   #     init_args:

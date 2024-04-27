@@ -171,6 +171,8 @@ class EODataset(Dataset):
                     pixels = self.l8_tfm(pixels)
                 case "linz":
                     pixels = self.linz_tfm(pixels)
+                case "s2":
+                    pixels = self.s2_tfm(pixels)
                 case _:
                     raise ValueError(f"Unknown platform: {platform}")
 
@@ -209,18 +211,23 @@ class ClaySampler(Sampler):
             repeated_indices = np.tile(indices, (max_len // len(indices) + 1))[:max_len]
             self.cubes_per_platform[platform] = repeated_indices
 
-        # Create batches such that we return one platform per batch one after other
+        # Create batches such that we return one platform per batch in cycle
         # Ignore the last batch if it is incomplete
-        for i in range(0, max_len):
+        for i in range(0, max_len, self.batch_size):
             for platform in self.platforms:
-                for j in range(self.batch_size):
-                    yield self.cubes_per_platform[platform][i + j]
+                batch = self.cubes_per_platform[platform][i : i + self.batch_size]
+                if len(batch) == self.batch_size:
+                    yield batch
 
     def __len__(self):
-        return len(self.dataset.chips_path)
+        return len(self.dataset.chips_path) // self.batch_size
 
 
 def batch_collate(batch):
+    """Collate function for DataLoader.
+
+    Merge the first two dimensions of the input tensors.
+    """
     d = defaultdict(list)
     for item in batch:
         d["pixels"].append(item["pixels"])
@@ -270,28 +277,19 @@ class ClayDataModule(L.LightningDataModule):
                 chips_path=chips_path[:split],
                 metadata=self.metadata,
             )
-            self.trn_sampler = BatchSampler(
-                sampler=ClaySampler(
-                    dataset=self.trn_ds,
-                    platforms=["naip", "linz", "l8"],
-                    batch_size=self.batch_size,
-                ),
+            self.trn_sampler = ClaySampler(
+                dataset=self.trn_ds,
+                platforms=["naip", "linz", "l8", "s2"],
                 batch_size=self.batch_size,
-                drop_last=True,
             )
-
             self.val_ds = EODataset(
                 chips_path=chips_path[split:],
                 metadata=self.metadata,
             )
-            self.val_sampler = BatchSampler(
-                sampler=ClaySampler(
-                    dataset=self.val_ds,
-                    platforms=["naip", "linz", "l8"],
-                    batch_size=self.batch_size,
-                ),
+            self.val_sampler = ClaySampler(
+                dataset=self.val_ds,
+                platforms=["naip", "linz", "l8", "s2"],
                 batch_size=self.batch_size,
-                drop_last=True,
             )
 
         elif stage == "predict":

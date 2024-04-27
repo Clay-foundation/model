@@ -456,6 +456,7 @@ class ClayMAE(nn.Module):
             - platform: [B 1]
             - date: [B 1]
         """
+        # print(datacube["pixels"].shape, datacube["platform"][0])
         waves = torch.tensor(
             list(self.metadata[datacube["platform"][0]].bands.wavelength.values())
         )
