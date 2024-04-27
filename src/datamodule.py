@@ -110,49 +110,28 @@ class ClayDataset(Dataset):
 class EODataset(Dataset):
     """Reads different Earth Observation data sources from a directory."""
 
-    def __init__(self, chips_path: List[Path], metadata: Box) -> None:
+    def __init__(self, chips_path: List[Path], size: int, metadata: Box) -> None:
         super().__init__()
         self.chips_path = chips_path
+        self.size = size
+        self.transforms = {}
 
-        # Create Transforms for each platform
-        self.naip_mean = list(metadata.naip.bands.mean.values())
-        self.naip_std = list(metadata.naip.bands.std.values())
-        self.naip_tfm = v2.Compose(
+        # Platforms to setup transforms for
+        platforms = ["naip", "s2", "l8", "linz"]
+
+        # Generate transforms for each platform using a helper function
+        for platform in platforms:
+            mean = list(metadata[platform].bands.mean.values())
+            std = list(metadata[platform].bands.std.values())
+            self.transforms[platform] = self.create_transforms(mean, std)
+
+    def create_transforms(self, mean, std):
+        return v2.Compose(
             [
                 v2.RandomHorizontalFlip(p=0.5),
-                v2.RandomVerticalFlip(p=0.5),
-                v2.RandomCrop(size=(224, 224)),
-                v2.Normalize(mean=self.naip_mean, std=self.naip_std),
-            ]
-        )
-        self.s2_mean = list(metadata.s2.bands.mean.values())
-        self.s2_std = list(metadata.s2.bands.std.values())
-        self.s2_tfm = v2.Compose(
-            [
-                v2.RandomHorizontalFlip(p=0.5),
-                v2.RandomVerticalFlip(p=0.5),
-                v2.RandomCrop(size=(224, 224)),
-                v2.Normalize(mean=self.s2_mean, std=self.s2_std),
-            ]
-        )
-        self.l8_mean = list(metadata.l8.bands.mean.values())
-        self.l8_std = list(metadata.l8.bands.std.values())
-        self.l8_tfm = v2.Compose(
-            [
-                v2.RandomHorizontalFlip(p=0.5),
-                v2.RandomVerticalFlip(p=0.5),
-                v2.RandomCrop(size=(224, 224)),
-                v2.Normalize(mean=self.l8_mean, std=self.l8_std),
-            ]
-        )
-        self.linz_mean = list(metadata.linz.bands.mean.values())
-        self.linz_std = list(metadata.linz.bands.std.values())
-        self.linz_tfm = v2.Compose(
-            [
-                v2.RandomHorizontalFlip(p=0.5),
-                v2.RandomVerticalFlip(p=0.5),
-                v2.RandomCrop(size=(224, 224)),
-                v2.Normalize(mean=self.linz_mean, std=self.linz_std),
+                v2.RandomRotation(degrees=60),
+                v2.RandomCrop(size=(self.size, self.size)),
+                v2.Normalize(mean=mean, std=std),
             ]
         )
 
@@ -164,17 +143,7 @@ class EODataset(Dataset):
         with np.load(chip_path, allow_pickle=False) as chip:
             pixels = torch.from_numpy(chip["pixels"].astype(np.float32))
             platform = chip_path.parent.name
-            match platform:
-                case "naip":
-                    pixels = self.naip_tfm(pixels)
-                case "l8":
-                    pixels = self.l8_tfm(pixels)
-                case "linz":
-                    pixels = self.linz_tfm(pixels)
-                case "s2":
-                    pixels = self.s2_tfm(pixels)
-                case _:
-                    raise ValueError(f"Unknown platform: {platform}")
+            pixels = self.transforms[platform](pixels)
 
             # Prepare additional information
             additional_info = {
@@ -246,6 +215,7 @@ class ClayDataModule(L.LightningDataModule):
     def __init__(
         self,
         data_dir: str = "data",
+        size: int = 224,
         # platform: str = "naip",
         metadata_path: str = "configs/metadata.yaml",
         batch_size: int = 10,
@@ -253,6 +223,7 @@ class ClayDataModule(L.LightningDataModule):
     ):
         super().__init__()
         self.data_dir = data_dir
+        self.size = size
         # self.platform = platform
         self.metadata = Box(yaml.safe_load(open(metadata_path)))
         self.batch_size = batch_size
@@ -275,6 +246,7 @@ class ClayDataModule(L.LightningDataModule):
 
             self.trn_ds = EODataset(
                 chips_path=chips_path[:split],
+                size=self.size,
                 metadata=self.metadata,
             )
             self.trn_sampler = ClaySampler(
@@ -284,6 +256,7 @@ class ClayDataModule(L.LightningDataModule):
             )
             self.val_ds = EODataset(
                 chips_path=chips_path[split:],
+                size=self.size,
                 metadata=self.metadata,
             )
             self.val_sampler = ClaySampler(

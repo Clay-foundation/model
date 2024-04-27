@@ -16,6 +16,7 @@ import yaml
 from box import Box
 from einops import rearrange, reduce, repeat
 from torch import nn
+from torchvision.transforms import v2
 from vit_pytorch.simple_vit import Transformer
 
 from src.factory import DynamicEmbedding
@@ -390,6 +391,10 @@ class ClayMAE(nn.Module):
         self.shuffle = shuffle
         self.metadata = metadata
         self.teacher = timm.create_model(teacher, pretrained=True, num_classes=0)
+        self.teacher_chip_size = 224
+        self.teacher_resize = v2.Resize(
+            size=(self.teacher_chip_size, self.teacher_chip_size)
+        )
         self.proj = nn.Linear(dim, self.teacher.num_features)
 
         self.encoder = Encoder(
@@ -500,7 +505,9 @@ class ClayMAE(nn.Module):
         # Read RGB bands from the sensor to feed the teacher model
         indices = self.metadata[datacube["platform"][0]].rgb_indices
         with torch.no_grad():
-            teacher_output = self.teacher(datacube["pixels"][:, indices, :, :])
+            rgb = datacube["pixels"][:, indices, :, :]
+            rgb = self.teacher_resize(rgb)
+            teacher_output = self.teacher(rgb)
 
         representation_loss = -(
             F.cosine_similarity(encoder_output, teacher_output).mean()

@@ -2,7 +2,7 @@
 seed_everything: 42
 data:
   data_dir: data
-  platform: naip
+  size: 224
   metadata_path: configs/metadata.yaml
   batch_size: 96
   num_workers: 192
