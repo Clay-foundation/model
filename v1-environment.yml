@@ -16,6 +16,7 @@ dependencies:
     - pyarrow
     - rasterio
     - s3fs
+    - scikit-image
     - scikit-learn
     - torch~=2.1.0
     - torchdata
