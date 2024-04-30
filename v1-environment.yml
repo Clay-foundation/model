@@ -9,7 +9,7 @@ dependencies:
     - einops
     - geopandas
     - jupyterlab
-    - jsonargparse
+    - jsonargparse[signatures]>=4.27.7
     - lightning
     - matplotlib
     - python-box
