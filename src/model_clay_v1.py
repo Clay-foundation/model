@@ -461,11 +461,9 @@ class ClayMAE(nn.Module):
             - platform: [B 1]
             - date: [B 1]
         """
-        # print(datacube["pixels"].shape, datacube["platform"][0])
-        waves = torch.tensor(
-            list(self.metadata[datacube["platform"][0]].bands.wavelength.values())
-        )
-        gsd = torch.tensor(self.metadata[datacube["platform"][0]].gsd)
+        platform = datacube["platform"][0]
+        waves = torch.tensor(list(self.metadata[platform].bands.wavelength.values()))
+        gsd = torch.tensor(self.metadata[platform].gsd)
 
         # ENCODER
         (
@@ -502,10 +500,16 @@ class ClayMAE(nn.Module):
 
         # TEACHER
         encoder_output = self.proj(encoded_unmasked_patches[:, 0, :])  # [B D']
-        # Read RGB bands from the sensor to feed the teacher model
-        indices = self.metadata[datacube["platform"][0]].rgb_indices
         with torch.no_grad():
-            rgb = datacube["pixels"][:, indices, :, :]
+            if platform == "sentinel-1-rtc":
+                r = datacube["pixels"][:, 0, :, :]
+                g = datacube["pixels"][:, 1, :, :]
+                b = r / (g + 1e-6)
+                rgb = torch.stack((r, g, b), dim=1)
+            else:
+                # Read RGB bands from the sensor to feed the teacher model
+                indices = self.metadata[platform].rgb_indices
+                rgb = datacube["pixels"][:, indices, :, :]
             rgb = self.teacher_resize(rgb)
             teacher_output = self.teacher(rgb)
 
@@ -516,8 +520,6 @@ class ClayMAE(nn.Module):
 
         loss = 0.90 * reconstruction_loss + 0.10 * representation_loss
         return (loss, reconstruction_loss, representation_loss)
-        # print(f"{reconstruction_loss:.4f}, {representation_loss:.4f}, {loss:.4f}")
-        # return loss
 
 
 def clay_mae_tiny(**kwargs):
