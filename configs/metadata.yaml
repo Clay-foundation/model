@@ -1,4 +1,4 @@
-s2:
+sentinel-2-l2a:
   band_order:
     - blue
     - green
@@ -14,7 +14,7 @@ s2:
     - 2
     - 1
     - 0
-  gsd: 20
+  gsd: 10
   bands:
     mean:
       blue: 1200
@@ -39,51 +39,86 @@ s2:
       swir16: 450
       swir22: 480
     wavelength:
-      blue: 0.4905
-      green: 0.5605
+      blue: 0.49
+      green: 0.56
       red: 0.665
-      rededge1: 0.7055
-      rededge2: 0.7405
+      rededge1: 0.704
+      rededge2: 0.74
       rededge3: 0.783
-      nir: 0.8425
+      nir: 0.842
       nir08: 0.865
       swir16: 1.61
       swir22: 2.19
-l8:
+landsat-c2l1:
   band_order:
-    - blue
-    - green
     - red
-    - rededge1
-    - rededge2
-    - rededge3
+    - green
+    - blue
+    - nir08
+    - swir16
+    - swir22
   rgb_indices:
     - 2
     - 1
     - 0
-  gsd: 20
+  gsd: 30
   bands:
     mean:
       blue: 1200
       green: 1400
       red: 1500
-      rededge1: 1800
-      rededge2: 1900
-      rededge3: 2000
+      nir08: 1800
+      swir16: 1900
+      swir22: 2000
     std:
       blue: 200
       green: 250
       red: 300
-      rededge1: 330
-      rededge2: 340
-      rededge3: 360
+      nir08: 330
+      swir16: 340
+      swir22: 360
     wavelength:
-      blue: 0.4905
-      green: 0.5605
-      red: 0.665
-      rededge1: 0.7055
-      rededge2: 0.7405
-      rededge3: 0.783
+      blue: 0.48
+      green: 0.56
+      red: 0.65
+      nir08: 0.86
+      swir16: 1.6
+      swir22: 2.2
+landsat-c2l2-sr:
+  band_order:
+    - red
+    - green
+    - blue
+    - nir08
+    - swir16
+    - swir22
+  rgb_indices:
+    - 2
+    - 1
+    - 0
+  gsd: 30
+  bands:
+    mean:
+      blue: 1200
+      green: 1400
+      red: 1500
+      nir08: 1800
+      swir16: 1900
+      swir22: 2000
+    std:
+      blue: 200
+      green: 250
+      red: 300
+      nir08: 330
+      swir16: 340
+      swir22: 360
+    wavelength:
+      blue: 0.48
+      green: 0.56
+      red: 0.65
+      nir08: 0.86
+      swir16: 1.6
+      swir22: 2.2
 naip:
   band_order:
     - red
@@ -107,21 +142,20 @@ naip:
       blue: 20
       nir: 50
     wavelength:
-      red: 0.66
-      green: 0.53
       blue: 0.48
-      nir: 0.86
+      green: 0.56
+      red: 0.65
+      nir: 0.842
 linz:
   band_order:
-    - blue
-    - green
     - red
-    - nir
+    - green
+    - blue
   rgb_indices:
-    - 2
-    - 1
     - 0
-  gsd: 0.1
+    - 1
+    - 2
+  gsd: 0.5
   bands:
     mean:
       blue: 100
@@ -133,5 +167,20 @@ linz:
       red: 25
     wavelength:
       blue: 0.48
-      green: 0.53
-      red: 0.66
+      green: 0.56
+      red: 0.65
+sentinel-1-rtc:
+  band_order:
+    - vv
+    - vh
+  gsd: 10
+  bands:
+    mean:
+      vv: 100
+      vh: 100
+    std:
+      vv: 25
+      vh: 25
+    wavelength:
+      vv: 55465.76
+      vh: 55465.76
