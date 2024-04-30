@@ -167,8 +167,8 @@ linz:
       red: 25
     wavelength:
       blue: 0.48
-      green: 0.56
-      red: 0.65
+      green: 0.555
+      red: 0.635
 sentinel-1-rtc:
   band_order:
     - vv
