@@ -166,7 +166,7 @@ linz:
       green: 25
       red: 25
     wavelength:
-      blue: 0.48
+      blue: 0.465
       green: 0.555
       red: 0.635
 sentinel-1-rtc:
