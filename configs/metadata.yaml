@@ -17,27 +17,27 @@ sentinel-2-l2a:
   gsd: 10
   bands:
     mean:
-      blue: 1200
-      green: 1400
-      red: 1500
-      rededge1: 1800
-      rededge2: 1900
-      rededge3: 2000
-      nir: 2200
-      nir08: 2300
-      swir16: 2400
-      swir22: 2500
+      blue: 1109
+      green: 1357
+      red: 1554
+      rededge1: 1888
+      rededge2: 2419
+      rededge3: 2626
+      nir: 2739
+      nir08: 2779
+      swir16: 2377
+      swir22: 1827
     std:
-      blue: 200
-      green: 250
-      red: 300
-      rededge1: 330
-      rededge2: 340
-      rededge3: 360
-      nir: 400
-      nir08: 420
-      swir16: 450
-      swir22: 480
+      blue: 1818
+      green: 1766
+      red: 1897
+      rededge1: 1880
+      rededge2: 1743
+      rededge3: 1707
+      nir: 1753
+      nir08: 1659
+      swir16: 1474
+      swir22: 1381
     wavelength:
       blue: 0.493
       green: 0.56
@@ -64,19 +64,19 @@ landsat-c2l1:
   gsd: 30
   bands:
     mean:
-      blue: 1200
-      green: 1400
-      red: 1500
-      nir08: 1800
-      swir16: 1900
-      swir22: 2000
+      red: 10685
+      green: 10570
+      blue: 11090
+      nir08: 14805
+      swir16: 12281
+      swir22: 10116
     std:
-      blue: 200
-      green: 250
-      red: 300
-      nir08: 330
-      swir16: 340
-      swir22: 360
+      red: 6029
+      green: 5416
+      blue: 5473
+      nir08: 6743
+      swir16: 5894
+      swir22: 4845
     wavelength:
       blue: 0.48
       green: 0.56
@@ -99,19 +99,19 @@ landsat-c2l2-sr:
   gsd: 30
   bands:
     mean:
-      blue: 1200
-      green: 1400
-      red: 1500
-      nir08: 1800
-      swir16: 1900
-      swir22: 2000
+      red: 13672
+      green: 13278
+      blue: 12429
+      nir08: 17790
+      swir16: 14634
+      swir22: 12717
     std:
-      blue: 200
-      green: 250
-      red: 300
-      nir08: 330
-      swir16: 340
-      swir22: 360
+      red: 9545
+      green: 9372
+      blue: 10107
+      nir08: 8253
+      swir16: 5305
+      swir22: 4534
     wavelength:
       blue: 0.48
       green: 0.56
@@ -132,15 +132,15 @@ naip:
   gsd: 1.0
   bands:
     mean:
-      red: 120
-      green: 110
-      blue: 100
-      nir: 130
+      red: 110.00
+      green: 115.27
+      blue: 98.01
+      nir: 138.84
     std:
-      red: 40
-      green: 30
-      blue: 20
-      nir: 50
+      red: 47.29
+      green: 39.91
+      blue: 35.52
+      nir: 50.09
     wavelength:
       blue: 0.48
       green: 0.56
@@ -158,13 +158,13 @@ linz:
   gsd: 0.5
   bands:
     mean:
-      blue: 100
-      green: 100
-      red: 100
+      red: 88.91
+      green: 98.33
+      blue: 88.53
     std:
-      blue: 25
-      green: 25
-      red: 25
+      red: 42.64
+      green: 38.12
+      blue: 32.55
     wavelength:
       blue: 0.465
       green: 0.555
@@ -176,11 +176,11 @@ sentinel-1-rtc:
   gsd: 10
   bands:
     mean:
-      vv: 100
-      vh: 100
+      vv: -203.36
+      vh: -203.45
     std:
-      vv: 25
-      vh: 25
+      vv: 2574.14
+      vh: 2574.13
     wavelength:
       vv: 55465.76
       vh: 55465.76
