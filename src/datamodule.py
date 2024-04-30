@@ -176,7 +176,8 @@ class ClaySampler(Sampler):
         max_len = max(len(indices) for indices in self.cubes_per_platform.values())
         for platform in self.platforms:
             indices = self.cubes_per_platform[platform]
-            np.random.shuffle(indices)
+            rng = np.random.default_rng()
+            rng.shuffle(indices)
             repeated_indices = np.tile(indices, (max_len // len(indices) + 1))[:max_len]
             self.cubes_per_platform[platform] = repeated_indices
 
