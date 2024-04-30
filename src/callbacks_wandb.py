@@ -191,49 +191,95 @@ class LogIntermediatePredictions(L.Callback):
             # Get WandB logger
             self.logger = get_wandb_logger(trainer=trainer)
 
-            # get the first batch from trainer
-            batch = next(iter(trainer.val_dataloaders))
-            batch = {
-                k: v.to(pl_module.device)
-                for k, v in batch.items()
-                if isinstance(v, torch.Tensor)
-            }
-            # ENCODER
-            (
-                encoded_unmasked_patches,
-                unmasked_indices,
-                masked_indices,
-                masked_matrix,
-            ) = pl_module.model.encoder(batch)
+            # get the val dataloader
+            val_dl = iter(trainer.val_dataloaders)
+            for i in range(6):
+                batch = next(val_dl)
+                platform = batch["platform"][0]
 
-            # DECODER
-            pixels = pl_module.model.decoder(
-                encoded_unmasked_patches, unmasked_indices, masked_indices
-            )
-            pixels = rearrange(
-                pixels,
-                "b c (h w) (p1 p2) -> b c (h p1) (w p2)",
-                h=pl_module.model.image_size // pl_module.model.patch_size,
-                p1=pl_module.model.patch_size,
-            )
+                batch = {
+                    k: v.to(pl_module.device)
+                    for k, v in batch.items()
+                    if isinstance(v, torch.Tensor)
+                }
 
-            assert pixels.shape == batch["pixels"].shape
-
-            n_rows = 2
-            n_cols = 8
-
-            fig, axs = plt.subplots(n_rows, n_cols, figsize=(20, 4))
-
-            for i in range(n_cols):
-                axs[0, i].imshow(
-                    batch["pixels"][i][0].detach().cpu().numpy(), cmap="viridis"
+                waves = torch.tensor(
+                    list(
+                        trainer.datamodule.metadata[platform].bands.wavelength.values()
+                    )
                 )
-                axs[0, i].set_title(f"Image {i}")
-                axs[0, i].axis("off")
+                gsd = torch.tensor(trainer.datamodule.metadata[platform].gsd)
 
-                axs[1, i].imshow(pixels[i][0].detach().cpu().numpy(), cmap="viridis")
-                axs[1, i].set_title(f"Preds {i}")
-                axs[1, i].axis("off")
+                # ENCODER
+                (
+                    encoded_unmasked_patches,
+                    unmasked_indices,
+                    masked_indices,
+                    masked_matrix,
+                ) = pl_module.model.encoder(
+                    {
+                        "pixels": batch["pixels"],
+                        "time": batch["time"],
+                        "latlon": batch["latlon"],
+                        "gsd": gsd,
+                        "waves": waves,
+                    }
+                )
 
-            self.logger.experiment.log({"Images": wandb.Image(fig)})
+                # DECODER
+                pixels, waves = pl_module.model.decoder(
+                    encoded_unmasked_patches,
+                    unmasked_indices,
+                    masked_indices,
+                    masked_matrix,
+                    batch["time"],
+                    batch["latlon"],
+                    gsd,
+                    waves,
+                )  # pixels: batch x (patch x patch) x 1024
+                pixels = rearrange(
+                    pixels,
+                    "b (h w) (c p1 p2) -> b c (h p1) (w p2)",
+                    p1=pl_module.model.patch_size,
+                    p2=pl_module.model.patch_size,
+                    h=trainer.datamodule.size // pl_module.model.patch_size,
+                    w=trainer.datamodule.size // pl_module.model.patch_size,
+                )
+
+                assert pixels.shape == batch["pixels"].shape
+
+                n_rows = 4  # 2 for actual and 2 for predicted
+                n_cols = 8
+
+                fig, axs = plt.subplots(n_rows, n_cols, figsize=(20, 8))
+
+                for i in range(n_cols):
+                    # Plot actual images in rows 0 and 2
+                    axs[0, i].imshow(
+                        batch["pixels"][i][0].detach().cpu().numpy(), cmap="viridis"
+                    )
+                    axs[0, i].set_title(f"Actual {i}")
+                    axs[0, i].axis("off")
+
+                    axs[2, i].imshow(
+                        batch["pixels"][i + n_cols][0].detach().cpu().numpy(),
+                        cmap="viridis",
+                    )
+                    axs[2, i].set_title(f"Actual {i+n_cols}")
+                    axs[2, i].axis("off")
+
+                    # Plot predicted images in rows 1 and 3
+                    axs[1, i].imshow(
+                        pixels[i][0].detach().cpu().numpy(), cmap="viridis"
+                    )
+                    axs[1, i].set_title(f"Pred {i}")
+                    axs[1, i].axis("off")
+
+                    axs[3, i].imshow(
+                        pixels[i + n_cols][0].detach().cpu().numpy(), cmap="viridis"
+                    )
+                    axs[3, i].set_title(f"Pred {i+n_cols}")
+                    axs[3, i].axis("off")
+
+                self.logger.experiment.log({f"{platform}": wandb.Image(fig)})
             plt.close(fig)
