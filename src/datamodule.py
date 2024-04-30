@@ -117,7 +117,14 @@ class EODataset(Dataset):
         self.transforms = {}
 
         # Platforms to setup transforms for
-        platforms = ["naip", "s2", "l8", "linz"]
+        platforms = [
+            "landsat-c2l1",
+            "landsat-c2l2-sr",
+            "linz",
+            "naip",
+            "sentinel-1-rtc",
+            "sentinel-2-l2a",
+        ]
 
         # Generate transforms for each platform using a helper function
         for platform in platforms:
@@ -129,7 +136,7 @@ class EODataset(Dataset):
         return v2.Compose(
             [
                 v2.RandomHorizontalFlip(p=0.5),
-                v2.RandomRotation(degrees=60),
+                v2.RandomVerticalFlip(p=0.5),
                 v2.RandomCrop(size=(self.size, self.size)),
                 v2.Normalize(mean=mean, std=std),
             ]
@@ -172,19 +179,20 @@ class ClaySampler(Sampler):
             self.cubes_per_platform[platform].append(idx)
 
     def __iter__(self):
+        cubes_per_platform_per_epoch = {}
         # Shuffle and adjust sizes
         max_len = max(len(indices) for indices in self.cubes_per_platform.values())
         for platform in self.platforms:
             indices = self.cubes_per_platform[platform]
             np.random.shuffle(indices)
             repeated_indices = np.tile(indices, (max_len // len(indices) + 1))[:max_len]
-            self.cubes_per_platform[platform] = repeated_indices
+            cubes_per_platform_per_epoch[platform] = repeated_indices
 
         # Create batches such that we return one platform per batch in cycle
         # Ignore the last batch if it is incomplete
         for i in range(0, max_len, self.batch_size):
             for platform in self.platforms:
-                batch = self.cubes_per_platform[platform][i : i + self.batch_size]
+                batch = cubes_per_platform_per_epoch[platform][i : i + self.batch_size]
                 if len(batch) == self.batch_size:
                     yield batch
 
@@ -218,13 +226,21 @@ class ClayDataModule(L.LightningDataModule):
         size: int = 224,
         # platform: str = "naip",
         metadata_path: str = "configs/metadata.yaml",
+        platforms: list = [
+            "landsat-c2l1",
+            "landsat-c2l2-sr",
+            "linz",
+            "naip",
+            "sentinel-1-rtc",
+            "sentinel-2-l2a",
+        ],
         batch_size: int = 10,
         num_workers: int = 8,
     ):
         super().__init__()
         self.data_dir = data_dir
         self.size = size
-        # self.platform = platform
+        self.platforms = platforms
         self.metadata = Box(yaml.safe_load(open(metadata_path)))
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -251,7 +267,7 @@ class ClayDataModule(L.LightningDataModule):
             )
             self.trn_sampler = ClaySampler(
                 dataset=self.trn_ds,
-                platforms=["naip", "linz", "l8", "s2"],
+                platforms=self.platforms,
                 batch_size=self.batch_size,
             )
             self.val_ds = EODataset(
@@ -261,7 +277,7 @@ class ClayDataModule(L.LightningDataModule):
             )
             self.val_sampler = ClaySampler(
                 dataset=self.val_ds,
-                platforms=["naip", "linz", "l8", "s2"],
+                platforms=self.platforms,
                 batch_size=self.batch_size,
             )
 
