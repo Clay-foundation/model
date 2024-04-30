@@ -9,7 +9,7 @@
 #SBATCH --output=model_train_%j.log  # Standard output and error log
 
 # Load any required modules (environments, libraries etc.)
-eval "$(conda 'shell.bash' 'hook' 2> /dev/null)" 
+eval "$(conda 'shell.bash' 'hook' 2> /dev/null)"
 
 # initialize conda
 conda activate claymodel
