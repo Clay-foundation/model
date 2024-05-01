@@ -1,26 +1,24 @@
 #!/usr/bin/env python3
 
 import sys
+
 sys.path.append("../../")
 
 import os
 import tempfile
 from math import floor
 from pathlib import Path
-import requests
 
 import boto3
-import einops
 import geopandas as gpd
-import pandas as pd
 import numpy
-import pyarrow as pa
+import pandas as pd
 import rasterio
+import requests
 import shapely
 import torch
 import xarray as xr
 from rasterio.windows import Window
-from shapely import box
 from torchvision.transforms import v2
 
 from src.datamodule import ClayDataset
@@ -188,6 +186,7 @@ def tiles_and_windows(input: Window):
 
     return result
 
+
 def download_image(url):
     # Download the image from the URL
     response = requests.get(url)
@@ -197,10 +196,11 @@ def download_image(url):
     else:
         raise Exception("Failed to download the image")
 
+
 def patch_bounds_from_url(url, chunk_size=(PATCH_SIZE, PATCH_SIZE)):
     # Download the image from the URL
     image_data = download_image(url)
-    
+
     # Open the image using rasterio from memory
     with rasterio.io.MemoryFile(image_data) as memfile:
         with memfile.open() as src:
@@ -208,19 +208,19 @@ def patch_bounds_from_url(url, chunk_size=(PATCH_SIZE, PATCH_SIZE)):
             img_data = src.read()
             img_meta = src.profile
             img_crs = src.crs
-    
+
     # Convert raster data and metadata into an xarray DataArray
     img_da = xr.DataArray(img_data, dims=("band", "y", "x"), attrs=img_meta)
-    
+
     # Tile the data
     ds_chunked = img_da.chunk({"y": chunk_size[0], "x": chunk_size[1]})
-    
+
     # Get the geospatial information from the original dataset
     transform = img_meta["transform"]
-    
+
     # Iterate over the chunks and compute the geospatial bounds for each chunk
     chunk_bounds = {}
-    
+
     for x in range(ds_chunked.sizes["x"] // chunk_size[1]):
         for y in range(ds_chunked.sizes["y"] // chunk_size[0]):
             # Compute chunk coordinates
@@ -228,11 +228,11 @@ def patch_bounds_from_url(url, chunk_size=(PATCH_SIZE, PATCH_SIZE)):
             y_start = y * chunk_size[0]
             x_end = min(x_start + chunk_size[1], ds_chunked.sizes["x"])
             y_end = min(y_start + chunk_size[0], ds_chunked.sizes["y"])
-    
+
             # Compute chunk geospatial bounds
             lon_start, lat_start = transform * (x_start, y_start)
             lon_end, lat_end = transform * (x_end, y_end)
-    
+
             # Store chunk bounds
             chunk_bounds[(x, y)] = {
                 "lon_start": lon_start,
@@ -240,8 +240,9 @@ def patch_bounds_from_url(url, chunk_size=(PATCH_SIZE, PATCH_SIZE)):
                 "lon_end": lon_end,
                 "lat_end": lat_end,
             }
-    
+
     return chunk_bounds, img_crs
+
 
 def make_batch(result):
     rgb_bands = []
@@ -249,7 +250,9 @@ def make_batch(result):
     sar_bands = []
 
     for url_rgb, url_swir, url_sar, win in result:
-        with rasterio.open(url_rgb) as src_rgb, rasterio.open(url_swir) as src_swir, rasterio.open(url_sar) as src_sar:
+        with rasterio.open(url_rgb) as src_rgb, rasterio.open(
+            url_swir
+        ) as src_swir, rasterio.open(url_sar) as src_sar:
             data_rgb = src_rgb.read(window=win)
             data_swir = src_swir.read(window=win)
             data_sar = src_sar.read(window=win)
@@ -268,21 +271,34 @@ def make_batch(result):
     sar_data = numpy.vstack(sar_bands)
 
     # Normalize SAR data
-    #sar_data = (sar_data - MEAN_SAR) / STD_SAR
+    # sar_data = (sar_data - MEAN_SAR) / STD_SAR
 
     combined_data = numpy.concatenate((rgb_data, swir_data, sar_data), axis=0)
 
     return {
-        "pixels": torch.as_tensor(data=[combined_data], dtype=torch.float32).to(rgb_model.device),
-        "latlon": torch.as_tensor(data=[ds.normalize_latlon(transform[0], transform[3])]).to(rgb_model.device),
-        "timestep": torch.as_tensor(data=[ds.normalize_timestamp(f"{YEAR}-06-01")]).to(rgb_model.device),
-        "date": f"{YEAR}-06-01"
+        "pixels": torch.as_tensor(data=[combined_data], dtype=torch.float32).to(
+            rgb_model.device
+        ),
+        "latlon": torch.as_tensor(
+            data=[ds.normalize_latlon(transform[0], transform[3])]
+        ).to(rgb_model.device),
+        "timestep": torch.as_tensor(data=[ds.normalize_timestamp(f"{YEAR}-06-01")]).to(
+            rgb_model.device
+        ),
+        "date": f"{YEAR}-06-01",
     }
+
 
 index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 2))
 
 # Setup model components
-tfm = v2.Compose([v2.Normalize(mean=MEAN_RGBNIR + MEAN_SWIR + MEAN_SAR, std=STD_RGBNIR + STD_SWIR + STD_SAR)])
+tfm = v2.Compose(
+    [
+        v2.Normalize(
+            mean=MEAN_RGBNIR + MEAN_SWIR + MEAN_SAR, std=STD_RGBNIR + STD_SWIR + STD_SAR
+        )
+    ]
+)
 ds = ClayDataset(chips_path=[], transform=tfm)
 
 # Load model
@@ -360,14 +376,15 @@ while yoff < RASTER_Y_SIZE:
         chunk_bounds, epsg = patch_bounds_from_url(result[0][0])
         print("chunk bounds length:", len(chunk_bounds))
 
-
         # Iterate through each patch
         for i in range(embeddings_mean.shape[0]):
             for j in range(embeddings_mean.shape[1]):
                 embeddings_output_patch = embeddings_mean[i, j]
-        
+
                 item_ = [
-                    element for element in list(chunk_bounds.items()) if element[0] == (i, j)
+                    element
+                    for element in list(chunk_bounds.items())
+                    if element[0] == (i, j)
                 ]
                 box_ = [
                     item_[0][1]["lon_start"],
@@ -377,37 +394,41 @@ while yoff < RASTER_Y_SIZE:
                 ]
 
                 data = {
-                    #"source_url": batch["source_url"][0],
-                    #"date": pd.to_datetime(arg=date, format="%Y-%m-%d").astype(
+                    # "source_url": batch["source_url"][0],
+                    # "date": pd.to_datetime(arg=date, format="%Y-%m-%d").astype(
                     #    dtype="date32[day][pyarrow]"
-                    #),
-                    #"date": pd.to_datetime(date, format="%Y-%m-%d", dtype="date32[day][pyarrow]"),
+                    # ),
+                    # "date": pd.to_datetime(date, format="%Y-%m-%d", dtype="date32[day][pyarrow]"),
                     "date": pd.to_datetime(batch["date"], format="%Y-%m-%d"),
                     "embeddings": [numpy.ascontiguousarray(embeddings_output_patch)],
                 }
-        
+
                 # Define the bounding box as a Polygon (xmin, ymin, xmax, ymax)
                 # The box_ list is encoded as
                 # [bottom left x, bottom left y, top right x, top right y]
                 box_emb = shapely.geometry.box(box_[0], box_[1], box_[2], box_[3])
 
                 print(str(epsg)[-4:])
-        
+
                 # Create the GeoDataFrame
-                gdf = gpd.GeoDataFrame(data, geometry=[box_emb], crs=f"EPSG:{str(epsg)[-4:]}")
-        
+                gdf = gpd.GeoDataFrame(
+                    data, geometry=[box_emb], crs=f"EPSG:{str(epsg)[-4:]}"
+                )
+
                 # Reproject to WGS84 (lon/lat coordinates)
                 gdf = gdf.to_crs(epsg=4326)
-        
+
                 with tempfile.TemporaryDirectory() as tmp:
                     # tmp = "/home/tam/Desktop/wcctmp"
-                
+
                     outpath = f"{tmp}/worldcover_patch_embeddings_{YEAR}_{index}_{i}_{j}_v{VERSION}.gpq"
                     print(f"Uploading embeddings to {outpath}")
-                    #print(gdf)
-                
-                    gdf.to_parquet(path=outpath, compression="ZSTD", schema_version="1.0.0")
-                
+                    # print(gdf)
+
+                    gdf.to_parquet(
+                        path=outpath, compression="ZSTD", schema_version="1.0.0"
+                    )
+
                     s3_client = boto3.client("s3")
                     s3_client.upload_file(
                         outpath,

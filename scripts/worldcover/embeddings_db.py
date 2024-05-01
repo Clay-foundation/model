@@ -31,7 +31,7 @@ for strip in vector_dir.glob("*.gpq"):
 db.table_names()
 
 # Drop existing table if exists
-#db.drop_table("worldcover-2020-v001")
+# db.drop_table("worldcover-2020-v001")
 
 # Create embeddings table and insert the vector data
 tbl = db.create_table("worldcover-2020-v001", data=data, mode="overwrite")
