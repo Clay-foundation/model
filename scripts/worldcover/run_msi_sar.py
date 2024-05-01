@@ -65,8 +65,8 @@ MEAN_SWIR = [2303.00, 1807.79]
 STD_SWIR = [1679.88, 1568.06]
 
 # Mean and standard deviation for SAR bands
-MEAN_SAR = [0.026, 0.118, 0.118]
-STD_SAR = [0.118, 0.873, 0.873]
+MEAN_SAR = [0.026, 0.118]
+STD_SAR = [0.118, 0.873]
 
 grid = gpd.read_file(
     "https://clay-mgrs-samples.s3.amazonaws.com/esa_worldcover_grid_usa.fgb"
