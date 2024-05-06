@@ -180,11 +180,12 @@ class ClaySampler(Sampler):
 
     def __iter__(self):
         cubes_per_platform_per_epoch = {}
+        rng = np.random.default_rng()
         # Shuffle and adjust sizes
         max_len = max(len(indices) for indices in self.cubes_per_platform.values())
         for platform in self.platforms:
             indices = self.cubes_per_platform[platform]
-            np.random.shuffle(indices)
+            rng.shuffle(indices)
             repeated_indices = np.tile(indices, (max_len // len(indices) + 1))[:max_len]
             cubes_per_platform_per_epoch[platform] = repeated_indices
 
@@ -220,11 +221,10 @@ def batch_collate(batch):
 
 
 class ClayDataModule(L.LightningDataModule):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         data_dir: str = "data",
         size: int = 224,
-        # platform: str = "naip",
         metadata_path: str = "configs/metadata.yaml",
         platforms: list = [
             "landsat-c2l1",

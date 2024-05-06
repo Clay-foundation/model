@@ -253,33 +253,33 @@ class LogIntermediatePredictions(L.Callback):
 
                 fig, axs = plt.subplots(n_rows, n_cols, figsize=(20, 8))
 
-                for i in range(n_cols):
+                for j in range(n_cols):
                     # Plot actual images in rows 0 and 2
-                    axs[0, i].imshow(
-                        batch["pixels"][i][0].detach().cpu().numpy(), cmap="viridis"
+                    axs[0, j].imshow(
+                        batch["pixels"][j][0].detach().cpu().numpy(), cmap="viridis"
                     )
-                    axs[0, i].set_title(f"Actual {i}")
-                    axs[0, i].axis("off")
+                    axs[0, j].set_title(f"Actual {j}")
+                    axs[0, j].axis("off")
 
-                    axs[2, i].imshow(
-                        batch["pixels"][i + n_cols][0].detach().cpu().numpy(),
+                    axs[2, j].imshow(
+                        batch["pixels"][j + n_cols][0].detach().cpu().numpy(),
                         cmap="viridis",
                     )
-                    axs[2, i].set_title(f"Actual {i+n_cols}")
-                    axs[2, i].axis("off")
+                    axs[2, j].set_title(f"Actual {j+n_cols}")
+                    axs[2, j].axis("off")
 
                     # Plot predicted images in rows 1 and 3
-                    axs[1, i].imshow(
-                        pixels[i][0].detach().cpu().numpy(), cmap="viridis"
+                    axs[1, j].imshow(
+                        pixels[j][0].detach().cpu().numpy(), cmap="viridis"
                     )
-                    axs[1, i].set_title(f"Pred {i}")
-                    axs[1, i].axis("off")
+                    axs[1, j].set_title(f"Pred {j}")
+                    axs[1, j].axis("off")
 
-                    axs[3, i].imshow(
-                        pixels[i + n_cols][0].detach().cpu().numpy(), cmap="viridis"
+                    axs[3, j].imshow(
+                        pixels[j + n_cols][0].detach().cpu().numpy(), cmap="viridis"
                     )
-                    axs[3, i].set_title(f"Pred {i+n_cols}")
-                    axs[3, i].axis("off")
+                    axs[3, j].set_title(f"Pred {j+n_cols}")
+                    axs[3, j].axis("off")
 
                 self.logger.experiment.log({f"{platform}": wandb.Image(fig)})
             plt.close(fig)
