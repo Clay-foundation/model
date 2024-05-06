@@ -4,7 +4,7 @@ rasterio.
 """
 
 import math
-import random
+from collections import defaultdict
 from pathlib import Path
 from typing import List, Literal
 
@@ -15,7 +15,10 @@ import torch
 import torchdata
 import yaml
 from box import Box
+from einops import rearrange
+from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
+from torch.utils.data.sampler import Sampler
 from torchvision.transforms import v2
 
 
@@ -107,17 +110,35 @@ class ClayDataset(Dataset):
 class EODataset(Dataset):
     """Reads different Earth Observation data sources from a directory."""
 
-    def __init__(self, chips_path: List[Path], metadata: Box) -> None:
+    def __init__(self, chips_path: List[Path], size: int, metadata: Box) -> None:
         super().__init__()
         self.chips_path = chips_path
-        self.mean = list(metadata.bands.mean.values())
-        self.std = list(metadata.bands.std.values())
-        self.tfm = v2.Compose(
+        self.size = size
+        self.transforms = {}
+
+        # Platforms to setup transforms for
+        platforms = [
+            "landsat-c2l1",
+            "landsat-c2l2-sr",
+            "linz",
+            "naip",
+            "sentinel-1-rtc",
+            "sentinel-2-l2a",
+        ]
+
+        # Generate transforms for each platform using a helper function
+        for platform in platforms:
+            mean = list(metadata[platform].bands.mean.values())
+            std = list(metadata[platform].bands.std.values())
+            self.transforms[platform] = self.create_transforms(mean, std)
+
+    def create_transforms(self, mean, std):
+        return v2.Compose(
             [
                 v2.RandomHorizontalFlip(p=0.5),
                 v2.RandomVerticalFlip(p=0.5),
-                v2.RandomCrop(size=(224, 224)),
-                v2.Normalize(mean=self.mean, std=self.std),
+                v2.RandomCrop(size=(self.size, self.size)),
+                v2.Normalize(mean=mean, std=std),
             ]
         )
 
@@ -128,11 +149,12 @@ class EODataset(Dataset):
         chip_path = self.chips_path[idx]
         with np.load(chip_path, allow_pickle=False) as chip:
             pixels = torch.from_numpy(chip["pixels"].astype(np.float32))
-            pixels = self.tfm(pixels)
+            platform = chip_path.parent.name
+            pixels = self.transforms[platform](pixels)
 
             # Prepare additional information
             additional_info = {
-                "platform": chip_path.parent.parent.name,
+                "platform": platform,
                 "time": torch.tensor(
                     np.hstack((chip["week_norm"], chip["hour_norm"])),
                     dtype=torch.float32,
@@ -145,19 +167,81 @@ class EODataset(Dataset):
         return {"pixels": pixels, **additional_info}
 
 
+class ClaySampler(Sampler):
+    def __init__(self, dataset, platforms, batch_size):
+        self.dataset = dataset
+        self.platforms = platforms
+        self.batch_size = batch_size
+
+        self.cubes_per_platform = {platform: [] for platform in platforms}
+        for idx, chip_path in enumerate(self.dataset.chips_path):
+            platform = chip_path.parent.name
+            self.cubes_per_platform[platform].append(idx)
+
+    def __iter__(self):
+        cubes_per_platform_per_epoch = {}
+        # Shuffle and adjust sizes
+        max_len = max(len(indices) for indices in self.cubes_per_platform.values())
+        for platform in self.platforms:
+            indices = self.cubes_per_platform[platform]
+            np.random.shuffle(indices)
+            repeated_indices = np.tile(indices, (max_len // len(indices) + 1))[:max_len]
+            cubes_per_platform_per_epoch[platform] = repeated_indices
+
+        # Create batches such that we return one platform per batch in cycle
+        # Ignore the last batch if it is incomplete
+        for i in range(0, max_len, self.batch_size):
+            for platform in self.platforms:
+                batch = cubes_per_platform_per_epoch[platform][i : i + self.batch_size]
+                if len(batch) == self.batch_size:
+                    yield batch
+
+    def __len__(self):
+        return len(self.dataset.chips_path) // self.batch_size
+
+
+def batch_collate(batch):
+    """Collate function for DataLoader.
+
+    Merge the first two dimensions of the input tensors.
+    """
+    d = defaultdict(list)
+    for item in batch:
+        d["pixels"].append(item["pixels"])
+        d["time"].append(item["time"])
+        d["latlon"].append(item["latlon"])
+        d["platform"].append(item["platform"])
+    return {
+        "pixels": rearrange(d["pixels"], "b1 b2 c h w -> (b1 b2) c h w"),
+        "time": rearrange(d["time"], "b1 b2 t -> (b1 b2) t"),
+        "latlon": rearrange(d["latlon"], "b1 b2 ll -> (b1 b2) ll"),
+        "platform": d["platform"],
+    }
+
+
 class ClayDataModule(L.LightningDataModule):
     def __init__(
         self,
         data_dir: str = "data",
-        platform: str = "naip",
+        size: int = 224,
+        # platform: str = "naip",
         metadata_path: str = "configs/metadata.yaml",
+        platforms: list = [
+            "landsat-c2l1",
+            "landsat-c2l2-sr",
+            "linz",
+            "naip",
+            "sentinel-1-rtc",
+            "sentinel-2-l2a",
+        ],
         batch_size: int = 10,
         num_workers: int = 8,
     ):
         super().__init__()
         self.data_dir = data_dir
-        self.platform = platform
-        self.metadata = Box(yaml.safe_load(open(metadata_path))[platform])
+        self.size = size
+        self.platforms = platforms
+        self.metadata = Box(yaml.safe_load(open(metadata_path)))
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.split_ratio = 0.8
@@ -169,19 +253,37 @@ class ClayDataModule(L.LightningDataModule):
             chips_path = list(dp.list_files_by_s3(masks="*.npz"))
         else:  # if self.data_dir is a local data path
             chips_path = sorted(list(Path(self.data_dir).glob("**/*.npz")))
+            chips_platform = [chip.parent.parent.name for chip in chips_path]
+            # chips_platform = [chip.parent.parent.name for chip in chips_path]
         print(f"Total number of chips: {len(chips_path)}")
 
         if stage == "fit":
-            random.shuffle(chips_path)
-            split = int(len(chips_path) * self.split_ratio)
+            trn_paths, val_paths = train_test_split(
+                chips_path,
+                test_size=(1 - self.split_ratio),
+                stratify=chips_platform,
+                shuffle=True,
+            )
 
             self.trn_ds = EODataset(
-                chips_path=chips_path[:split],
+                chips_path=trn_paths,
+                size=self.size,
                 metadata=self.metadata,
             )
+            self.trn_sampler = ClaySampler(
+                dataset=self.trn_ds,
+                platforms=self.platforms,
+                batch_size=self.batch_size,
+            )
             self.val_ds = EODataset(
-                chips_path=chips_path[split:],
+                chips_path=val_paths,
+                size=self.size,
                 metadata=self.metadata,
+            )
+            self.val_sampler = ClaySampler(
+                dataset=self.val_ds,
+                platforms=self.platforms,
+                batch_size=self.batch_size,
             )
 
         elif stage == "predict":
@@ -194,19 +296,21 @@ class ClayDataModule(L.LightningDataModule):
     def train_dataloader(self):
         return DataLoader(
             self.trn_ds,
-            batch_size=self.batch_size,
             num_workers=self.num_workers,
-            shuffle=True,
+            batch_sampler=self.trn_sampler,
+            collate_fn=batch_collate,
             pin_memory=True,
+            prefetch_factor=4,
         )
 
     def val_dataloader(self):
         return DataLoader(
             self.val_ds,
-            batch_size=self.batch_size,
             num_workers=self.num_workers,
-            shuffle=False,
+            batch_sampler=self.val_sampler,
+            collate_fn=batch_collate,
             pin_memory=True,
+            prefetch_factor=4,
         )
 
     def predict_dataloader(self):

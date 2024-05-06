@@ -9,13 +9,14 @@ dependencies:
     - einops
     - geopandas
     - jupyterlab
-    - jsonargparse
+    - jsonargparse[signatures]>=4.27.7
     - lightning
     - matplotlib
     - python-box
     - pyarrow
     - rasterio
     - s3fs
+    - scikit-image
     - scikit-learn
     - torch~=2.1.0
     - torchdata

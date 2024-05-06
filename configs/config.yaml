@@ -2,14 +2,21 @@
 seed_everything: 42
 data:
   data_dir: data
-  platform: naip
+  size: 224
   metadata_path: configs/metadata.yaml
-  batch_size: 96
-  num_workers: 192
+  platforms:
+    - landsat-c2l1
+    - landsat-c2l2-sr
+    - linz
+    - naip
+    - sentinel-1-rtc
+    - sentinel-2-l2a
+  batch_size: 8
+  num_workers: 8
 model:
   model_size: base
-  mask_ratio: 0.75
-  norm_pix_loss: False
+  mask_ratio: 0.70
+  norm_pix_loss: True
   patch_size: 16
   shuffle: True
   metadata_path: configs/metadata.yaml
@@ -21,23 +28,24 @@ model:
   embeddings_level: mean
 trainer:
   accelerator: auto
-  strategy: ddp # ddp_find_unused_parameters_true
+  strategy: ddp
   devices: auto
   num_nodes: 1
   precision: bf16-mixed
-  log_every_n_steps: 50
-  max_epochs: 100
-  accumulate_grad_batches: 2
-  default_root_dir: s3://clay-model-ckpt/v0.3.4/
-  val_check_interval: 0.5
+  log_every_n_steps: 10
+  max_epochs: 200
+  accumulate_grad_batches: 1
+  default_root_dir: s3://clay-model-ckpt/v0.5.0/
+  # val_check_interval: 0.5
   fast_dev_run: False
   num_sanity_val_steps: 0
+  use_distributed_sampler: False
   # logger:
   #   - class_path: lightning.pytorch.loggers.CSVLogger
   #     init_args:
   #       save_dir: log_dir
-  #       name: testv0.3.4
-  logger: 
+  #       name: testv0.5.0
+  logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
         entity: developmentseed
@@ -46,9 +54,9 @@ trainer:
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
-        dirpath: s3://clay-model-ckpt/v0.3.4/
+        dirpath: s3://clay-model-ckpt/v0.5.0/
         auto_insert_metric_name: False
-        filename: mae_v0.3.4_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
+        filename: mae_v0.5.0_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
         monitor: val/loss
         mode: min
         save_last: True
@@ -58,7 +66,7 @@ trainer:
     - class_path: lightning.pytorch.callbacks.LearningRateMonitor
       init_args:
         logging_interval: step
-    # - class_path: src.callbacks.LogIntermediatePredictions
+    - class_path: src.callbacks_wandb.LogIntermediatePredictions
   plugins:
     - class_path: lightning.pytorch.plugins.io.AsyncCheckpointIO
 ckpt_path: null
