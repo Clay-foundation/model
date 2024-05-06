@@ -187,7 +187,10 @@ end = "2018-09-01"
 stack = get_stack(*poi, start, end, gsd=10, size=64)
 plot_rgb(stack)
 
-model = load_model(ckpt="/home/tam/Downloads/mae_v0.53_last.ckpt", device="cuda")
+model = load_model(
+    ckpt="s3://clay-model-ckpt/v0.5.3/mae_v0.5.3_epoch-29_val-loss-0.3073.ckpt",
+    device="cuda",
+)
 
 embeddings = generate_embeddings(model, stack)
 
