@@ -504,7 +504,7 @@ class ClayMAE(nn.Module):
             if platform == "sentinel-1-rtc":
                 r = datacube["pixels"][:, 0, :, :]
                 g = datacube["pixels"][:, 1, :, :]
-                b = r / (g + 1e-6)
+                b = r - g
                 rgb = torch.stack((r, g, b), dim=1)
             else:
                 # Read RGB bands from the sensor to feed the teacher model
