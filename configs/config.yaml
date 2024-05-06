@@ -12,11 +12,11 @@ data:
     - sentinel-1-rtc
     - sentinel-2-l2a
   batch_size: 8
-  num_workers: 64
+  num_workers: 8
 model:
   model_size: base
-  mask_ratio: 0.75
-  norm_pix_loss: False
+  mask_ratio: 0.70
+  norm_pix_loss: True
   patch_size: 16
   shuffle: True
   metadata_path: configs/metadata.yaml
@@ -28,7 +28,7 @@ model:
   embeddings_level: mean
 trainer:
   accelerator: auto
-  # strategy: ddp
+  strategy: ddp
   devices: auto
   num_nodes: 1
   precision: bf16-mixed
