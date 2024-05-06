@@ -14,13 +14,16 @@ dependencies:
   - lightning~=2.1.0
   - matplotlib-base~=3.8.2
   - planetary-computer~=1.0.0
+  - python-box~=7.1.0
   - pytorch~=2.1.0  # [osx]
   - pytorch~=2.1.0 *cuda12*  # [linux]
   - python~=3.11.0
   - rioxarray~=0.15.0
+  - s3fs~=2024.3.1
   - scikit-image~=0.22.0
   - scikit-learn~=1.4.0
   - stackstac~=0.5.0
+  - timm~=0.9.16
   - torchdata~=0.7.1
   - transformers~=4.35.2
   - typeshed-client~=2.4.0

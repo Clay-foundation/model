@@ -25,17 +25,19 @@ class FCBlock(nn.Module):
 
 
 class WavesTransformer(nn.Module):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         wave_dim,
         output_dim,
         num_latent_tokens,
         embed_dim,
+        is_decoder,
         num_heads=4,
         num_layers=1,
     ):
         super().__init__()
         self.num_latent_tokens = num_latent_tokens
+        self.is_decoder = is_decoder
         layer = nn.TransformerEncoderLayer(
             d_model=wave_dim,
             nhead=num_heads,
@@ -47,7 +49,7 @@ class WavesTransformer(nn.Module):
         self.encoder = nn.TransformerEncoder(layer, num_layers)
 
         self.fc_weight = nn.Linear(wave_dim, output_dim)
-        self.fc_bias = nn.Linear(wave_dim, embed_dim)
+        self.fc_bias = None if self.is_decoder else nn.Linear(wave_dim, embed_dim)
 
         self.weight_tokens = nn.Parameter(
             torch.randn(self.num_latent_tokens, wave_dim) * 0.02
@@ -60,7 +62,7 @@ class WavesTransformer(nn.Module):
         weights = self.fc_weight(
             out[self.num_latent_tokens : -1] + x[self.num_latent_tokens : -1]
         )
-        bias = self.fc_bias(out[-1])
+        bias = None if self.is_decoder else self.fc_bias(out[-1])
         return weights, bias
 
 
@@ -82,7 +84,11 @@ class DynamicEmbedding(nn.Module):
         self.output_dim = (patch_size**2) * embed_dim
 
         self.weight_generator = WavesTransformer(
-            wave_dim, self.output_dim, self.num_latent_tokens, self.embed_dim
+            wave_dim,
+            self.output_dim,
+            self.num_latent_tokens,
+            self.embed_dim,
+            is_decoder,
         )
         self.fclayer = FCBlock(self.wave_dim)
 
@@ -90,6 +96,7 @@ class DynamicEmbedding(nn.Module):
 
     def forward(self, batch, waves):
         waves = posemb_sincos_1d(waves, self.wave_dim)
+        waves = waves.to(batch.device)
         waves = self.fclayer(waves)
         weight, bias = self.weight_generator(waves)
 
@@ -101,7 +108,9 @@ class DynamicEmbedding(nn.Module):
                 k2=self.patch_size,
                 cout=self.embed_dim,
             )
-            dynamic_out = F.linear(batch, dynamic_weight * 0.02, bias=None)
+            if bias is not None:
+                bias = rearrange(bias, "b -> (b)")
+            dynamic_out = F.linear(batch, dynamic_weight * 0.02, bias=bias)
             x = dynamic_out
         else:
             dynamic_weight = rearrange(
