@@ -17,6 +17,7 @@ import torchdata
 import yaml
 from box import Box
 from einops import rearrange
+from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
 from torch.utils.data.sampler import Sampler, BatchSampler
@@ -253,15 +254,20 @@ class ClayDataModule(L.LightningDataModule):
             chips_path = list(dp.list_files_by_s3(masks="*.npz"))
         else:  # if self.data_dir is a local data path
             chips_path = sorted(list(Path(self.data_dir).glob("**/*.npz")))
+            chips_platform = [chip.parent.parent.name for chip in chips_path]
             # chips_platform = [chip.parent.parent.name for chip in chips_path]
         print(f"Total number of chips: {len(chips_path)}")
 
         if stage == "fit":
-            random.shuffle(chips_path)
-            split = int(len(chips_path) * self.split_ratio)
+            trn_paths, val_paths = train_test_split(
+                chips_path,
+                test_size=(1 - self.split_ratio),
+                stratify=chips_platform,
+                shuffle=True,
+            )
 
             self.trn_ds = EODataset(
-                chips_path=chips_path[:split],
+                chips_path=trn_paths,
                 size=self.size,
                 metadata=self.metadata,
             )
@@ -271,7 +277,7 @@ class ClayDataModule(L.LightningDataModule):
                 batch_size=self.batch_size,
             )
             self.val_ds = EODataset(
-                chips_path=chips_path[split:],
+                chips_path=val_paths,
                 size=self.size,
                 metadata=self.metadata,
             )
@@ -295,6 +301,7 @@ class ClayDataModule(L.LightningDataModule):
             batch_sampler=self.trn_sampler,
             collate_fn=batch_collate,
             pin_memory=True,
+            prefetch_factor=4,
         )
 
     def val_dataloader(self):
@@ -304,6 +311,7 @@ class ClayDataModule(L.LightningDataModule):
             batch_sampler=self.val_sampler,
             collate_fn=batch_collate,
             pin_memory=True,
+            prefetch_factor=4,
         )
 
     def predict_dataloader(self):
