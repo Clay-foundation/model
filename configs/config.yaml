@@ -45,7 +45,7 @@ trainer:
   #     init_args:
   #       save_dir: log_dir
   #       name: testv0.5.0
-  logger: 
+  logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
         entity: developmentseed

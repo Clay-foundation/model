@@ -4,7 +4,6 @@ rasterio.
 """
 
 import math
-import random
 from collections import defaultdict
 from pathlib import Path
 from typing import List, Literal
@@ -19,8 +18,8 @@ from box import Box
 from einops import rearrange
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
+from torch.utils.data.sampler import Sampler
 from torchvision.transforms import v2
-from torch.utils.data.sampler import Sampler, BatchSampler
 
 
 # %%
