@@ -9,7 +9,9 @@ Model weights released on 2024/01/12.
 
 ### Summary
 
-Clay v0 is a self-supervised modified vision transfer model trained on stacks of Sentinel-2, Sentinel-1 & DEM data. It is trained as a Masked Autoencoder (MAE) to reconstruct the original image from a masked image.
+Clay v0 is a self-supervised modified vision transformer model trained on stacks of Sentinel-2, Sentinel-1 & DEM data. It is trained as a Masked Autoencoder (MAE) to reconstruct the original image from a masked image.
+
+With the pre-trained model, you can input stacks of geospatial data and output vector embeddings, which capture spatial, temporal, and spectral information about Earth and represent these relationships numerically in high-dimensional space. Each embedding is representative of a certain area of Earth at a certain point in time.
 
 Each data entry is a stack of 10 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. The model is trained with 3 timesteps of data for each location, with a total of 1203 MGRS tiles globally distributed, each of size 10km x 10km. The data was collected from the Microsoft Planetary Computer.
 
