@@ -36,6 +36,7 @@ N_S_INDEX_END = 49
 YORIGIN = 50.0
 XORIGIN = -125.0
 PXSIZE = 8.333333333333333e-05
+SUCCESS_CODE = 200
 
 RASTER_X_SIZE = (E_W_INDEX_END - E_W_INDEX_START) * TILE_SIZE
 RASTER_Y_SIZE = (N_S_INDEX_END - N_S_INDEX_START) * TILE_SIZE
@@ -191,7 +192,7 @@ def download_image(url):
     # Download the image from the URL
     response = requests.get(url)
     # Check if the request was successful
-    if response.status_code == 200:
+    if response.status_code == SUCCESS_CODE:
         return response.content  # Return the image content
     else:
         raise Exception("Failed to download the image")
@@ -394,11 +395,6 @@ while yoff < RASTER_Y_SIZE:
                 ]
 
                 data = {
-                    # "source_url": batch["source_url"][0],
-                    # "date": pd.to_datetime(arg=date, format="%Y-%m-%d").astype(
-                    #    dtype="date32[day][pyarrow]"
-                    # ),
-                    # "date": pd.to_datetime(date, format="%Y-%m-%d", dtype="date32[day][pyarrow]"),
                     "date": pd.to_datetime(batch["date"], format="%Y-%m-%d"),
                     "embeddings": [numpy.ascontiguousarray(embeddings_output_patch)],
                 }
@@ -426,7 +422,9 @@ while yoff < RASTER_Y_SIZE:
                     # print(gdf)
 
                     gdf.to_parquet(
-                        path=outpath, compression="ZSTD", schema_version="1.0.0"
+                        path=outpath, 
+                        compression="ZSTD", 
+                        schema_version="1.0.0"
                     )
 
                     s3_client = boto3.client("s3")
