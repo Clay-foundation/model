@@ -145,7 +145,7 @@ inputs it will be necessary to subset these as shown in the partial input tutori
 * Training Time:
     * `25` epochs, each taking ~`15h` to train.
 * Carbon Emissions:
-    * According to the "Customer Carbon Emission Tool", there were no emissions. Following the [documentation](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/ccft-estimation.html), we believe this is due to the usage of renewable energy sources.
+    * According to the "Customer Carbon Emission Tool", there were no Scope 1 or Scope 2 carbon emissions. Following the [documentation](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/ccft-estimation.html), we believe this is due to the usage of renewable energy sources. We are aware that Scope 3 emissions might be significant for data centers and that these are not included in the estimate. 
 * Training stages:
     * While developing the model we run small tests locally and on the cloud. We estimate that all testing and development compute is less than the compute used for 1 epoch of training.
     * QA of the model is also done locally and on the cloud, and we estimate that it is less than the compute used for 1 epoch of training.
