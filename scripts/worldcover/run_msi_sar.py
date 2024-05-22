@@ -417,16 +417,16 @@ while yoff < RASTER_Y_SIZE:
                 with tempfile.TemporaryDirectory() as tmp:
                     # tmp = "/home/tam/Desktop/wcctmp"
 
-                    outpath = f"{tmp}/worldcover_patch_embeddings_{YEAR}_{index}_{i}_{j}_" \
-                              f"v{VERSION}.gpq"
+                    outpath = (
+                        f"{tmp}/worldcover_patch_embeddings_{YEAR}_{index}_{i}_{j}_"
+                        f"v{VERSION}.gpq"
+                    )
 
                     print(f"Uploading embeddings to {outpath}")
                     # print(gdf)
 
                     gdf.to_parquet(
-                        path=outpath, 
-                        compression="ZSTD", 
-                        schema_version="1.0.0"
+                        path=outpath, compression="ZSTD", schema_version="1.0.0"
                     )
 
                     s3_client = boto3.client("s3")
