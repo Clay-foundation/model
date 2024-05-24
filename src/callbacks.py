@@ -1,5 +1,4 @@
 from torch.lightning.callbacks import Callback
-from torchvision.transforms import v2
 
 
 class ProgressiveResizing(Callback):
