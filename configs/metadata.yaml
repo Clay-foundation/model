@@ -1,0 +1,186 @@
+sentinel-2-l2a:
+  band_order:
+    - blue
+    - green
+    - red
+    - rededge1
+    - rededge2
+    - rededge3
+    - nir
+    - nir08
+    - swir16
+    - swir22
+  rgb_indices:
+    - 2
+    - 1
+    - 0
+  gsd: 10
+  bands:
+    mean:
+      blue: 1105.
+      green: 1355.
+      red: 1552.
+      rededge1: 1887.
+      rededge2: 2422.
+      rededge3: 2630.
+      nir: 2743.
+      nir08: 2785.
+      swir16: 2388.
+      swir22: 1835.
+    std:
+      blue: 1809.
+      green: 1757.
+      red: 1888.
+      rededge1: 1870.
+      rededge2: 1732.
+      rededge3: 1697.
+      nir: 1742.
+      nir08: 1648.
+      swir16: 1470.
+      swir22: 1379.
+    wavelength:
+      blue: 0.493
+      green: 0.56
+      red: 0.665
+      rededge1: 0.704
+      rededge2: 0.74
+      rededge3: 0.783
+      nir: 0.842
+      nir08: 0.865
+      swir16: 1.61
+      swir22: 2.19
+landsat-c2l1:
+  band_order:
+    - red
+    - green
+    - blue
+    - nir08
+    - swir16
+    - swir22
+  rgb_indices:
+    - 0
+    - 1
+    - 2
+  gsd: 30
+  bands:
+    mean:
+      red: 10678.
+      green: 10563.
+      blue: 11083.
+      nir08: 14792.
+      swir16: 12276.
+      swir22: 10114.
+    std:
+      red: 6025.
+      green: 5411.
+      blue: 5468.
+      nir08: 6746.
+      swir16: 5897.
+      swir22: 4850.
+    wavelength:
+      red: 0.65
+      green: 0.56
+      blue: 0.48
+      nir08: 0.86
+      swir16: 1.6
+      swir22: 2.2
+landsat-c2l2-sr:
+  band_order:
+    - red
+    - green
+    - blue
+    - nir08
+    - swir16
+    - swir22
+  rgb_indices:
+    - 0
+    - 1
+    - 2
+  gsd: 30
+  bands:
+    mean:
+      red: 13705.
+      green: 13310.
+      blue: 12474.
+      nir08: 17801.
+      swir16: 14615.
+      swir22: 12701.
+    std:
+      red: 9578.
+      green: 9408.
+      blue: 10144.
+      nir08: 8277.
+      swir16: 5300.
+      swir22: 4522.
+    wavelength:
+      red: 0.65
+      green: 0.56
+      blue: 0.48
+      nir08: 0.86
+      swir16: 1.6
+      swir22: 2.2
+naip:
+  band_order:
+    - red
+    - green
+    - blue
+    - nir
+  rgb_indices:
+    - 0
+    - 1
+    - 2
+  gsd: 1.0
+  bands:
+    mean:
+      red: 110.16
+      green: 115.41
+      blue: 98.15
+      nir: 139.04
+    std:
+      red: 47.23
+      green: 39.82
+      blue: 35.43
+      nir: 49.86
+    wavelength:
+      red: 0.65
+      green: 0.56
+      blue: 0.48
+      nir: 0.842
+linz:
+  band_order:
+    - red
+    - green
+    - blue
+  rgb_indices:
+    - 0
+    - 1
+    - 2
+  gsd: 0.5
+  bands:
+    mean:
+      red: 89.96
+      green: 99.46
+      blue: 89.51
+    std:
+      red: 41.83
+      green: 36.96
+      blue: 31.45
+    wavelength:
+      red: 0.635
+      green: 0.555
+      blue: 0.465
+sentinel-1-rtc:
+  band_order:
+    - vv
+    - vh
+  gsd: 10
+  bands:
+    mean:
+      vv: 0.123273
+      vh: 0.027337
+    std:
+      vv: 1.492154
+      vh: 0.122182
+    wavelength:
+      vv: 3.5
+      vh: 4.0
