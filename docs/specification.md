@@ -9,7 +9,9 @@ Model weights released on 2024/01/12.
 
 ### Summary
 
-Clay v0 is a self-supervised modified vision transfer model trained on stacks of Sentinel-2, Sentinel-1 & DEM data. It is trained as a Masked Autoencoder (MAE) to reconstruct the original image from a masked image.
+Clay v0 is a self-supervised modified vision transformer model trained on stacks of Sentinel-2, Sentinel-1 & DEM data. It is trained as a Masked Autoencoder (MAE) to reconstruct the original image from a masked image.
+
+With the pre-trained model, you can input stacks of geospatial data and output vector embeddings, which capture spatial, temporal, and spectral information about Earth and represent these relationships numerically in high-dimensional space. Each embedding is representative of a certain area of Earth at a certain point in time.
 
 Each data entry is a stack of 10 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. The model is trained with 3 timesteps of data for each location, with a total of 1203 MGRS tiles globally distributed, each of size 10km x 10km. The data was collected from the Microsoft Planetary Computer.
 
@@ -143,7 +145,7 @@ inputs it will be necessary to subset these as shown in the partial input tutori
 * Training Time:
     * `25` epochs, each taking ~`15h` to train.
 * Carbon Emissions:
-    * *Report not yet available from provider, expected March'24*
+    * According to the "Customer Carbon Emission Tool", there were no Scope 1 or Scope 2 carbon emissions. Following the [documentation](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/ccft-estimation.html), we believe this is due to the usage of renewable energy sources. We are aware that Scope 3 emissions might be significant for data centers and that these are not included in the estimate.
 * Training stages:
     * While developing the model we run small tests locally and on the cloud. We estimate that all testing and development compute is less than the compute used for 1 epoch of training.
     * QA of the model is also done locally and on the cloud, and we estimate that it is less than the compute used for 1 epoch of training.

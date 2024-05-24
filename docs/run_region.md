@@ -63,26 +63,26 @@ mgrs_aoi.to_file("data/mgrs/mgrs_aoi.fgb")
 
 This will select the MGRS tiles that intersect with your AOI. The processing
 will then happen for each of the MGRS tiles. This will most likely provide
-slightly more data than the AOI itself, as the whole tile data will downloaded
+slightly more data than the AOI itself, as the whole tile data will be downloaded
 for each matched MGRS tile.
 
-Each run of th datacube script will take an index as input, which is the index
+Each run of the datacube script will take an index as input, which is the index
 of the MGRS tile within the input file. This is why we need to download the
 data in a loop.
 
 A list of date ranges can be specified. The script will look for the least
-cloudy Sentinel-2 scene for each date range, and match Sentinel-1 dates near
+cloudy Sentinel-2 scene for each date range and match Sentinel-1 dates near
 the identified Sentinel-2 dates.
 
-The output folder can be specified as a local folder, or a bucket can be
-specified to upload the data to S3.
+The output folder can be specified as a local folder or a bucket can be
+specified if you want to upload the data to S3.
 
 Note that for the script to run, a Microsoft Planetary Computer token needs
-to be set up, consult the [Planetary Computer SDK](https://github.com/microsoft/planetary-computer-sdk-for-python)
+to be set up. Consult the [Planetary Computer SDK](https://github.com/microsoft/planetary-computer-sdk-for-python)
 documentation on how to set up the token.
 
 By default, the datacube script will download all the data available for each
-MGRS tile it processes. So the output might include imagery chips that are
+MGRS tile it processes, so the output might include imagery chips that are
 outside of the AOI specified.
 
 To speed up processing in the example below, we use the subset argument to
@@ -95,7 +95,7 @@ be downloaded for each MGRS tile.
 ```bash
 for i in {0..5}; do
 
-python scripts/datacube.py \
+python scripts/pipeline/datacube.py \
     --sample data/mgrs/mgrs_aoi.fgb \
     --localpath data/chips  \
     --index $i \
@@ -110,7 +110,7 @@ done
 The checkpoints can be accessed directly from Hugging Face
 at https://huggingface.co/made-with-clay/Clay.
 
-The following command will run the model to create the embeddings,
+The following command will run the model to create the embeddings
 and automatically download and cache the model weights.
 
 ```bash

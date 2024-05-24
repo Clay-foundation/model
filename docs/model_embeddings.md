@@ -1,13 +1,13 @@
 # Generating vector embeddings
 
-Once you have a pretrained model, it is now possible to pass some input images
-into the encoder part of the Vision Transformer, and produce vector embeddings
+Once you have a pretrained model, it is possible to pass some input images
+into the encoder part of the Vision Transformer and produce vector embeddings
 which contain a semantic representation of the image.
 
 ## Producing embeddings from the pretrained model
 
-Step by step instructions to create embeddings for a single MGRS tile location
-(e.g. 27WXN).
+Step-by-step instructions to create embeddings for a single MGRS tile location
+(e.g. 27WXN):
 
 1. Ensure that you can access the 13-band GeoTIFF data files.
 
@@ -15,11 +15,11 @@ Step by step instructions to create embeddings for a single MGRS tile location
    aws s3 ls s3://clay-tiles-02/02/27WXN/
    ```
 
-   This should report a list of filepaths if you have the correct permissions,
-   otherwise, please set up authentication before continuing.
+   This should report a list of filepaths if you have the correct permissions.
+   Otherwise, please set up authentication before continuing.
 
-2. Download the pretrained model weights, and put them in the `checkpoints/`
-   folder.
+2. Download the pretrained model weights and put them in the `checkpoints/`
+   folder:
 
    ```bash
    aws s3 cp s3://clay-model-ckpt/v0/clay-small-70MT-1100T-10E.ckpt checkpoints/
@@ -37,7 +37,7 @@ Step by step instructions to create embeddings for a single MGRS tile location
    For example, an AWS g5.4xlarge instance would be a cost effective option.
    ```
 
-3. Run model inference to generate the embeddings.
+3. Run model inference to generate the embeddings:
 
    ```bash
    python trainer.py predict --ckpt_path=checkpoints/clay-small-70MT-1100T-10E.ckpt \
@@ -51,7 +51,7 @@ Step by step instructions to create embeddings for a single MGRS tile location
    This should output a GeoParquet file containing the embeddings for MGRS tile
    27WXN (recall that each 10000x10000 pixel MGRS tile contains hundreds of
    smaller 512x512 chips), saved to the `data/embeddings/` folder. See the next
-   sub-section for details about the embeddings file.
+   subsection for details about the embeddings file.
 
    The `embeddings_level` flag determines how the embeddings are calculated.
    The default is `mean`, resulting in one average embedding per MGRS tile of
@@ -61,9 +61,9 @@ Step by step instructions to create embeddings for a single MGRS tile location
    dimensionality of the encoder output, including the band group
    dimension. The array size of those embeddings is 6 * 16 * 16 * 768.
 
-   The embeddings are flattened into one dimensional arrays because pandas
+   The embeddings are flattened into one-dimensional arrays because pandas
    does not allow for multidimensional arrays. This makes it necessary to
-   reshape the flattened arrays to access the patch level embeddings.
+   reshape the flattened arrays to access the patch-level embeddings.
 
    ```{note}
    For those interested in how the embeddings were computed, the predict step
@@ -113,7 +113,7 @@ Example: `27WXN_20200101_20231231_v001.gpq`
 
 ### Table schema
 
-Each row within the GeoParquet table is generated from a 512x512 pixel image,
+Each row within the GeoParquet table is generated from a 512x512 pixel image
 and contains a record of the embeddings, spatiotemporal metadata, and a link to
 the GeoTIFF file used as the source image for the embedding. The table looks
 something like this:
@@ -161,9 +161,9 @@ Further reading:
 - https://cloudnativegeo.org/blog/2023/10/the-geoparquet-ecosystem-at-1.0.0
 ```
 
-## Converting to patch level embeddings
+## Converting to patch-level embeddings
 
-In the case where patch level embeddings are requested, the resulting array
+In the case where patch-level embeddings are requested, the resulting array
 will have all patch embeddings ravelled in one row. Each row represents a
 512x512 pixel image, and contains 16x16 patch embeddings.
 
