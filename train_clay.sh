@@ -20,4 +20,4 @@ export PYTHONFAULTHANDLER=1
 export PYTHONUNBUFFERED=1
 
 # Run the model on multi node parallel cluster
-srun python trainer.py fit --model ClayMAEModule --data ClayDataModule --config configs/config.yaml --data.data_dir /fsx/dra1/naip
+srun python trainer.py fit --model ClayMAEModule --data ClayDataModule --config configs/config.yaml --data.data_dir /fsx
