@@ -1,14 +1,8 @@
 import math
 import os
-import re
 from typing import Literal
 
-import geopandas as gpd
 import lightning as L
-import numpy as np
-import pandas as pd
-import pyarrow as pa
-import shapely
 import timm
 import torch
 import torch.nn.functional as F

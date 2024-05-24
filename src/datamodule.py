@@ -3,14 +3,12 @@ LightningDataModule to load Earth Observation data from GeoTIFF files using
 rasterio.
 """
 
-import math
 from collections import defaultdict
 from pathlib import Path
 from typing import List, Literal
 
 import lightning as L
 import numpy as np
-import rasterio
 import torch
 import torchdata
 import yaml
