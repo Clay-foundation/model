@@ -16,7 +16,7 @@ Start by cloning this [repo-url](https://github.com/Clay-foundation/model)
     git clone https://github.com/Clay-foundation/model
     cd model
 
-Then we recommend [using mamba](https://mamba.readthedocs.io/en/latest/installation.html)
+Then we recommend [using mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html)
 to install the dependencies. A virtual environment will also be created with Python and
 [JupyterLab](https://github.com/jupyterlab/jupyterlab) installed.
 
