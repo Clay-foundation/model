@@ -4,7 +4,7 @@ This section describes how we created the training dataset for the clay model.
 
 ## Data sources selection
 
-The goal for the Clay model is for it to be as general as possible. It should be able to accept data from any platform coming from satellites, aerial, or drone platforms. For this to be possible, clearly the model design is the basis. We have developed a model architecture that can accept multiple different spectral bands and resolutions as input, at different sizes.
+The goal for the Clay model is for it to be as general as possible. It should be able to accept data from any platform coming from satellites, aerial, or drone platforms. For this to be possible, clearly the model design is the basis. Drawing inspiration from earlier works on Foundation models like Prithvi, SatMAE, ScaleMAE, DOFA, and SpectralGPT, we have developed a model architecture capable of accepting inputs of diverse spectral bands and resolutions in different sizes.
 
 To train such a model, it is necessary to create a training dataset
 that contains data from multiple platforms, and is as varied as possible in terms of
@@ -23,8 +23,8 @@ included in the trainig for Clay v1
 | Platform | Spatial Coverage | Spectral bands | GSD (meters) |
 ---------|------------------|----------------|--------------|
 | Landsat 8 and 9 | Global | 6 optical bands | 30 |
-| Sentinel 2 | Global | 10 optical bands | 10 |
-| Sentinel 1 | Global | 2 radar bands | 10 |
+| Sentinel 2 L2A | Global | 10 optical bands | 10 |
+| Sentinel 1 RTC | Global | 2 radar bands | 10 |
 | NAIP | USA | 4 optical bands | < 1 |
 | LINZ | New Zealand | 3 optical bands | < 0.5 |
 
