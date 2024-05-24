@@ -110,21 +110,13 @@ class ClayDataset(Dataset):
 class EODataset(Dataset):
     """Reads different Earth Observation data sources from a directory."""
 
-    def __init__(self, chips_path: List[Path], size: int, metadata: Box) -> None:
+    def __init__(
+        self, chips_path: List[Path], size: int, platforms: list, metadata: Box
+    ) -> None:
         super().__init__()
         self.chips_path = chips_path
         self.size = size
         self.transforms = {}
-
-        # Platforms to setup transforms for
-        platforms = [
-            "landsat-c2l1",
-            "landsat-c2l2-sr",
-            "linz",
-            "naip",
-            "sentinel-1-rtc",
-            "sentinel-2-l2a",
-        ]
 
         # Generate transforms for each platform using a helper function
         for platform in platforms:
@@ -268,6 +260,7 @@ class ClayDataModule(L.LightningDataModule):
             self.trn_ds = EODataset(
                 chips_path=trn_paths,
                 size=self.size,
+                platforms=self.platforms,
                 metadata=self.metadata,
             )
             self.trn_sampler = ClaySampler(
@@ -278,6 +271,7 @@ class ClayDataModule(L.LightningDataModule):
             self.val_ds = EODataset(
                 chips_path=val_paths,
                 size=self.size,
+                platforms=self.platforms,
                 metadata=self.metadata,
             )
             self.val_sampler = ClaySampler(
