@@ -38,18 +38,8 @@ parts:
       file: worldcover-embeddings
 - caption: Tutorials
   chapters:
-    - title: Generative AI for pixel reconstruction
-      file: clay-v0-reconstruction
-    - title: Create location embeddings
-      file: clay-v0-location-embeddings
-    - title: Interpolating images in embedding space
-      file: clay-v0-interpolation
-    - title: Generate embeddings from partial inputs
-      file: partial-inputs
-    - title: Generate and use patch level embeddings from partial input
-      file: tutorial_digital_earth_pacific_patch_level
-    - title: Calculate and use patch level cloud cover percentages
-      file: patch_level_cloud_cover
+    - title: Explore embeddings from Clay Encoder
+      file: visualize-embeddings
 - caption: About Clay
   chapters:
     - title: GitHub
