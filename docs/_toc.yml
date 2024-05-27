@@ -40,6 +40,8 @@ parts:
   chapters:
     - title: Explore embeddings from Clay Encoder
       file: visualize-embeddings
+    - title: Clay MAE reconstruction
+      file: reconstruction
 - caption: About Clay
   chapters:
     - title: GitHub

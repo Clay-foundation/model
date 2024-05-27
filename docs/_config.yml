@@ -13,6 +13,7 @@ execute:
   exclude_patterns:
     - clay-v1-wall-to-wall.ipynb
     - visualize-embeddings.ipynb
+    - reconstruction.ipynb
 
 # Define the name of the latex output file for PDF builds
 latex:
