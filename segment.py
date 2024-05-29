@@ -15,6 +15,7 @@ from lightning.pytorch.cli import LightningCLI
 from finetune.segment.chesapeake_datamodule import ChesapeakeDataModule  # noqa: F401
 from finetune.segment.chesapeake_model import ChesapeakeSegmentor  # noqa: F401
 
+
 # %%
 def cli_main():
     """
@@ -42,11 +43,11 @@ if __name__ == "__main__":
 
 # if __name__ == "__main__":
 #     dm = ChesapeakeDataModule(
-#         train_chip_dir, 
-#         train_label_dir, 
-#         val_chip_dir, 
-#         val_label_dir, 
-#         metadata_path, 
+#         train_chip_dir,
+#         train_label_dir,
+#         val_chip_dir,
+#         val_label_dir,
+#         metadata_path,
 #         batch_size,
 #         num_workers,
 #         platform)
