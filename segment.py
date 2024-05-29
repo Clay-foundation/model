@@ -30,29 +30,3 @@ if __name__ == "__main__":
     cli_main()
 
     print("Done!")
-
-
-# import yaml
-# from box import Box
-
-# import lightning as L
-# from torchvision.transforms import v2
-
-# from finetune.segment.chesapeake_datamodule import ChesapeakeDataModule
-# from finetune.segment.chesapeake_model import ChesapeakeSegmentor
-
-# if __name__ == "__main__":
-#     dm = ChesapeakeDataModule(
-#         train_chip_dir,
-#         train_label_dir,
-#         val_chip_dir,
-#         val_label_dir,
-#         metadata_path,
-#         batch_size,
-#         num_workers,
-#         platform)
-
-#     model = ChesapeakeSegmentor()
-
-#     trainer = L.Trainer(max_epochs=5, devices="auto", accelerator="auto", fast_dev_run=False)
-#     trainer.fit(model, datamodule=dm)
