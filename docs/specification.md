@@ -34,9 +34,10 @@ The pre-trained model can process stacks of geospatial data from different senso
 
 Clay v1 was trained on 70 million globally distributed chips of size 224x224, collected according to the land use/land cover (LULC) statistics of the globe. The training was conducted on AWS using four p5.48xlarge instances for ten epochs in May 2024.
 
-You can access the model weights on HuggingFace [here](https://huggingface.co/made-with-clay/Clay/).
+You can access the model weights on HuggingFace [here](https://huggingface.co/made-with-clay/Clay/blob/main/clay-v1-base.ckpt).
 
 ## Model Architecture
+![Architecture](https://github.com/Clay-foundation/model/assets/8049519/f6a1e92c-3993-4148-98a2-e3805dae4414)
 
 Clay v1's architecture includes a dynamic embedding block for generating patches from multi-band inputs, position encoding to integrate spatial and temporal data, a Vision Transformer-based masked autoencoder (MAE) for reconstructing sensor data, and a DINO teacher model to enhance representation learning. This architecture allows the model to process inputs from various satellite sensors of any size and number of bands, capturing complex geospatial information effectively.
 
@@ -122,6 +123,10 @@ The data used for this model is described in detail in the [](training-data) sec
     * We do not have other distribution channels at this time.
 * Production use:
     * We support our partners to build applications with the model, and we expect them to use the model in production.
+
+![Training Loss](https://github.com/Clay-foundation/model/assets/8049519/b8618d46-a66c-441d-b3b2-e2707d74af95)
+![Validation Loss](https://github.com/Clay-foundation/model/assets/8049519/e266abad-bcd6-44e1-a4f2-889eec061748)
+
 
 ## Results
 
