@@ -17,7 +17,7 @@ that contains data from multiple platforms, and is as varied as possible in term
 To achieve this we have first complied a [list of possible input platforms](https://github.com/Clay-foundation/model/issues/128). The list of candidate systems is rather long, and will be growing in the future. To reduce complexity, we have converged to a shorter list of platforms for the first round of model training.
 
 Criteria was availability in the cloud, existence of STAC catalogs, and cloud optimized formats. This resulted in the following list of systems that we have
-included in the trainig for Clay v1
+included in the training for Clay v1
 
 
 | Platform | Spatial Coverage | Spectral bands | GSD (meters) |
