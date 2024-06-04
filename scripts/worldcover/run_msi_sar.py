@@ -10,7 +10,6 @@ from math import floor
 from pathlib import Path
 
 import boto3
-import einops
 import geopandas as gpd
 import numpy
 import pandas as pd
@@ -46,30 +45,29 @@ CKPT_PATH = (
     "https://huggingface.co/made-with-clay/Clay/resolve/main/"
     "Clay_v0.1_epoch-24_val-loss-0.46.ckpt"
 )
-VERSION = "005"
+VERSION = "007"
 BUCKET = "clay-worldcover-embeddings"
-URL = "https://esa-worldcover-s2.s3.amazonaws.com/rgbnir/{year}/N{yidx}/ESA_WorldCover_10m_{year}_v{version}_N{yidx}W{xidx}_S2RGBNIR.tif"
+URL_RGBNIR = "https://esa-worldcover-s2.s3.amazonaws.com/rgbnir/{year}/N{yidx}/ESA_WorldCover_10m_{year}_v{version}_N{yidx}W{xidx}_S2RGBNIR.tif"
+URL_SWIR = "https://esa-worldcover-s2.s3.amazonaws.com/swir/{year}/N{yidx}/ESA_WorldCover_10m_{year}_v{version}_N{yidx}W{xidx}_SWIR.tif"
+URL_SAR = "https://esa-worldcover-s1.s3.amazonaws.com/vvvhratio/{year}/N{yidx}/ESA_WorldCover_10m_{year}_v{version}_N{yidx}E{xidx}_S1VVVHratio.tif"
 WC_VERSION_LOOKUP = {
     2020: 100,
     2021: 200,
 }
 
+# Mean and standard deviation for RGBNIR bands
+MEAN_RGBNIR = [1369.03, 1597.68, 1741.10, 2858.43]
+STD_RGBNIR = [2026.96, 2011.88, 2146.35, 2016.38]
 
-MEAN = [
-    1369.03,  # red
-    1597.68,  # green
-    1741.10,  # blue
-    2858.43,  # nir
-]
-STD = [
-    2026.96,  # red
-    2011.88,  # green
-    2146.35,  # blue
-    2016.38,  # nir
-]
+# Mean and standard deviation for SWIR bands
+MEAN_SWIR = [2303.00, 1807.79]
+STD_SWIR = [1679.88, 1568.06]
+
+# Mean and standard deviation for SAR bands
+MEAN_SAR = [0.026, 0.118]
+STD_SAR = [0.118, 0.873]
 
 grid = gpd.read_file(
-    # "/home/tam/Desktop/usa/esa_worldcover_grid_usa.fgb"
     "https://clay-mgrs-samples.s3.amazonaws.com/esa_worldcover_grid_usa.fgb"
 )
 
@@ -92,7 +90,19 @@ def tiles_and_windows(input: Window):
 
     result = [
         (
-            URL.format(
+            URL_RGBNIR.format(
+                yidx=y_tile_index,
+                xidx=str(x_tile_index).zfill(3),
+                year=YEAR,
+                version=WC_VERSION_LOOKUP[YEAR],
+            ),
+            URL_SWIR.format(
+                yidx=y_tile_index,
+                xidx=str(x_tile_index).zfill(3),
+                year=YEAR,
+                version=WC_VERSION_LOOKUP[YEAR],
+            ),
+            URL_SAR.format(
                 yidx=y_tile_index,
                 xidx=str(x_tile_index).zfill(3),
                 year=YEAR,
@@ -105,7 +115,19 @@ def tiles_and_windows(input: Window):
     if x_another:
         result.append(
             (
-                URL.format(
+                URL_RGBNIR.format(
+                    yidx=y_tile_index,
+                    xidx=str(x_tile_index - 1).zfill(3),
+                    year=YEAR,
+                    version=WC_VERSION_LOOKUP[YEAR],
+                ),
+                URL_SWIR.format(
+                    yidx=y_tile_index,
+                    xidx=str(x_tile_index - 1).zfill(3),
+                    year=YEAR,
+                    version=WC_VERSION_LOOKUP[YEAR],
+                ),
+                URL_SAR.format(
                     yidx=y_tile_index,
                     xidx=str(x_tile_index - 1).zfill(3),
                     year=YEAR,
@@ -117,7 +139,19 @@ def tiles_and_windows(input: Window):
     if y_another:
         result.append(
             (
-                URL.format(
+                URL_RGBNIR.format(
+                    yidx=y_tile_index - 1,
+                    xidx=str(x_tile_index).zfill(3),
+                    year=YEAR,
+                    version=WC_VERSION_LOOKUP[YEAR],
+                ),
+                URL_SWIR.format(
+                    yidx=y_tile_index - 1,
+                    xidx=str(x_tile_index).zfill(3),
+                    year=YEAR,
+                    version=WC_VERSION_LOOKUP[YEAR],
+                ),
+                URL_SAR.format(
                     yidx=y_tile_index - 1,
                     xidx=str(x_tile_index).zfill(3),
                     year=YEAR,
@@ -129,7 +163,19 @@ def tiles_and_windows(input: Window):
     if x_another and y_another:
         result.append(
             (
-                URL.format(
+                URL_RGBNIR.format(
+                    yidx=y_tile_index - 1,
+                    xidx=str(x_tile_index - 1).zfill(3),
+                    year=YEAR,
+                    version=WC_VERSION_LOOKUP[YEAR],
+                ),
+                URL_SWIR.format(
+                    yidx=y_tile_index - 1,
+                    xidx=str(x_tile_index - 1).zfill(3),
+                    year=YEAR,
+                    version=WC_VERSION_LOOKUP[YEAR],
+                ),
+                URL_SAR.format(
                     yidx=y_tile_index - 1,
                     xidx=str(x_tile_index - 1).zfill(3),
                     year=YEAR,
@@ -143,7 +189,7 @@ def tiles_and_windows(input: Window):
 
 
 def download_image(url):
-    # Download an image from a URL
+    # Download the image from the URL
     response = requests.get(url)
     # Check if the request was successful
     if response.status_code == SUCCESS_CODE:
@@ -153,7 +199,7 @@ def download_image(url):
 
 
 def patch_bounds_from_url(url, chunk_size=(PATCH_SIZE, PATCH_SIZE)):
-    # Download an image from a URL
+    # Download the image from the URL
     image_data = download_image(url)
 
     # Open the image using rasterio from memory
@@ -200,31 +246,38 @@ def patch_bounds_from_url(url, chunk_size=(PATCH_SIZE, PATCH_SIZE)):
 
 
 def make_batch(result):
-    pixels = []
-    for url, win in result:
-        with rasterio.open(url) as src:
-            data = src.read(window=win)
-            if NODATA in data:
+    rgb_bands = []
+    swir_bands = []
+    sar_bands = []
+
+    for url_rgb, url_swir, url_sar, win in result:
+        with rasterio.open(url_rgb) as src_rgb, rasterio.open(
+            url_swir
+        ) as src_swir, rasterio.open(url_sar) as src_sar:
+            data_rgb = src_rgb.read(window=win)
+            data_swir = src_swir.read(window=win)
+            data_sar = src_sar.read(window=win)
+            if NODATA in data_rgb or NODATA in data_swir or NODATA in data_sar:
                 return
-            pixels.append(data)
-            transform = src.window_transform(win)
+            transform = src_rgb.window_transform(win)
+            rgb_bands.append(data_rgb)
+            swir_bands.append(data_swir)
+            sar_bands.append(data_sar)
 
-    if len(pixels) == 1:
-        pixels = pixels[0]
-    elif len(pixels) == 2:  # noqa: PLR2004
-        if pixels[0].shape[2] == CHIP_SIZE:
-            pixels = einops.pack(pixels, "b * w")[0]
-        else:
-            pixels = einops.pack(pixels, "b h *")[0]
-    else:
-        px1 = einops.pack(pixels[:2], "b w *")[0]
-        px2 = einops.pack(pixels[2:], "b w *")[0]
-        pixels = einops.pack((px1, px2), "b * w")[0]
+    if len(rgb_bands) == 0 or len(swir_bands) == 0 or len(sar_bands) == 0:
+        return
 
-    assert pixels.shape == (4, CHIP_SIZE, CHIP_SIZE)
+    rgb_data = numpy.vstack(rgb_bands)
+    swir_data = numpy.vstack(swir_bands)
+    sar_data = numpy.vstack(sar_bands)
+
+    # Normalize SAR data
+    # sar_data = (sar_data - MEAN_SAR) / STD_SAR
+
+    combined_data = numpy.concatenate((rgb_data, swir_data, sar_data), axis=0)
 
     return {
-        "pixels": torch.as_tensor(data=[pixels], dtype=torch.float32).to(
+        "pixels": torch.as_tensor(data=[combined_data], dtype=torch.float32).to(
             rgb_model.device
         ),
         "latlon": torch.as_tensor(
@@ -237,45 +290,24 @@ def make_batch(result):
     }
 
 
-def get_pixels(result):
-    pixels = []
-    for url, win in result:
-        with rasterio.open(url) as src:
-            data = src.read(window=win)
-            if NODATA in data:
-                return
-            pixels.append(data)
-            # transform = src.window_transform(win)
-
-    if len(pixels) == 1:
-        pixels = pixels[0]
-    elif len(pixels) == 2:  # noqa: PLR2004
-        if pixels[0].shape[2] == CHIP_SIZE:
-            pixels = einops.pack(pixels, "b * w")[0]
-        else:
-            pixels = einops.pack(pixels, "b h *")[0]
-    else:
-        px1 = einops.pack(pixels[:2], "b w *")[0]
-        px2 = einops.pack(pixels[2:], "b w *")[0]
-        pixels = einops.pack((px1, px2), "b * w")[0]
-
-    assert pixels.shape == (4, CHIP_SIZE, CHIP_SIZE)
-
-    return pixels
-
-
 index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 2))
 
 # Setup model components
-tfm = v2.Compose([v2.Normalize(mean=MEAN, std=STD)])
+tfm = v2.Compose(
+    [
+        v2.Normalize(
+            mean=MEAN_RGBNIR + MEAN_SWIR + MEAN_SAR, std=STD_RGBNIR + STD_SWIR + STD_SAR
+        )
+    ]
+)
 ds = ClayDataset(chips_path=[], transform=tfm)
 
 # Load model
 rgb_model = CLAYModule.load_from_checkpoint(
     CKPT_PATH,
     mask_ratio=0.0,
-    band_groups={"rgb": (2, 1, 0), "nir": (3,)},
-    bands=4,
+    band_groups={"rgb": (2, 1, 0), "nir": (3,), "swir": (4, 5), "sar": (6, 7)},
+    bands=8,
     strict=False,  # ignore the extra parameters in the checkpoint
     embeddings_level="group",
 )
@@ -325,7 +357,6 @@ while yoff < RASTER_Y_SIZE:
 
     print(len(embeddings), len(results))
     embeddings_ = numpy.vstack(embeddings)
-    # embeddings_ = embeddings[0]
     print("Embeddings shape: ", embeddings_.shape)
 
     # remove date and lat/lon
@@ -334,7 +365,7 @@ while yoff < RASTER_Y_SIZE:
     print(f"Embeddings have shape {embeddings_.shape}")
 
     # reshape to disaggregated patches
-    embeddings_patch = embeddings_.reshape([2, 16, 16, 768])
+    embeddings_patch = embeddings_.reshape([4, 16, 16, 768])
 
     # average over the band groups
     embeddings_mean = embeddings_patch.mean(axis=0)
@@ -343,9 +374,7 @@ while yoff < RASTER_Y_SIZE:
 
     if result is not None:
         print("result: ", result[0][0])
-        pix = get_pixels(result)
         chunk_bounds, epsg = patch_bounds_from_url(result[0][0])
-        # print("chunk_bounds: ", chunk_bounds)
         print("chunk bounds length:", len(chunk_bounds))
 
         # Iterate through each patch
@@ -392,6 +421,7 @@ while yoff < RASTER_Y_SIZE:
                         f"{tmp}/worldcover_patch_embeddings_{YEAR}_{index}_{i}_{j}_"
                         f"v{VERSION}.gpq"
                     )
+
                     print(f"Uploading embeddings to {outpath}")
                     # print(gdf)
 

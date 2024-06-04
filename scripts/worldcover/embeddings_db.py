@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 from skimage import io
 
 # Set working directory
-wd = "/home/usr/Desktop/"
+wd = "./"
 
 # To download the existing embeddings run aws s3 sync
 # aws s3 sync s3://clay-worldcover-embeddings /my/dir/clay-worldcover-embeddings
 
-vector_dir = Path(wd + "clay-worldcover-embeddings/v002/2021/")
+vector_dir = Path(wd + "clay-worldcover-embeddings/2020/")
 
 # Create new DB structure or open existing
 db = lancedb.connect(wd + "worldcoverembeddings_db")
@@ -24,17 +24,17 @@ for strip in vector_dir.glob("*.gpq"):
 
     for _, row in tile_df.iterrows():
         data.append(
-            {"vector": row["embeddings"], "year": 2021, "bbox": row.geometry.bounds}
+            {"vector": row["embeddings"], "year": 2020, "bbox": row.geometry.bounds}
         )
 
 # Show table names
 db.table_names()
 
 # Drop existing table if exists
-db.drop_table("worldcover-2021-v001")
+# db.drop_table("worldcover-2020-v001")
 
 # Create embeddings table and insert the vector data
-tbl = db.create_table("worldcover-2021-v001", data=data, mode="overwrite")
+tbl = db.create_table("worldcover-2020-v001", data=data, mode="overwrite")
 
 
 # Visualize some image chips
@@ -53,6 +53,6 @@ def plot(df, cols=10):
 
 
 # Select a vector by index, and search 10 similar pairs, and plot
-v = tbl.to_pandas()["vector"].values[10540]
+v = tbl.to_pandas()["vector"].values[5]
 result = tbl.search(query=v).limit(5).to_pandas()
 plot(result, 5)
