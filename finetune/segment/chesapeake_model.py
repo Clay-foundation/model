@@ -2,8 +2,6 @@ import lightning as L
 import segmentation_models_pytorch as smp
 import torch
 import torch.nn.functional as F
-import yaml
-from box import Box
 from torch import optim
 from torchmetrics.classification import F1Score, MulticlassJaccardIndex
 
@@ -45,7 +43,7 @@ class ChesapeakeSegmentor(L.LightningModule):
 
     def forward(self, datacube):
         platform = "naip"
-        waves = torch.tensor([0.65, 0.56,  0.48, 0.842])
+        waves = torch.tensor([0.65, 0.56, 0.48, 0.842])
         gsd = torch.tensor(1.0)
 
         # Forward pass through the network
@@ -99,7 +97,7 @@ class ChesapeakeSegmentor(L.LightningModule):
             on_epoch=True,
             prog_bar=True,
             logger=True,
-            sync_dist=True
+            sync_dist=True,
         )
         self.log(
             f"{phase}/iou",
@@ -108,7 +106,7 @@ class ChesapeakeSegmentor(L.LightningModule):
             on_epoch=True,
             prog_bar=True,
             logger=True,
-            sync_dist=True
+            sync_dist=True,
         )
         self.log(
             f"{phase}/f1",
@@ -117,7 +115,7 @@ class ChesapeakeSegmentor(L.LightningModule):
             on_epoch=True,
             prog_bar=True,
             logger=True,
-            sync_dist=True
+            sync_dist=True,
         )
         return loss
 

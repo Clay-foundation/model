@@ -26,14 +26,16 @@ Notes:
 
 import os
 import sys
-import rasterio as rio
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import rasterio as rio
+
 
 def read_and_chip(file_path, chip_size, output_dir):
     """
     Reads a GeoTIFF file, creates chips of specified size, and saves them as numpy arrays.
-    
+
     Args:
         file_path (str or Path): Path to the GeoTIFF file.
         chip_size (int): Size of the square chips.
@@ -54,9 +56,12 @@ def read_and_chip(file_path, chip_size, output_dir):
                 x2, y2 = x1 + chip_size, y1 + chip_size
 
                 chip = data[:, y1:y2, x1:x2]
-                chip_path = os.path.join(output_dir, f'{Path(file_path).stem}_chip_{chip_number}.npy')
+                chip_path = os.path.join(
+                    output_dir, f"{Path(file_path).stem}_chip_{chip_number}.npy"
+                )
                 np.save(chip_path, chip)
                 chip_number += 1
+
 
 def process_files(file_paths, output_dir, chip_size):
     """
@@ -71,6 +76,7 @@ def process_files(file_paths, output_dir, chip_size):
         print(f"Processing: {file_path}")
         read_and_chip(file_path, chip_size, output_dir)
 
+
 def main():
     """
     Main function to process files and create chips.
@@ -82,7 +88,7 @@ def main():
     if len(sys.argv) != 4:
         print("Usage: python script.py <data_dir> <output_dir> <chip_size>")
         sys.exit(1)
-    
+
     data_dir = Path(sys.argv[1])
     output_dir = Path(sys.argv[2])
     chip_size = int(sys.argv[3])
@@ -92,10 +98,11 @@ def main():
     train_label_paths = list((data_dir / "train").glob("*_lc.tif"))
     val_label_paths = list((data_dir / "val").glob("*_lc.tif"))
 
-    process_files(train_image_paths, output_dir / 'train/chips', chip_size)
-    process_files(val_image_paths, output_dir / 'val/chips', chip_size)
-    process_files(train_label_paths, output_dir / 'train/labels', chip_size)
-    process_files(val_label_paths, output_dir / 'val/labels', chip_size)
+    process_files(train_image_paths, output_dir / "train/chips", chip_size)
+    process_files(val_image_paths, output_dir / "val/chips", chip_size)
+    process_files(train_label_paths, output_dir / "train/labels", chip_size)
+    process_files(val_label_paths, output_dir / "val/labels", chip_size)
+
 
 if __name__ == "__main__":
     main()
