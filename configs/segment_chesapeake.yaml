@@ -1,24 +1,26 @@
 # lightning.pytorch==2.1.2
 seed_everything: 42
 data:
-  train_chip_dir: nbs/data/cvpr/train/chips/
-  train_label_dir: nbs/data/cvpr/train/labels/
-  val_chip_dir: nbs/data/cvpr/val/chips/
-  val_label_dir: nbs/data/cvpr/val/labels/
+  train_chip_dir: data/cvpr/ny/train/chips/
+  train_label_dir: data/cvpr/ny/train/labels/
+  val_chip_dir: data/cvpr/ny/val/chips/
+  val_label_dir: data/cvpr/ny/val/labels/
   metadata_path: configs/metadata.yaml
-  batch_size: 32
+  batch_size: 40
   num_workers: 8
   platform: naip
 model:
-  metadata_path: configs/metadata.yaml
   num_classes: 7
   feature_maps:
     - 3
     - 5
     - 7
     - 11
-  ckpt_path: checkpoints/v0.5.7/mae_v0.5.7_epoch-13_val-loss-0.3098.ckpt
-  lr: 1e-3
+  ckpt_path: checkpoints/clay-v1-base.ckpt
+  lr: 1e-5
+  wd: 0.05
+  b1: 0.9
+  b2: 0.95
 trainer:
   accelerator: auto
   strategy: ddp
@@ -28,7 +30,7 @@ trainer:
   log_every_n_steps: 5
   max_epochs: 10
   accumulate_grad_batches: 1
-  default_root_dir: s3://clay-model-ckpt/finetune/segment/chesapeake/v0.0.1/
+  default_root_dir: checkpoints/segment
   fast_dev_run: False
   num_sanity_val_steps: 0
   logger:
@@ -40,11 +42,11 @@ trainer:
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
-        dirpath: s3://clay-model-ckpt/finetune/segment/chesapeake/v0.0.1/
+        dirpath: checkpoints/segment
         auto_insert_metric_name: False
-        filename: chesapeake-7class-segment_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
-        monitor: val/loss
-        mode: min
+        filename: chesapeake-7class-segment_epoch-{epoch:02d}_val-iou-{val/iou:.4f}
+        monitor: val/iou
+        mode: max
         save_last: True
         save_top_k: 2
         save_weights_only: True

@@ -3,7 +3,7 @@ Command line interface to run the neural network model!
 
 From the project root directory, do:
 
-    python segment.py fit
+    python segment.py fit --config configs/segment_chesapeake.yaml
 
 References:
 - https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html

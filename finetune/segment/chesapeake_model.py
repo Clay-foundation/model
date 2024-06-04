@@ -13,31 +13,30 @@ from finetune.segment.factory import Segmentor
 class ChesapeakeSegmentor(L.LightningModule):
     def __init__(
         self,
-        metadata_path="configs/metadata.yaml",
-        num_classes=7,
-        feature_maps=[3, 5, 7, 11],
-        ckpt_path="checkpoints/v0.5.7/mae_v0.5.7_epoch-13_val-loss-0.3098.ckpt",
-        lr=1e-3,
+        num_classes,
+        feature_maps,
+        ckpt_path,
+        lr,
+        wd,
+        b1,
+        b2,
     ):
         super().__init__()
+        self.save_hyperparameters()
         self.model = Segmentor(
             num_classes=num_classes, feature_maps=feature_maps, ckpt_path=ckpt_path
         )
+
         self.loss_fn = smp.losses.FocalLoss(mode="multiclass")
-        # self.loss_fn = nn.CrossEntropyLoss(ignore_index=7)
-        # self.loss_fn = smp.losses.DiceLoss(mode="multiclass")
-        # self.loss_fn = smp.losses.LovaszLoss(mode="multiclass")
-        # self.loss_fn = smp.losses.TverskyLoss(mode="multiclass", alpha=0.3, beta=0.7)
-        self.metrics = MulticlassJaccardIndex(
+        self.iou = MulticlassJaccardIndex(
             num_classes=num_classes,
             average="weighted",
         )
-        self.f1_score = F1Score(
+        self.f1 = F1Score(
             task="multiclass",
             num_classes=num_classes,
             average="weighted",
         )
-        self.metadata = Box(yaml.safe_load(open(metadata_path)))
         self.lr = lr
 
     @staticmethod
@@ -46,8 +45,8 @@ class ChesapeakeSegmentor(L.LightningModule):
 
     def forward(self, datacube):
         platform = "naip"
-        waves = torch.tensor(list(self.metadata[platform].bands.wavelength.values()))
-        gsd = torch.tensor(self.metadata[platform].gsd)
+        waves = torch.tensor([0.65, 0.56,  0.48, 0.842])
+        gsd = torch.tensor(1.0)
 
         # Forward pass through the network
         return self.model(
@@ -67,9 +66,20 @@ class ChesapeakeSegmentor(L.LightningModule):
                 for name, param in self.model.named_parameters()
                 if param.requires_grad
             ],
-            lr=self.lr,
+            lr=self.hparams.lr,
+            weight_decay=self.hparams.wd,
+            betas=(self.hparams.b1, self.hparams.b2),
         )
-        return optimizer
+        scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+            optimizer, T_0=1000, T_mult=1, eta_min=self.hparams.lr * 100, last_epoch=-1
+        )
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "interval": "step",
+            },
+        }
 
     def shared_step(self, batch, batch_idx, phase):
         labels = batch["label"].long()
@@ -79,8 +89,8 @@ class ChesapeakeSegmentor(L.LightningModule):
         )
 
         loss = self.loss_fn(outputs, labels)
-        metrics = self.metrics(outputs, labels)
-        f1_score = self.f1_score(outputs, labels)
+        iou = self.iou(outputs, labels)
+        f1 = self.f1(outputs, labels)
 
         self.log(
             f"{phase}/loss",
@@ -89,22 +99,25 @@ class ChesapeakeSegmentor(L.LightningModule):
             on_epoch=True,
             prog_bar=True,
             logger=True,
+            sync_dist=True
         )
         self.log(
-            f"{phase}/metrics",
-            metrics,
+            f"{phase}/iou",
+            iou,
             on_step=True,
             on_epoch=True,
             prog_bar=True,
             logger=True,
+            sync_dist=True
         )
         self.log(
-            f"{phase}/f1_score",
-            f1_score,
+            f"{phase}/f1",
+            f1,
             on_step=True,
             on_epoch=True,
             prog_bar=True,
             logger=True,
+            sync_dist=True
         )
         return loss
 

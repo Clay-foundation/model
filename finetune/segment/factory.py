@@ -18,7 +18,7 @@ class SegmentEncoder(Encoder):
         heads,
         dim_head,
         mlp_ratio,
-        feature_maps=[2, 4],
+        feature_maps,
         ckpt_path=None,
     ):
         super().__init__(
