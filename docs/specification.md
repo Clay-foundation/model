@@ -1,62 +1,79 @@
-(model_release)=
-# Pretrained Model release v0.0.1
+# Pretrained Model release v1.0
 
 This changelog is a summary of the changes to the pretrained model weights for the Clay model. We follow the "Stanford [Foundation Model Transparency Index](https://github.com/stanford-crfm/fmti)"
 
-Model weights released on 2024/01/12.
+Model weights released on 2024/05/12.
 
 > For release notes for the source code, see [](software_release)
 
-### Summary
+## Summary
 
-Clay v0 is a self-supervised modified vision transformer model trained on stacks of Sentinel-2, Sentinel-1 & DEM data. It is trained as a Masked Autoencoder (MAE) to reconstruct the original image from a masked image.
+Clay v1 is our MAE-based model designed to handle inputs from a variety of satellite sensors, including Sentinel-2, Landsat, Sentinel-1 SAR, LINZ, and NAIP. It supports inputs of any size and any number of bands.
 
-With the pre-trained model, you can input stacks of geospatial data and output vector embeddings, which capture spatial, temporal, and spectral information about Earth and represent these relationships numerically in high-dimensional space. Each embedding is representative of a certain area of Earth at a certain point in time.
+### **Acknowledgments and Inspirations:**
 
-Each data entry is a stack of 10 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. The model is trained with 3 timesteps of data for each location, with a total of 1203 MGRS tiles globally distributed, each of size 10km x 10km. The data was collected from the Microsoft Planetary Computer.
+Clay v1 is based on the foundational work of several pioneering models and research papers. We owe a significant debt of gratitude to the following projects, which provided architectural inspiration and implementation guidance:
 
-The model was trained on AWS on 4 NVIDIA A10G GPUs for 25 epochs (~14h per epoch) in December 2023.
+- **DOFA**: [Code](https://github.com/zhu-xlab/DOFA), [Paper](https://arxiv.org/abs/2403.15356)
+- **GFM**: [Code](https://github.com/mmendiet/GFM), [Paper](https://arxiv.org/abs/2302.04476)
+- **Prithvi**: [Code](https://github.com/NASA-IMPACT/hls-foundation-os), [Paper](https://arxiv.org/abs/2310.18660)
+- **SatMAE**: [Project](https://sustainlab-group.github.io/SatMAE/)
+- **ScaleMAE**: [Project](https://ai-climate.berkeley.edu/scale-mae-website/)
+- **Spectral-GPT**: [Paper](https://arxiv.org/abs/2311.07113)
 
-Model weights are available on HuggingFace [here](https://huggingface.co/made-with-clay/Clay/).
+### **Components of Clay v1:**
 
-We also generated embeddings for all trainning data, which can be found on Source Cooperative [here](https://source.coop/).
+1. **Dynamic Embedding Block**: This component generates patches for the chips from the number of bands and their wavelengths, which are then fed into the masked autoencoder (MAE).
+2. **Position Encoding**: This component encodes spatial and temporal information by adding positional encoding to the model. This encoding is scaled according to the Ground Sampling Distance (GSD) and is combined with location information (latitude/longitude) and time step (week/hour).
+3. **Masked Autoencoder (MAE)**: A VIT-based MAE is used to reconstruct the sensor data for all input bands. This contributes to 95% of the total loss, known as the reconstruction loss.
+4. **Teacher**: DINO is used as a teacher to compute the representation loss, which accounts for the remaining 5% of the total loss.
+
+### **Pre-training and Usage:**
+
+The pre-trained model can process stacks of geospatial data from different sensors with various resolutions and bands, and output vector embeddings. During pre-training, the model processes stacks of chips from different sensors along with metadata such as wavelengths, GSD, latitude/longitude, and time step. The task involves capturing spatial, temporal, and spectral information about Earth and representing these relationships in high-dimensional space. Each resulting embedding represents a specific area of Earth at a particular time.
+
+Clay v1 was trained on 70 million globally distributed chips of size 224x224, collected according to the land use/land cover (LULC) statistics of the globe. The training was conducted on AWS using four p5.48xlarge instances for ten epochs in May 2024.
+
+You can access the model weights on HuggingFace [here](https://huggingface.co/made-with-clay/Clay/blob/main/clay-v1-base.ckpt).
 
 ## Model Architecture
+![Architecture](https://github.com/Clay-foundation/model/assets/8049519/f6a1e92c-3993-4148-98a2-e3805dae4414)
 
-Clay is a MAE, with a modified ViT encoder down to embeddings, and a decoder to reconstruct the masked parts of the original image. The loss function is the MSE between the original image and the reconstructed image.
+Clay v1's architecture includes a dynamic embedding block for generating patches from multi-band inputs, position encoding to integrate spatial and temporal data, a Vision Transformer-based masked autoencoder (MAE) for reconstructing sensor data, and a DINO teacher model to enhance representation learning. This architecture allows the model to process inputs from various satellite sensors of any size and number of bands, capturing complex geospatial information effectively.
 
-For details, check the source code [here](https://github.com/Clay-foundation/model/blob/v0.0.1/src/model_clay.py).
+For more details, you can view the source code [here](https://github.com/Clay-foundation/model/blob/main/src/model.py).
 
-![Architecture](https://github.com/Clay-foundation/model/assets/23487320/c9b46255-c2d7-4ca4-a980-7ff3033c23e3)
+https://github.com/Clay-foundation/model/blob/main/LICENSE
 
-* Core Framework: [Lightning](https://lightning.ai/) and its dependencies, like PyTorch, etc.
-
-* Input modalities:
-    * Fixed spec of 10 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. See below for details.
-* Output modalities:
-    * As a masked auto-enconder, fixed spec of 10 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data, to mimic the input as close as possible.
-* Model size:
-    * Number of parameters: `127M`
-    * Model size on disk: `~500MB`.
-* Model license:
-    * Source code: [Apache 2.0](https://github.com/Clay-foundation/model/blob/v0.0.1/LICENSE)
-    * Model weights: [OpenRAIL-M](https://github.com/Clay-foundation/model/blob/v0.0.1/LICENSE-MODEL.md)
-        * Prohibited uses: See OpenRAIL-M license section 5.
-* Feedback and redress mechanisms:
-    * Please open an issue or discussion on the [GitHub repository](https://github.com/Clay-foundation/model) or send an email to `bruno@madewithclay.org`.
+- Core Framework: [Lightning](https://lightning.ai/) and its dependencies, such as PyTorch, etc.
+- Input modalities:
+    - A fixed specification of 10 bands from Sentinel-2, 6 bands from Landsat, 4 bands from NAIP, 3 bands from LINZ, and 2 bands from Sentinel-1 data.
+- Output modalities:
+    - As a masked auto-encoder, it has a fixed specification of 10 bands from Sentinel-2, 6 bands from Landsat, 4 bands from NAIP, 3 bands from LINZ, and 2 bands from Sentinel-1 data, to closely mimic the input.
+- Model size:
+    - Number of parameters: `201M`
+    - Model size on disk: `768M`.
+- Model license:
+    - Source code: [Apache 2.0](https://github.com/Clay-foundation/model/blob/main/LICENSE)
+    - Model weights: [OpenRAIL-M](https://github.com/Clay-foundation/model/blob/main/LICENSE-MODEL.md)
+        - Prohibited uses: Refer to OpenRAIL-M license section 5.
+- Feedback and redress mechanisms:
+    - Please open an issue or discussion on the [GitHub repository](https://github.com/Clay-foundation/model) or send an email to `bruno@madewithclay.org`.
 
 ## Model Card
 
-For v0 of CLAY, we used the [`clay_small`](https://github.com/Clay-foundation/model/blob/0145e55bcf6bd3e9b19f5c07819a1398b6a22c35/src/model_clay.py#L713) setup model.
+For Clay v1, we utilized the [`clay_mae_base`](https://github.com/Clay-foundation/model/blob/4119be7c4a4f41f9ce026afb24828fa9ef3c9a61/src/model.py#L557-L573) and the model weights can be found on Huggingface [here](https://huggingface.co/made-with-clay/Clay/blob/main/clay-v1-base.ckpt).
 
 ```
 MASKED PATCHES = 75%
-INPUT SIZE = 13 bands x 512 width x 512 height
-PATCH SIZE = 32 x 32
+INPUT SIZE = 224
+
+NORM_PIX_LOSS = TRUE
+PATCH SIZE = 8
 
 OPTIMIZER
-    Adam
-    Learning rate = 1e-4
+    AdamW
+    Learning rate = 1e-5
     Weight decay = 0.05
     Beta 1 = 0.9
     Beta 2 = 0.95
@@ -65,7 +82,7 @@ SCHEDULER
     CosineAnnealingWarmRestarts
     T_0 = 1000
     T_mult = 2
-    eta_min = Learning rate * 10
+    eta_min = Learning rate * 100
 
 ENCODER
     dim = 768
@@ -73,77 +90,27 @@ ENCODER
     heads = 12
     dim_head = 64
     mlp_ratio = 4
-    dropout = 0.0
-    emb_dropout = 0.0
 
 DECODER
     decoder_dim = 512
-    decoder_depth = 8
-    decoder_heads = 8
+    decoder_depth = 6
+    decoder_heads = 6
     decoder_dim_head = 64
     decoder_mlp_ratio = 4
-    decoder_dropout = 0.0
 ```
 
-(Data_card)=
 ## Data Card
 
-We organize our input dataset creation in MGRS tiles. Each tile is a 10km x 10km area. We have `1203` tiles in total, each with 3 timesteps of data between `2017` and `2023`, so `3609 Tiles` in total. Each timestep is a stack of 10 bands of Sentinel-2, 2 bands of Sentinel-1 & 1 band of DEM data. Each tile is split into `512 x 512` chips, so we have around `~1.2 Million` chips in total. Each chip contains `13 bands`, 10 of which are the Sentinel-2 bands, 2 are Sentinel 1 bands & 1 DEM band. We store each chip as geotiff, along with their coordinate & timestamp information that is used for model training.
+The data used for this model is described in detail in the [](training-data) section.
 
-![Tile locations](https://github.com/Clay-foundation/model/assets/23487320/af46a272-a102-4c66-a8bc-52bcb987c365)
-
-* Training dataset size: `6.4 TB`
-* Training dataset source links:
-    * [Sentinel-2](https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a)
-    * [Sentinel-1](https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc)
-    * DEM from [Copernicus Digital Elevation Model](https://planetarycomputer.microsoft.com/dataset/cop-dem-glo-90)
-* Training dataset items:
-    * The actual list of files used is available [here](https://gist.github.com/brunosan/62247e5dc79684bdaca11cefae679e90).
-* Data source selection and curation process:
-    * We aim for fully open data, with global and historical coverage, with the highest spatial, temporal and spectral resolution, hosted on a cloud format that eases the process to search and download the needed sections.
-    * Once these sources are selected, we make a [statistical sample based on cover type](https://github.com/Clay-foundation/model/blob/0145e55bcf6bd3e9b19f5c07819a1398b6a22c35/scripts/landcover.py#L156), so that we have a good coverage of the different landscapes. The land cover data is from [ESA WorldCover 2021](https://registry.opendata.aws/esa-worldcover-vito/).
-* Data augmentation:
-    * We do not use any data augmentation techniques like affine transformations, random crops (except the masked autoencoder task), etc. We also do not use input mixing like CutMix, MixUp, etc.
-    * Clouds, cloud shadows, smog, atmospheric scattering, mid-air planes and other non-ground registrations could be considered natural augmentations. We explicitly filter out large % of clouds on our chips, but small clouds and their shadows might be present. As we increase the number of observations per location, and bands, we expect the model to learn to ignore single events but register patterns (places that are often cloudy or with smog).
-* PII or harmful content:
-    * We believe that satellites images at this resolution (`10m/px`) are not subject to PII or harmful content concerns.
-* Human evaluation, wages, and annotation process:
-    * Besides tweaking the statistical samples as part of the model development team, and the stated dataset hosting partners, we do not use any human evaluation, or annotation process, or third party services.
-
-We store each chip as geotiff, along with their coordinate & timestamp information that is used for model training.
-
-![bands](https://github.com/Clay-foundation/model/assets/23487320/85fbc8d2-28f6-4021-855b-c1eb84dd09e3)
-
-### Normalization parameters
-
-To normalize the data before passing it to the model, we computed the following normalization parameters from a random sample of the training data. The normalization parameters are used in the [Data Module](https://github.com/Clay-foundation/model/blob/v0.0.1/src/datamodule.py#L108), for partial
-inputs it will be necessary to subset these as shown in the partial input tutorial.
-
-| Band           | Mean    | Standard deviation |
-|----------------|---------|--------------------|
-| Sentinel-2 B02 | 1369.03 | 2026.96            |
-| Sentinel-2 B03 | 1597.68 | 2011.88            |
-| Sentinel-2 B04 | 1741.10 | 2146.35            |
-| Sentinel-2 B05 | 2053.58 | 2138.96            |
-| Sentinel-2 B06 | 2569.82 | 2003.27            |
-| Sentinel-2 B07 | 2763.01 | 1962.45            |
-| Sentinel-2 B08 | 2858.43 | 2016.38            |
-| Sentinel-2 B8A | 2893.86 | 1917.12            |
-| Sentinel-2 B11 | 2303.00 | 1679.88            |
-| Sentinel-2 B12 | 1807.79 | 1568.06            |
-| Sentinel-1 VV  | 0.026   | 0.118              |
-| Sentinel-1 VH  | 0.118   | 0.873              |
-| Copernicus DEM | 499.46  | 880.35             |
+## Normalization parameters
 
 ## Training Card
 
 * Compute Resources:
-    * AWS EC2 `g5.12xlarge` with 4 NVIDIA A10G GPUs
-* Batch Size:
-    * Batch Size = `10`
-    * Effective Batch Size = Batch Size x Number of GPUs x Gradient Accumulation Steps = `10` x `4` x `5` = `200`
+    * 4 AWS EC2 p5.48x  with 8 NVIDIA H100 GPUs each
 * Training Time:
-    * `25` epochs, each taking ~`15h` to train.
+    * `10` epochs, each taking ~`50h` to train.
 * Carbon Emissions:
     * According to the "Customer Carbon Emission Tool", there were no Scope 1 or Scope 2 carbon emissions. Following the [documentation](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/ccft-estimation.html), we believe this is due to the usage of renewable energy sources. We are aware that Scope 3 emissions might be significant for data centers and that these are not included in the estimate.
 * Training stages:
@@ -156,34 +123,29 @@ inputs it will be necessary to subset these as shown in the partial input tutori
     * We do not have other distribution channels at this time.
 * Production use:
     * We support our partners to build applications with the model, and we expect them to use the model in production.
-    * We are developing a web application and expect to release it in 2024 Q1.
 
+![Training Loss](https://github.com/Clay-foundation/model/assets/8049519/b8618d46-a66c-441d-b3b2-e2707d74af95)
+![Validation Loss](https://github.com/Clay-foundation/model/assets/8049519/e266abad-bcd6-44e1-a4f2-889eec061748)
 
-![Learning Rate & Epoch](https://github.com/Clay-foundation/model/assets/23487320/d2a2944c-0b2c-4c19-893b-abe3fca10edc)
-
-![MSE Loss for Pixel Reconstruction](https://github.com/Clay-foundation/model/assets/23487320/cbbed1d1-ca7b-4352-8a2a-610b33f42d1c)
 
 ## Results
 
-As a foundational model, it is designed to be used as a building block for other models. In this section we only a sample of the training objective, which is to reconstruct the original image from a 75% masked image.
-
-[Reconstruction](https://github.com/Clay-foundation/model/assets/23487320/491febc1-af3c-43ab-bd9a-85ef7fbf6064)
+As a foundation model, it is designed to be used as a building block for other models. We have examples of what the embedding space & reconstruction looks like for the base model in the docs [here](visualize-embedding.ipynb) & [here](reconstruction.ipynb).
 
 
 ### Performance Metrics
 The model shows the following performance characteristics for its Masked Autoencoder objective:
-* Training loss: `0.52`
-* Validation loss: `0.46`
+* Training loss: `0.3073`
+* Validation loss: `0.3075`
 
 ## Known Limitations and Biases
 
-- The model is trained on Sentinel data only.
-- Sentinel data only covers land and coastal waters.
-- We only train on a ver small sample of the Sentinel archives, both in terms of spatial coverage and time.
+- Training data for this model only covers land and coastal waters.
+- We only train on a very small sample of the source archives, both in terms of spatial coverage and time.
 - We do not train on the poles, and we do not train on open ocean, nor ocean nor atmospheric volumetric data.
 - We do not train on night time data.
 - We do not explicitly include extreme events in the training data.
-- We only train at most 3 different times per location.
+- We only train at most 6 different times per location.
 
 
 ## Ethical Considerations
