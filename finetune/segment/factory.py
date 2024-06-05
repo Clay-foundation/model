@@ -7,9 +7,11 @@ Paper URL: https://arxiv.org/abs/2105.15203
 """
 
 import re
+
 import torch
 from einops import rearrange, repeat
 from torch import nn
+
 from src.model import Encoder
 
 
