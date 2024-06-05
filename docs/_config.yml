@@ -24,11 +24,6 @@ latex:
 bibtex_bibfiles:
   - references.bib
 
-# Launch button settings
-launch_buttons:
-  notebook_interface: jupyterlab
-  binderhub_url: https://mybinder.org
-
 # Information about where the book exists on the web
 repository:
   url: https://github.com/Clay-foundation/model  # Online location of your book
