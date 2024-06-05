@@ -7,25 +7,25 @@ parts:
 - caption: Release notes
   chapters:
     - title: Software release notes
-      file: changelog
+      file: release-notes/changelog
     - title: Model release notes
-      file: specification
+      file: release-notes/specification
     - title: Data sampling strategy
-      file: data_sampling
+      file: release-notes/data_sampling
 - caption: Getting Started
   chapters:
     - title: Installation
-      file: installation
+      file: getting-started/installation
     - title: Basic Use
-      file: basic_use
+      file: getting-started/basic_use
 - caption: Tutorials
   chapters:
     - title: Clay v1 wall-to-wall example
-      file: clay-v1-wall-to-wall
+      file: tutorials/clay-v1-wall-to-wall
     - title: Explore embeddings from Clay Encoder
-      file: visualize-embeddings
+      file: tutorials/visualize-embeddings
     - title: Clay MAE reconstruction
-      file: reconstruction
+      file: tutorials/reconstruction
 - caption: About Clay
   chapters:
     - title: GitHub

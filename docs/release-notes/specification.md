@@ -1,6 +1,6 @@
 # Pretrained Model release v1.0
 
-This changelog is a summary of the changes to the pretrained model weights for the Clay model. We follow the "Stanford [Foundation Model Transparency Index](https://github.com/stanford-crfm/fmti)"
+This changelog is a summary of the changes to the pretrained model weights for the Clay model. We follow the "[Stanford Foundation Model Transparency Index](https://github.com/stanford-crfm/fmti)"
 
 Model weights released on 2024/05/12.
 
@@ -130,7 +130,7 @@ The data used for this model is described in detail in the [](training-data) sec
 
 ## Results
 
-As a foundation model, it is designed to be used as a building block for other models. We have examples of what the embedding space & reconstruction looks like for the base model in the docs [here](visualize-embedding.ipynb) & [here](reconstruction.ipynb).
+As a foundation model, it is designed to be used as a building block for other models. We have documented examples of how the [embedding space](../tutorials/visualize-embeddings.ipynb) and the [reconstructions](../tutorials/reconstruction.ipynb) look like for the base model.
 
 
 ### Performance Metrics
