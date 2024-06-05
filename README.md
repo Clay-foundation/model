@@ -6,8 +6,6 @@
 
 An open source AI model and interface for Earth.
 
-# Getting started
-
 ## Quickstart
 
 Launch into a [JupyterLab](https://jupyterlab.readthedocs.io) environment on
