@@ -100,7 +100,7 @@ The model can be run via LightningCLI using configurations in `finetune/segment/
       b2: 0.95
     ```
 
-3. Update the WandB logger configuration in the configuration file with your WandB details:
+3. Update the [WandB logger](https://lightning.ai/docs/pytorch/stable/extensions/generated/lightning.pytorch.loggers.WandbLogger.html#lightning.pytorch.loggers.WandbLogger) configuration in the configuration file with your WandB details or use [CSV Logger](https://lightning.ai/docs/pytorch/stable/extensions/generated/lightning.pytorch.loggers.CSVLogger.html#lightning.pytorch.loggers.CSVLogger) if you don't want to log to WandB:
     ```yaml
     logger:
       - class_path: lightning.pytorch.loggers.WandbLogger

@@ -7,7 +7,8 @@ preprocessing required for training and validating a segmentation model.
 Dataset citation:
 Robinson C, Hou L, Malkin K, Soobitsky R, Czawlytko J, Dilkina B, Jojic N.
 Large Scale High-Resolution Land Cover Mapping with Multi-Resolution Data.
-Proceedings of the 2019 Conference on Computer Vision and Pattern Recognition (CVPR 2019).
+Proceedings of the 2019 Conference on Computer Vision and Pattern Recognition
+(CVPR 2019).
 
 Dataset URL: https://lila.science/datasets/chesapeakelandcover
 """
@@ -62,7 +63,7 @@ class ChesapeakeDataset(Dataset):
         return v2.Compose(
             [
                 v2.Normalize(mean=mean, std=std),
-            ]
+            ],
         )
 
     def __len__(self):
@@ -116,7 +117,7 @@ class ChesapeakeDataModule(L.LightningDataModule):
         platform (str): Platform identifier used in metadata.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         train_chip_dir,
         train_label_dir,
@@ -146,10 +147,16 @@ class ChesapeakeDataModule(L.LightningDataModule):
         """
         if stage in {"fit", None}:
             self.trn_ds = ChesapeakeDataset(
-                self.train_chip_dir, self.train_label_dir, self.metadata, self.platform
+                self.train_chip_dir,
+                self.train_label_dir,
+                self.metadata,
+                self.platform,
             )
             self.val_ds = ChesapeakeDataset(
-                self.val_chip_dir, self.val_label_dir, self.metadata, self.platform
+                self.val_chip_dir,
+                self.val_label_dir,
+                self.metadata,
+                self.platform,
             )
 
     def train_dataloader(self):
@@ -174,5 +181,7 @@ class ChesapeakeDataModule(L.LightningDataModule):
             DataLoader: DataLoader for validation dataset.
         """
         return DataLoader(
-            self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers
+            self.val_ds,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
         )

@@ -2,7 +2,8 @@
 Clay Segmentor for semantic segmentation tasks.
 
 Attribution:
-Decoder from Segformer: Simple and Efficient Design for Semantic Segmentation with Transformers
+Decoder from Segformer: Simple and Efficient Design for Semantic Segmentation
+with Transformers
 Paper URL: https://arxiv.org/abs/2105.15203
 """
 
@@ -17,14 +18,16 @@ from src.model import Encoder
 
 class SegmentEncoder(Encoder):
     """
-    Encoder class for segmentation tasks, incorporating a feature pyramid network (FPN).
+    Encoder class for segmentation tasks, incorporating a feature pyramid
+    network (FPN).
 
     Attributes:
-        feature_maps (list): Indices of layers to be used for generating feature maps.
+        feature_maps (list): Indices of layers to be used for generating
+        feature maps.
         ckpt_path (str): Path to the clay checkpoint file.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         mask_ratio,
         patch_size,
@@ -38,7 +41,14 @@ class SegmentEncoder(Encoder):
         ckpt_path=None,
     ):
         super().__init__(
-            mask_ratio, patch_size, shuffle, dim, depth, heads, dim_head, mlp_ratio
+            mask_ratio,
+            patch_size,
+            shuffle,
+            dim,
+            depth,
+            heads,
+            dim_head,
+            mlp_ratio,
         )
         self.feature_maps = feature_maps
 
@@ -179,7 +189,7 @@ class Segmentor(nn.Module):
             ckpt_path=ckpt_path,
         )
         self.upsamples = [nn.Upsample(scale_factor=2**i) for i in range(4)] + [
-            nn.Upsample(scale_factor=4)
+            nn.Upsample(scale_factor=4),
         ]
         self.fusion = nn.Conv2d(self.encoder.dim * 5, self.encoder.dim, kernel_size=1)
         self.seg_head = nn.Conv2d(self.encoder.dim, num_classes, kernel_size=1)

@@ -1,5 +1,6 @@
 """
-LightningModule for training and validating a segmentation model using the Segmentor class.
+LightningModule for training and validating a segmentation model using the
+Segmentor class.
 """
 
 import lightning as L
@@ -24,7 +25,7 @@ class ChesapeakeSegmentor(L.LightningModule):
         lr (float): Learning rate.
     """
 
-    def __init__(
+    def __init__(  # # noqa: PLR0913
         self,
         num_classes,
         feature_maps,
@@ -37,7 +38,9 @@ class ChesapeakeSegmentor(L.LightningModule):
         super().__init__()
         self.save_hyperparameters()  # Save hyperparameters for checkpointing
         self.model = Segmentor(
-            num_classes=num_classes, feature_maps=feature_maps, ckpt_path=ckpt_path
+            num_classes=num_classes,
+            feature_maps=feature_maps,
+            ckpt_path=ckpt_path,
         )
 
         self.loss_fn = smp.losses.FocalLoss(mode="multiclass")
@@ -62,7 +65,6 @@ class ChesapeakeSegmentor(L.LightningModule):
         Returns:
             torch.Tensor: The segmentation logits.
         """
-        platform = "naip"
         waves = torch.tensor([0.65, 0.56, 0.48, 0.842])  # NAIP wavelengths
         gsd = torch.tensor(1.0)  # NAIP GSD
 
@@ -74,7 +76,7 @@ class ChesapeakeSegmentor(L.LightningModule):
                 "latlon": datacube["latlon"],
                 "gsd": gsd,
                 "waves": waves,
-            }
+            },
         )
 
     def configure_optimizers(self):
@@ -82,7 +84,8 @@ class ChesapeakeSegmentor(L.LightningModule):
         Configure the optimizer and learning rate scheduler.
 
         Returns:
-            dict: A dictionary containing the optimizer and scheduler configuration.
+            dict: A dictionary containing the optimizer and scheduler
+            configuration.
         """
         optimizer = optim.AdamW(
             [
@@ -95,7 +98,11 @@ class ChesapeakeSegmentor(L.LightningModule):
             betas=(self.hparams.b1, self.hparams.b2),
         )
         scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer, T_0=1000, T_mult=1, eta_min=self.hparams.lr * 100, last_epoch=-1
+            optimizer,
+            T_0=1000,
+            T_mult=1,
+            eta_min=self.hparams.lr * 100,
+            last_epoch=-1,
         )
         return {
             "optimizer": optimizer,
@@ -120,7 +127,10 @@ class ChesapeakeSegmentor(L.LightningModule):
         labels = batch["label"].long()
         outputs = self(batch)
         outputs = F.interpolate(
-            outputs, size=(224, 224), mode="bilinear", align_corners=False
+            outputs,
+            size=(224, 224),
+            mode="bilinear",
+            align_corners=False,
         )  # Resize to match labels size
 
         loss = self.loss_fn(outputs, labels)
