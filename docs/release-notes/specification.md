@@ -103,7 +103,20 @@ DECODER
 
 The data used for this model is described in detail in the [](training-data) section.
 
-## Normalization parameters
+## Normalization and Wavelength parameters
+
+The normalization parameters depend on the input system that is used. They are
+therefore not static values, but rather an input variable to the model.
+
+Similarly, the model takes the central wavelength of each input band as a variable.
+
+During training we used Sentinel-2, Sentinel-1, Landsat 8 and 9, NAIP, and LINZ
+data. For these we compiled normalization and wavelength values that were used
+during training. These can be used for inferencing when passing data from any of
+these systems.
+
+The normalization and wavelength parameters can be found in the following
+[metadata file](https://github.com/Clay-foundation/model/blob/main/configs/metadata.yaml).
 
 ## Training Card
 
