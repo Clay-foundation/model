@@ -1,6 +1,6 @@
-# Clay Foundation Model
+# Clay Model
 
-## An open source AI model for Earth
+## An open source AI for Earth
 
 Clay is a [foundation model](https://www.adalovelaceinstitute.org/resource/foundation-models-explainer/) of Earth. Foundation models trained on earth observation (EO) data can efficiently distill and synthesize vast amounts of environmental data, allowing them to generalize this knowledge to specific, downstream applications. This makes them versatile and powerful tools for nature and climate applications.
 
@@ -20,14 +20,16 @@ The Clay model can be used in three main ways:
 ## Where is what
 
 - Our **website** is [madewithclay.org](https://madewithclay.org).
+   - We will soon release ["Clay Explore"](https://explore.madewithclay.org), our no-code app for AI for Earth.
 - The Clay model **code** lives on [Github](https://github.com/Clay-foundation/model).
   License: [Apache-w.0](https://github.com/Clay-foundation/model/blob/main/LICENSE).
-  The latest release is [v0.0.1](https://github.com/Clay-foundation/model/releases/tag/v0.0.1)
+  The latest release is [v1.0](https://github.com/Clay-foundation/model/releases/tag/v1.0)
 - The Clay model **weights**  on [Hugging Face](https://huggingface.co/made-with-clay/Clay/).
   License: [OpenRAIL-M](https://github.com/Clay-foundation/model/blob/main/LICENSE-MODEL.md).
 - The Clay **documentation** [lives on this site](https://clay-foundation.github.io/model/index.html).
   License: [CC-BY](http://creativecommons.org/licenses/by/4.0/).
-- We release the **embeddings** of the used training data on [Source Cooperative](https://beta.source.coop/repositories/clay/clay-model-v0-embeddings).
+-  We will soon release the v1 embeddings on [Source Cooperative](https://beta.source.coop/repositories/clay/).
+   > -We have released sample embeddings for Clay v0.1 [here](https://beta.source.coop/repositories/clay/clay-model-v0-embeddings).
   License: [ODC-BY](https://opendatacommons.org/licenses/by/).
 
 CLAY is a fiscal sponsored project of the 501c3 non-profit
