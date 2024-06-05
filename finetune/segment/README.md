@@ -22,8 +22,8 @@ In this example, we will use the `Segmentor` class to segment Land Use Land Cove
 
 If you use this dataset, please cite the associated manuscript:
 
-Robinson C, Hou L, Malkin K, Soobitsky R, Czawlytko J, Dilkina B, Jojic N. 
-Large Scale High-Resolution Land Cover Mapping with Multi-Resolution Data. 
+Robinson C, Hou L, Malkin K, Soobitsky R, Czawlytko J, Dilkina B, Jojic N.
+Large Scale High-Resolution Land Cover Mapping with Multi-Resolution Data.
 Proceedings of the 2019 Conference on Computer Vision and Pattern Recognition (CVPR 2019).
 
 Dataset URL: [Chesapeake Bay Land Cover Dataset](https://lila.science/datasets/chesapeakelandcover)
@@ -49,7 +49,7 @@ Download the Chesapeake Bay Land Cover dataset and organize your dataset directo
    ```bash
    # train
    s5cmd cp --include "*_lc.tif" --include "*_naip-new.tif" "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-train_tiles/*" data/cvpr/files/train/
-   
+
    # val
    s5cmd cp --include "*_lc.tif" --include "*_naip-new.tif" "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-val_tiles/*" data/cvpr/files/val/
    ```
