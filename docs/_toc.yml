@@ -10,34 +10,18 @@ parts:
       file: changelog
     - title: Model release notes
       file: specification
+    - title: Data sampling strategy
+      file: data_sampling
 - caption: Getting Started
   chapters:
     - title: Installation
       file: installation
     - title: Basic Use
       file: basic_use
-- caption: Data Preparation
-  chapters:
-    - title: Creating datacubes
-      file: data_datacube
-    - title: Benchmark dataset labels
-      file: data_labels
-    - title: Data sampling strategy
-      file: data_sampling
-- caption: Running the model
+- caption: Tutorials
   chapters:
     - title: Clay v1 wall-to-wall example
       file: clay-v1-wall-to-wall
-    - title: Run over a region
-      file: run_region
-    - title: Generating embeddings
-      file: model_embeddings
-    - title: Finetuning
-      file: model_finetuning
-    - title: Embeddings for Contiguous US
-      file: worldcover-embeddings
-- caption: Tutorials
-  chapters:
     - title: Explore embeddings from Clay Encoder
       file: visualize-embeddings
     - title: Clay MAE reconstruction
@@ -50,3 +34,22 @@ parts:
       url: https://www.linkedin.com/company/made-with-clay
     - title: Website
       url: https://madewithclay.org
+- caption: Older Versions
+  chapters:
+    - file: clay-v0/specification-v0
+      sections:
+      - title: Run over a region
+        file: clay-v0/run_region
+      - title: Generating embeddings
+        file: clay-v0/model_embeddings
+      - title: Finetuning
+        file: clay-v0/model_finetuning
+      - title: Embeddings for Contiguous US
+        file: clay-v0/worldcover-embeddings
+      - title: Interpolation example for v0
+        file: clay-v0/clay-v0-interpolation
+      - title: Creating datacubes
+        file: clay-v0/data_datacube
+      - title: Benchmark dataset labels
+        file: clay-v0/data_labels
+      - file: clay-v0-interpolation
