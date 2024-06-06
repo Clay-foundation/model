@@ -1,3 +1,4 @@
+(software_release_v1)=
 # Release v1.0 (2024/06/06)
 
 ## 💫 Highlights
