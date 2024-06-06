@@ -6,12 +6,12 @@ root: index
 parts:
 - caption: Release notes
   chapters:
-    - title: Software release notes
-      file: release-notes/changelog
     - title: Model release notes
       file: release-notes/specification
     - title: Data sampling strategy
       file: release-notes/data_sampling
+    - title: Software release notes v1.0
+      file: release-notes/changelog-v1.0
 - caption: Getting Started
   chapters:
     - title: Installation
@@ -53,3 +53,5 @@ parts:
       - title: Benchmark dataset labels
         file: clay-v0/data_labels
       - file: clay-v0-interpolation
+      - title: Software release notes v0.1
+        file: release-notes/changelog-v1.0
