@@ -46,7 +46,7 @@ class ChesapeakeDataset(Dataset):
         )
 
         # Load chip and label file names
-        self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npy")]
+        self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npy")][:2000]
         self.labels = [re.sub("_naip-new_", "_lc_", chip) for chip in self.chips]
 
     def create_transforms(self, mean, std):
@@ -88,10 +88,6 @@ class ChesapeakeDataset(Dataset):
         # Remap labels to match desired classes
         label_mapping = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 15: 6}
         remapped_label = np.vectorize(label_mapping.get)(label)
-
-        # Apply transformations
-        if self.transform:
-            chip = self.transform(torch.from_numpy(chip))
 
         sample = {
             "pixels": self.transform(torch.from_numpy(chip)),
