@@ -46,7 +46,9 @@ class ChesapeakeDataset(Dataset):
         )
 
         # Load chip and label file names
-        self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npy")][:2000]
+        self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npy")][
+            :2000
+        ]
         self.labels = [re.sub("_naip-new_", "_lc_", chip) for chip in self.chips]
 
     def create_transforms(self, mean, std):
