@@ -1,4 +1,4 @@
-(software_release)=
+(software_release_v0)=
 # Code Model release v0.0.1
 
 This changelog is a summary of the changes to the source code of the Clay model.
