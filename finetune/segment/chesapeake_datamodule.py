@@ -89,10 +89,6 @@ class ChesapeakeDataset(Dataset):
         label_mapping = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 15: 6}
         remapped_label = np.vectorize(label_mapping.get)(label)
 
-        # Apply transformations
-        if self.transform:
-            chip = self.transform(torch.from_numpy(chip))
-
         sample = {
             "pixels": self.transform(torch.from_numpy(chip)),
             "label": torch.from_numpy(remapped_label[0]),
