@@ -1,28 +1,43 @@
-"""
+r"""
 Chesapeake CVPR Data Processing Script
 ======================================
 
-This script processes GeoTIFF files from the Chesapeake CVPR dataset to create image chips for segmentation tasks.
+This script processes GeoTIFF files from the Chesapeake CVPR dataset to create
+image chips for segmentation tasks.
 
 Dataset Source:
 ---------------
-Chesapeake CVPR data from LILA: https://lila.science/datasets/chesapeakelandcover
+Chesapeake CVPR data from LILA:
+https://lila.science/datasets/chesapeakelandcover
+
 For this experiment, we will use images from NY.
 
 Notes:
 ------
-1. Only copy *_lc.tif & *_naip-new.tif files that we will use for our segmentation downstream task.
+1. Only copy *_lc.tif & *_naip-new.tif files that we will use for our
+segmentation downstream task.
    Using s5cmd for this: https://github.com/peak/s5cmd
-   - Train: s5cmd cp --include "*_lc.tif" --include "*_naip-new.tif" "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-train_tiles/*" data/cvpr/files/train/
-   - Val: s5cmd cp --include "*_lc.tif" --include "*_naip-new.tif" "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-val_tiles/*" data/cvpr/files/val/
+   - Train:
+   s5cmd cp \
+        --include "*_lc.tif" \
+        --include "*_naip-new.tif" \
+        "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-train_tiles/*" \
+        data/cvpr/files/train/
+   - Val:
+   s5cmd cp \
+        --include "*_lc.tif" \
+        --include "*_naip-new.tif" \
+        "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-val_tiles/*" \
+        data/cvpr/files/val/
 
-2. We will create chips of size `224 x 224` to feed them to the model, feel free to experiment with other chip sizes as well.
+2. We will create chips of size `224 x 224` to feed them to the model, feel
+free to experiment with other chip sizes as well.
    Run the script as follows:
-   python script.py <data_dir> <output_dir> <chip_size>
+   python preprocess_data.py <data_dir> <output_dir> <chip_size>
 
    Example:
-   python script.py data/cvpr/files data/cvpr/ny 224
-"""
+   python preprocess_data.py data/cvpr/files data/cvpr/ny 224
+"""  # noqa E501
 
 import os
 import sys
@@ -34,7 +49,8 @@ import rasterio as rio
 
 def read_and_chip(file_path, chip_size, output_dir):
     """
-    Reads a GeoTIFF file, creates chips of specified size, and saves them as numpy arrays.
+    Reads a GeoTIFF file, creates chips of specified size, and saves them as
+    numpy arrays.
 
     Args:
         file_path (str or Path): Path to the GeoTIFF file.
@@ -57,7 +73,8 @@ def read_and_chip(file_path, chip_size, output_dir):
 
                 chip = data[:, y1:y2, x1:x2]
                 chip_path = os.path.join(
-                    output_dir, f"{Path(file_path).stem}_chip_{chip_number}.npy"
+                    output_dir,
+                    f"{Path(file_path).stem}_chip_{chip_number}.npy",
                 )
                 np.save(chip_path, chip)
                 chip_number += 1
@@ -85,7 +102,7 @@ def main():
         - output_dir: Directory to save the output chips.
         - chip_size: Size of the square chips.
     """
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 4:  # noqa: PLR2004
         print("Usage: python script.py <data_dir> <output_dir> <chip_size>")
         sys.exit(1)
 

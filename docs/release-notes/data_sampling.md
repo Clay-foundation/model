@@ -1,3 +1,4 @@
+(training-data)=
 # Training Data
 
 This section describes how we created the training dataset for the clay model.

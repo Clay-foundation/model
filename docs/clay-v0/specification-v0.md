@@ -1,11 +1,11 @@
 (model_release)=
-# Pretrained Model release v0.0.1
+# Pretrained Model release v0
 
 This changelog is a summary of the changes to the pretrained model weights for the Clay model. We follow the "Stanford [Foundation Model Transparency Index](https://github.com/stanford-crfm/fmti)"
 
 Model weights released on 2024/01/12.
 
-> For release notes for the source code, see [](software_release)
+> For release notes for the source code, see [](software_release_v0)
 
 ### Summary
 
