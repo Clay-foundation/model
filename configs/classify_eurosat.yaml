@@ -6,7 +6,7 @@ data:
   num_workers: 8
 model:
   num_classes: 10
-  ckpt_path: checkpoints/clay-v1-base.pt
+  ckpt_path: checkpoints/clay-v1-base.ckpt
   lr: 1e-4
   wd: 0.05
   b1: 0.9

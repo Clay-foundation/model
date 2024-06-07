@@ -98,4 +98,4 @@ The model can be run via LightningCLI using configurations in `finetune/classify
 
 ## Acknowledgments
 
-This implementation uses the TorchGeo package for dataset handling and the EuroSAT dataset for training and evaluation. Special thanks to the contributors of TorchGeo and EuroSAT.
+This implementation uses the TorchGeo package for dataset handling and the EuroSAT dataset for training and evaluation. Special thanks to the contributors of [TorchGeo](https://github.com/microsoft/torchgeo) and [EuroSAT](https://github.com/phelber/EuroSAT).
