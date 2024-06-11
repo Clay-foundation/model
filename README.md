@@ -11,7 +11,7 @@ An open source AI model and interface for Earth.
 Launch into a [JupyterLab](https://jupyterlab.readthedocs.io) environment on
 
 | [Binder](https://mybinder.readthedocs.io/en/latest) | [SageMaker Studio Lab](https://studiolab.sagemaker.aws) |
-|:--:|:--:|:--:|
+|:--:|:--:|
 | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Clay-foundation/model/main) | [![Open in SageMaker Studio Lab](https://studiolab.sagemaker.aws/studiolab.svg)](https://studiolab.sagemaker.aws/import/github/Clay-foundation/model/blob/main/docs/tutorials/clay-v1-wall-to-wall.ipynb) |
 
 ## Installation
