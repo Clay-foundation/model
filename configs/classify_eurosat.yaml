@@ -1,0 +1,48 @@
+# lightning.pytorch==2.1.2
+seed_everything: 42
+data:
+  metadata_path: configs/metadata.yaml
+  batch_size: 256
+  num_workers: 8
+model:
+  num_classes: 10
+  ckpt_path: checkpoints/clay-v1-base.ckpt
+  lr: 1e-4
+  wd: 0.05
+  b1: 0.9
+  b2: 0.95
+trainer:
+  accelerator: auto
+  strategy: ddp
+  devices: auto
+  num_nodes: 1
+  precision: bf16-mixed
+  log_every_n_steps: 5
+  max_epochs: 20
+  accumulate_grad_batches: 1
+  default_root_dir: checkpoints/classify
+  fast_dev_run: False
+  num_sanity_val_steps: 0
+  logger:
+    - class_path: lightning.pytorch.loggers.WandbLogger
+      init_args:
+        entity: developmentseed
+        project: clay-classify
+        log_model: false
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        dirpath: checkpoints/classify
+        auto_insert_metric_name: False
+        filename: eurosat_epoch-{epoch:02d}_val-score-{val/score:.3f}
+        monitor: val/score
+        mode: max
+        save_last: True
+        save_top_k: 2
+        save_weights_only: True
+        verbose: True
+    - class_path: lightning.pytorch.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: step
+  plugins:
+    - class_path: lightning.pytorch.plugins.io.AsyncCheckpointIO
