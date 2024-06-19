@@ -6,6 +6,19 @@ from torch.utils.data import DataLoader
 from torchgeo.datasets import EuroSAT as TGEuroSAT
 from torchvision.transforms import v2
 
+S2_BANDS = [
+    "B02",
+    "B03",
+    "B04",
+    "B05",
+    "B06",
+    "B07",
+    "B08",
+    "B08A",
+    "B11",
+    "B12",
+]
+
 
 class EuroSAT(TGEuroSAT):
     """
@@ -91,36 +104,14 @@ class EuroSATDataModule(L.LightningDataModule):
             self.trn_ds = EuroSAT(
                 root="data",
                 split="train",
-                bands=[
-                    "B02",
-                    "B03",
-                    "B04",
-                    "B05",
-                    "B06",
-                    "B07",
-                    "B08",
-                    "B08A",
-                    "B11",
-                    "B12",
-                ],
+                bands=S2_BANDS,
                 transforms=self.trn_tfm,
                 download=True,
             )
             self.val_ds = EuroSAT(
                 root="data",
                 split="val",
-                bands=[
-                    "B02",
-                    "B03",
-                    "B04",
-                    "B05",
-                    "B06",
-                    "B07",
-                    "B08",
-                    "B08A",
-                    "B11",
-                    "B12",
-                ],
+                bands=S2_BANDS,
                 transforms=self.val_tfm,
                 download=True,
             )
