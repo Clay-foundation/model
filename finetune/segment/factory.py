@@ -148,10 +148,10 @@ class SegmentEncoder(Encoder):
             patches = attn(patches) + patches
             patches = ff(patches) + patches
             if idx in self.feature_maps:
-                _cube = rearrange(patches[:, 1:, :], "B (H W) D -> B D H W", H=28, W=28)
+                _cube = rearrange(patches[:, 1:, :], "B (H W) D -> B D H W", H=32, W=32)
                 features.append(_cube)
         patches = self.transformer.norm(patches)
-        _cube = rearrange(patches[:, 1:, :], "B (H W) D -> B D H W", H=28, W=28)
+        _cube = rearrange(patches[:, 1:, :], "B (H W) D -> B D H W", H=32, W=32)
         features.append(_cube)
 
         # Apply FPN layers
