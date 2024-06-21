@@ -157,7 +157,8 @@ python finetune/regression/preprocess_data.py \
   --features=/home/tam/Desktop/biomasters/train_features/ \
   --cubes=/home/tam/Desktop/biomasters/train_cubes/ \
   --processes=12 \
-  --sample=1
+  --sample=1 \
+  --overwrite
 ```
 
 ### Prepare test features
@@ -167,5 +168,6 @@ python finetune/regression/preprocess_data.py \
   --features=/home/tam/Desktop/biomasters/test_features/ \
   --cubes=/home/tam/Desktop/biomasters/test_cubes/ \
   --processes=12 \
-  --sample=1
+  --sample=1 \
+  --overwrite
 ```

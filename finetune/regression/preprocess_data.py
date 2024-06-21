@@ -30,8 +30,10 @@ def list_uniqe_ids(src: Path) -> List[str]:
     return ids
 
 
-def process_data_for_id(id: str, feature_path: Path, cubes_path: Path) -> None:
-    if (cubes_path / f"biomasters_cube_{id}.npz").exists():
+def process_data_for_id(
+    id: str, feature_path: Path, cubes_path: Path, overwrite: bool
+) -> None:
+    if not overwrite and (cubes_path / f"biomasters_cube_{id}.npz").exists():
         print(f"Found existing file for {id}, skipping.")
         return
     data = []
@@ -44,16 +46,25 @@ def process_data_for_id(id: str, feature_path: Path, cubes_path: Path) -> None:
             file_data = (
                 imread(feature_path / feature_name).swapaxes(1, 2).swapaxes(0, 1)
             )
+            ND1 = 0
+            ND2 = -9999
+            if platform == "S1":
+                file_data = np.ma.array(
+                    file_data, mask=np.logical_or(file_data == ND1, file_data == ND2)
+                )
+            else:
+                file_data = np.ma.array(file_data, mask=file_data == ND1)
             # Limit data to the first 10 bands
             file_data = file_data[:10]
             data_month.append(file_data)
-        data_month = np.vstack(data_month)
+        data_month = np.ma.vstack(data_month)
         NR_OF_BANDS_EXPECTED = 14
         if data_month.shape[0] != NR_OF_BANDS_EXPECTED:
             continue
         data.append(data_month)
-    cube = np.array(data).mean(axis=0)
-    np.savez_compressed(cubes_path / f"biomasters_cube_{id}.npz", cube=cube)
+    cube = np.ma.array(data)
+    mean_cube = np.ma.mean(cube, axis=0)
+    np.savez_compressed(cubes_path / f"biomasters_cube_{id}.npz", cube=mean_cube)
 
 
 @click.command()
@@ -77,7 +88,12 @@ def process_data_for_id(id: str, feature_path: Path, cubes_path: Path) -> None:
     help="Fraction of original data to sample",
     type=click.FloatRange(0, 1),
 )
-def process(features, cubes, processes, sample):
+@click.option(
+    "--overwrite",
+    is_flag=True,
+    help="Overwrite existing cubes",
+)
+def process(features, cubes, processes, sample, overwrite):
     """
     Combine tiff files into npz datacubes.
 
@@ -96,12 +112,12 @@ def process(features, cubes, processes, sample):
     if processes > 1:
         features = [features] * len(ids)
         cubes = [cubes] * len(ids)
+        overwrite = [overwrite] * len(ids)
         with Pool(processes) as pl:
-            pl.starmap(process_data_for_id, zip(ids, features, cubes))
+            pl.starmap(process_data_for_id, zip(ids, features, cubes, overwrite))
     else:
         for id in ids:
-            process_data_for_id(id, features, cubes)
-            break
+            process_data_for_id(id, features, cubes, overwrite)
 
 
 if __name__ == "__main__":

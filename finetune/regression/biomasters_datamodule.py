@@ -94,8 +94,8 @@ class BioMastersDataset(Dataset):
         chip_name = self.chip_dir / self.chips[idx]
         label_name = self.label_dir / (chip_name.stem.split("_")[-1] + "_agbm.tif")
 
-        chip = np.load(chip_name)["cube"]
-        label = imread(label_name)
+        chip = np.load(chip_name)["cube"].astype("float32")
+        label = imread(label_name).astype("float32")
         label = np.expand_dims(label, 0)
 
         sample = {

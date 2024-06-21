@@ -2,11 +2,9 @@ import lightning as L
 import torch
 import torch.nn.functional as F
 from torch import nn, optim
-from torchmetrics import RootMeanSquaredErrorUsingSlidingWindow
+from torchmetrics import MeanSquaredError
 
 from finetune.segment.factory import Segmentor
-
-# from finetune.classify.factory import Classifier
 
 
 class BioMastersClassifier(L.LightningModule):
@@ -31,7 +29,7 @@ class BioMastersClassifier(L.LightningModule):
             num_classes=1, feature_maps=feature_maps, ckpt_path=ckpt_path
         )
         self.loss_fn = nn.MSELoss()
-        self.rmse = RootMeanSquaredErrorUsingSlidingWindow()
+        self.score_fn = MeanSquaredError()
 
     def forward(self, datacube):
         """
@@ -127,7 +125,9 @@ class BioMastersClassifier(L.LightningModule):
         # print("Logits shape", logits.shape)
         # print("Labels shape", labels.shape)
         loss = self.loss_fn(logits, labels)
-        score = self.rmse(logits, labels)
+        score = self.score_fn(logits, labels)
+        # Convert to RMSE
+        score = torch.sqrt(score)
 
         self.log(
             f"{phase}/loss",

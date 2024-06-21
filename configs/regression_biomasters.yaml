@@ -2,7 +2,7 @@
 seed_everything: 42
 data:
   metadata_path: configs/metadata.yaml
-  batch_size: 2
+  batch_size: 6
   num_workers: 6
   train_chip_dir: /home/tam/Desktop/biomasters/train_cubes
   train_label_dir: /home/tam/Desktop/biomasters/train_agbm
