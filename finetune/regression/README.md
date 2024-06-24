@@ -14,6 +14,7 @@ sudo apt install p7zip-full
 
 ### Extract train feature
 
+
 ```bash
 7z e -o/home/tam/Desktop/biomasters/train_features/ /datadisk/biomasters/raw/train_features.zip
 ```
@@ -149,6 +150,9 @@ The time steps for Sentinel-2 are not complete, not all months are
 provided for all tiles. In addtion, the Clay model does not take time
 series as input. So aggregating the time element is simplifying but
 ok for the purpose of this example.
+
+**In addition, we skip the one orbit because it nodata most of the time**
+
 
 ### Prepare training features
 

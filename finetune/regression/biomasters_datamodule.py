@@ -54,8 +54,8 @@ class BioMastersDataset(Dataset):
         # Duplicate the S1 statistics so that the asc/desc orbit data
         # is handled correctly
         self.transform = self.create_transforms(
-            mean=s1_mean + s1_mean + s2_mean,
-            std=s1_std + s1_std + s2_std,
+            mean=s1_mean + s2_mean,
+            std=s1_std + s2_std,
         )
         # Load chip and label file names
         self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npz")]

@@ -49,21 +49,32 @@ def process_data_for_id(
             ND1 = 0
             ND2 = -9999
             if platform == "S1":
+                # Limit to first orbit (the other is mostly nodata)
+                file_data = file_data[:2]
                 file_data = np.ma.array(
                     file_data, mask=np.logical_or(file_data == ND1, file_data == ND2)
                 )
             else:
+                file_data = file_data[:10]
                 file_data = np.ma.array(file_data, mask=file_data == ND1)
-            # Limit data to the first 10 bands
-            file_data = file_data[:10]
             data_month.append(file_data)
+
         data_month = np.ma.vstack(data_month)
-        NR_OF_BANDS_EXPECTED = 14
+        NR_OF_BANDS_EXPECTED = 12
         if data_month.shape[0] != NR_OF_BANDS_EXPECTED:
             continue
         data.append(data_month)
+
     cube = np.ma.array(data)
     mean_cube = np.ma.mean(cube, axis=0)
+
+    if np.sum(mean_cube.mask):
+        print("Nodata", np.sum(mean_cube.mask))
+    NODATA_THRESHOLD = 1e5
+    if np.sum(mean_cube.mask) > NODATA_THRESHOLD:
+        print("Skipping due to lots of nodata")
+        return
+
     np.savez_compressed(cubes_path / f"biomasters_cube_{id}.npz", cube=mean_cube)
 
 

@@ -7,6 +7,27 @@ from torchmetrics import MeanSquaredError
 from finetune.segment.factory import Segmentor
 
 
+class NoNaNRMSE(nn.Module):
+    def __init__(self, threshold=400):
+        super().__init__()
+
+        self.threshold = threshold
+
+    def forward(self, logits, target):
+        not_nan = target < self.threshold
+
+        # logits = logits.squeeze(1)
+        diff = logits - target
+        diff[~not_nan] = 0
+        diff2 = torch.square(diff)
+        diff2m = (diff2 / not_nan.sum((-1, -2, -3), keepdim=True)).sum((-1, -2, -3))
+        diff2msqrt = torch.sqrt(diff2m)
+
+        rmse = diff2msqrt.mean()
+
+        return rmse
+
+
 class BioMastersClassifier(L.LightningModule):
     """
     LightningModule for training and evaluating a regression on the BioMasters
@@ -28,7 +49,7 @@ class BioMastersClassifier(L.LightningModule):
         self.model = Segmentor(
             num_classes=1, feature_maps=feature_maps, ckpt_path=ckpt_path
         )
-        self.loss_fn = nn.MSELoss()
+        self.loss_fn = NoNaNRMSE()
         self.score_fn = MeanSquaredError()
 
     def forward(self, datacube):
@@ -42,11 +63,9 @@ class BioMastersClassifier(L.LightningModule):
         Returns:
             torch.Tensor: The output logits from the classifier.
         """
-        # Wavelengths for S1 (twice) and S2 bands of BioMasters dataset
+        # Wavelengths for S1 and S2 bands of BioMasters dataset
         waves = torch.tensor(
             [
-                3.5,  # S1
-                4.0,
                 3.5,  # S1
                 4.0,
                 0.493,  # S2
@@ -92,7 +111,7 @@ class BioMastersClassifier(L.LightningModule):
             betas=(self.hparams.b1, self.hparams.b2),
         )
         scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer, T_0=100, T_mult=1, eta_min=self.hparams.lr * 100, last_epoch=-1
+            optimizer, T_0=1000, T_mult=1, eta_min=self.hparams.lr * 100, last_epoch=-1
         )
         return {
             "optimizer": optimizer,

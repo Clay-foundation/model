@@ -10,7 +10,7 @@ data:
   val_label_dir: /home/tam/Desktop/biomasters/test_agbm
 model:
   ckpt_path: checkpoints/clay-v1-base.ckpt
-  lr: 1e-4
+  lr: 1e-5
   wd: 0.05
   b1: 0.9
   b2: 0.95
@@ -27,10 +27,12 @@ trainer:
   precision: 32-true
   log_every_n_steps: 5
   max_epochs: 20
-  accumulate_grad_batches: 1
   default_root_dir: checkpoints/regression
   fast_dev_run: False
   num_sanity_val_steps: 0
+  limit_train_batches: 0.25
+  limit_val_batches: 0.25
+  accumulate_grad_batches: 6
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
