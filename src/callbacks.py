@@ -46,17 +46,23 @@ class LayerwiseFinetuning(BaseFinetuning):
 
     def freeze_before_training(self, pl_module):
         """Freezes the encoder before starting the training."""
-        self.freeze(modules=[pl_module.model.encoder.patch_embedding, 
-                             pl_module.model.encoder.transformer], 
-                    train_bn=self.train_bn)
+        self.freeze(
+            modules=[
+                pl_module.model.encoder.patch_embedding,
+                pl_module.model.encoder.transformer,
+            ],
+            train_bn=self.train_bn,
+        )
 
     def finetune_function(self, pl_module, epoch, optimizer):
         if epoch == self.phase:
             """Unfreezes the encoder for training."""
             print(f"In Phase {self.phase}: Full throttle")
             self.unfreeze_and_add_param_group(
-                modules=[pl_module.model.encoder.patch_embedding, 
-                         pl_module.model.encoder.transformer],
+                modules=[
+                    pl_module.model.encoder.patch_embedding,
+                    pl_module.model.encoder.transformer,
+                ],
                 optimizer=optimizer,
                 train_bn=self.train_bn,
             )

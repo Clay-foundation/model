@@ -10,9 +10,9 @@ Paper URL: https://arxiv.org/abs/2105.15203
 import re
 
 import torch
+import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import nn
-import torch.nn.functional as F
 
 from src.model import Encoder
 
@@ -151,7 +151,9 @@ class SegmentEncoder(Encoder):
             patches = attn(patches) + patches
             patches = ff(patches) + patches
             if idx in self.feature_maps:
-                _cube = rearrange(patches[:, 1:, :], "B (H W) D -> B D H W", H=H//8, W=W//8)
+                _cube = rearrange(
+                    patches[:, 1:, :], "B (H W) D -> B D H W", H=H // 8, W=W // 8
+                )
                 features.append(_cube)
         # patches = self.transformer.norm(patches)
         # _cube = rearrange(patches[:, 1:, :], "B (H W) D -> B D H W", H=H//8, W=W//8)
@@ -175,11 +177,14 @@ class FusionBlock(nn.Module):
         x = F.relu(self.bn(self.conv(x)))
         return x
 
+
 class SegmentationHead(nn.Module):
     def __init__(self, input_dim, num_classes):
         super(SegmentationHead, self).__init__()
         self.conv1 = nn.Conv2d(input_dim, input_dim // 2, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(input_dim // 2, num_classes, kernel_size=1)  # final conv to num_classes
+        self.conv2 = nn.Conv2d(
+            input_dim // 2, num_classes, kernel_size=1
+        )  # final conv to num_classes
         self.bn1 = nn.BatchNorm2d(input_dim // 2)
 
     def forward(self, x):
@@ -215,8 +220,10 @@ class Regressor(nn.Module):
             ckpt_path=ckpt_path,
         )
         self.upsamples = [nn.Upsample(scale_factor=2**i) for i in range(5)]
-        self.fusion = FusionBlock(self.encoder.dim, self.encoder.dim//4)
-        self.seg_head = nn.Conv2d(self.encoder.dim//4, num_classes, kernel_size=3, padding=1)
+        self.fusion = FusionBlock(self.encoder.dim, self.encoder.dim // 4)
+        self.seg_head = nn.Conv2d(
+            self.encoder.dim // 4, num_classes, kernel_size=3, padding=1
+        )
 
     def forward(self, datacube):
         """
@@ -239,4 +246,3 @@ class Regressor(nn.Module):
 
         logits = self.seg_head(fused)
         return logits
-

@@ -110,11 +110,7 @@ class BioMastersClassifier(L.LightningModule):
             weight_decay=self.hparams.wd,
             betas=(self.hparams.b1, self.hparams.b2),
         )
-        scheduler = optim.lr_scheduler.StepLR(
-            optimizer,
-            step_size=8,
-            gamma=0.5
-        )
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.5)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
