@@ -1,0 +1,66 @@
+# lightning.pytorch==2.1.2
+seed_everything: 42
+data:
+  data_dir: data
+  size: 224
+  metadata_path: configs/metadata.yaml
+  platforms:
+    - landsat-c2l1
+    - landsat-c2l2-sr
+    - linz
+    - naip
+    - sentinel-1-rtc
+    - sentinel-2-l2a
+  batch_size: 8
+  num_workers: 8
+model:
+  model_size: base
+  mask_ratio: 0.75
+  norm_pix_loss: True
+  patch_size: 8
+  shuffle: True
+  metadata_path: configs/metadata.yaml
+  teacher: vit_base_patch16_224.dino
+  lr: 1e-5
+  wd: 0.05
+  b1: 0.9
+  b2: 0.95
+  embeddings_level: mean
+trainer:
+  accelerator: auto
+  strategy: ddp
+  devices: auto
+  num_nodes: 1
+  precision: bf16-mixed
+  log_every_n_steps: 10
+  max_epochs: 200
+  accumulate_grad_batches: 1
+  default_root_dir: s3://clay-model-ckpt/v1.0.0/
+  fast_dev_run: False
+  num_sanity_val_steps: 0
+  use_distributed_sampler: False
+  logger:
+    - class_path: lightning.pytorch.loggers.WandbLogger
+      init_args:
+        entity: developmentseed
+        project: clay
+        log_model: false
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        dirpath: s3://clay-model-ckpt/v1.0.0/
+        auto_insert_metric_name: False
+        filename: mae_v1.0.0_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
+        monitor: val/loss
+        mode: min
+        save_last: True
+        save_top_k: 2
+        save_weights_only: False
+        verbose: True
+    - class_path: lightning.pytorch.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: step
+    - class_path: src.callbacks_wandb.LogIntermediatePredictions
+  plugins:
+    - class_path: lightning.pytorch.plugins.io.AsyncCheckpointIO
+ckpt_path: null

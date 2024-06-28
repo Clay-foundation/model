@@ -1,6 +1,7 @@
 name: claymodel
 channels:
   - conda-forge
+  - pytorch
   - nodefaults
 dependencies:
   - conda-lock~=2.5.6
@@ -15,8 +16,8 @@ dependencies:
   - matplotlib-base~=3.8.2
   - planetary-computer~=1.0.0
   - python-box~=7.1.0
-  - pytorch~=2.1.0  # [osx]
-  - pytorch~=2.1.0 *cuda12*  # [linux]
+  - pytorch~=2.1.0
+  - cpuonly
   - python~=3.11.0
   - pyarrow~=16.1.0
   - rioxarray~=0.15.0
@@ -33,5 +34,3 @@ dependencies:
   - vit-pytorch~=1.6.4
   - wandb~=0.15.12
   - zarr~=2.16.1
-platforms:
-  - linux-64

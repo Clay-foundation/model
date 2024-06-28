@@ -6,48 +6,26 @@ root: index
 parts:
 - caption: Release notes
   chapters:
-    - title: Software release notes
-      file: changelog
     - title: Model release notes
-      file: specification
+      file: release-notes/specification
+    - title: Data sampling strategy
+      file: release-notes/data_sampling
+    - title: Software release notes v1.0
+      file: release-notes/changelog-v1.0
 - caption: Getting Started
   chapters:
     - title: Installation
-      file: installation
+      file: getting-started/installation
     - title: Basic Use
-      file: basic_use
-- caption: Data Preparation
-  chapters:
-    - title: Creating datacubes
-      file: data_datacube
-    - title: Benchmark dataset labels
-      file: data_labels
-    - title: Data sampling strategy
-      file: data_sampling
-- caption: Running the model
-  chapters:
-    - title: Run over a region
-      file: run_region
-    - title: Generating embeddings
-      file: model_embeddings
-    - title: Finetuning
-      file: model_finetuning
-    - title: Embeddings for Contiguous US
-      file: worldcover-embeddings
+      file: getting-started/basic_use
 - caption: Tutorials
   chapters:
-    - title: Generative AI for pixel reconstruction
-      file: clay-v0-reconstruction
-    - title: Create location embeddings
-      file: clay-v0-location-embeddings
-    - title: Interpolating images in embedding space
-      file: clay-v0-interpolation
-    - title: Generate embeddings from partial inputs
-      file: partial-inputs
-    - title: Generate and use patch level embeddings from partial input
-      file: tutorial_digital_earth_pacific_patch_level
-    - title: Calculate and use patch level cloud cover percentages
-      file: patch_level_cloud_cover
+    - title: Clay v1 wall-to-wall example
+      file: tutorials/clay-v1-wall-to-wall
+    - title: Explore embeddings from Clay Encoder
+      file: tutorials/visualize-embeddings
+    - title: Clay MAE reconstruction
+      file: tutorials/reconstruction
 - caption: About Clay
   chapters:
     - title: GitHub
@@ -56,3 +34,24 @@ parts:
       url: https://www.linkedin.com/company/made-with-clay
     - title: Website
       url: https://madewithclay.org
+- caption: Older Versions
+  chapters:
+    - file: clay-v0/specification-v0
+      sections:
+      - title: Run over a region
+        file: clay-v0/run_region
+      - title: Generating embeddings
+        file: clay-v0/model_embeddings
+      - title: Finetuning
+        file: clay-v0/model_finetuning
+      - title: Embeddings for Contiguous US
+        file: clay-v0/worldcover-embeddings
+      - title: Interpolation example for v0
+        file: clay-v0/clay-v0-interpolation
+      - title: Creating datacubes
+        file: clay-v0/data_datacube
+      - title: Benchmark dataset labels
+        file: clay-v0/data_labels
+      - file: clay-v0-interpolation
+      - title: Software release notes v0.1
+        file: clay-v0/changelog-v1.0
