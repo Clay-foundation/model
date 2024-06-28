@@ -46,16 +46,14 @@ class BioMastersDataset(Dataset):
         self.metadata = metadata
 
         # Load statistics from Clay metadata
-        s1_mean = list(metadata["sentinel-1-rtc"].bands.mean.values())
         s2_mean = list(metadata["sentinel-2-l2a"].bands.mean.values())
-        s1_std = list(metadata["sentinel-1-rtc"].bands.std.values())
         s2_std = list(metadata["sentinel-2-l2a"].bands.std.values())
 
         # Duplicate the S1 statistics so that the asc/desc orbit data
         # is handled correctly
         self.transform = self.create_transforms(
-            mean=s1_mean + s2_mean,
-            std=s1_std + s2_std,
+            mean=s2_mean,
+            std=s2_std,
         )
         # Load chip and label file names
         self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npz")]
@@ -94,7 +92,7 @@ class BioMastersDataset(Dataset):
         chip_name = self.chip_dir / self.chips[idx]
         label_name = self.label_dir / (chip_name.stem.split("_")[-1] + "_agbm.tif")
 
-        chip = np.load(chip_name)["cube"].astype("float32")
+        chip = np.load(chip_name)["cube"][2:, ...].astype("float32")
         label = imread(label_name).astype("float32")
         label = np.expand_dims(label, 0)
 

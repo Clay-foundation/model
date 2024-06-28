@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch import nn, optim
 from torchmetrics import MeanSquaredError
 
-from finetune.segment.factory import Segmentor
+from finetune.regression.factory import Regressor
 
 
 class NoNaNRMSE(nn.Module):
@@ -46,7 +46,7 @@ class BioMastersClassifier(L.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         # self.model = Classifier(num_classes=1, ckpt_path=ckpt_path)
-        self.model = Segmentor(
+        self.model = Regressor(
             num_classes=1, feature_maps=feature_maps, ckpt_path=ckpt_path
         )
         self.loss_fn = NoNaNRMSE()
@@ -66,8 +66,8 @@ class BioMastersClassifier(L.LightningModule):
         # Wavelengths for S1 and S2 bands of BioMasters dataset
         waves = torch.tensor(
             [
-                3.5,  # S1
-                4.0,
+                # 3.5,  # S1
+                # 4.0,
                 0.493,  # S2
                 0.56,
                 0.665,
@@ -110,14 +110,16 @@ class BioMastersClassifier(L.LightningModule):
             weight_decay=self.hparams.wd,
             betas=(self.hparams.b1, self.hparams.b2),
         )
-        scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer, T_0=1000, T_mult=1, eta_min=self.hparams.lr * 100, last_epoch=-1
+        scheduler = optim.lr_scheduler.StepLR(
+            optimizer,
+            step_size=8,
+            gamma=0.5
         )
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": scheduler,
-                "interval": "step",
+                "interval": "epoch",
             },
         }
 
