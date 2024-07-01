@@ -180,7 +180,7 @@ class FusionBlock(nn.Module):
 
 class SegmentationHead(nn.Module):
     def __init__(self, input_dim, num_classes):
-        super(SegmentationHead, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(input_dim, input_dim // 2, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(
             input_dim // 2, num_classes, kernel_size=1
