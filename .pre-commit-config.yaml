@@ -15,7 +15,10 @@ repos:
   hooks:
     - id: ruff  # Run the linter
       args: [ --fix ]
-      types_or: [ python, pyi, jupyter ]
+      types_or: [ python, pyi ]
+    - id: ruff  # Run the linter for Jupyter notebooks with the PLR0913 rule ignored
+      args: [ --fix, --ignore=PLR0913 ]
+      types: [ jupyter ]
     - id: ruff-format  # Run the formatter
       types_or: [ python, pyi, jupyter ]
 

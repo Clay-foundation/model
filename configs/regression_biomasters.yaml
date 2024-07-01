@@ -1,0 +1,63 @@
+# lightning.pytorch==2.1.2
+seed_everything: 42
+data:
+  metadata_path: configs/metadata.yaml
+  batch_size: 10
+  num_workers: 8
+  train_chip_dir: data/biomasters/train_cube
+  train_label_dir: data/biomasters/train_agbm
+  val_chip_dir: data/biomasters/test_cube
+  val_label_dir: data/biomasters/test_agbm
+model:
+  ckpt_path: checkpoints/clay-v1-base.ckpt
+  lr: 1e-3
+  wd: 0.05
+  b1: 0.9
+  b2: 0.95
+  feature_maps:
+    - 2
+    - 5
+    - 7
+    - 9
+    - 11
+trainer:
+  accelerator: auto
+  strategy: ddp
+  devices: auto
+  num_nodes: 1
+  precision: bf16-mixed
+  log_every_n_steps: 5
+  max_epochs: 100
+  default_root_dir: checkpoints/regression
+  fast_dev_run: False
+  num_sanity_val_steps: 0
+  # limit_train_batches: 0.25
+  # limit_val_batches: 0.25
+  accumulate_grad_batches: 4
+  logger:
+    - class_path: lightning.pytorch.loggers.WandbLogger
+      init_args:
+        entity: developmentseed
+        project: clay-regression
+        log_model: false
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        dirpath: checkpoints/regression
+        auto_insert_metric_name: False
+        filename: biomasters_epoch-{epoch:02d}_val-score-{val/score:.3f}
+        monitor: val/score
+        mode: min
+        save_last: False
+        save_top_k: 2
+        save_weights_only: True
+        verbose: True
+    - class_path: lightning.pytorch.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: step
+    - class_path: src.callbacks.LayerwiseFinetuning
+      init_args:
+        phase: 10
+        train_bn: True
+  plugins:
+    - class_path: lightning.pytorch.plugins.io.AsyncCheckpointIO

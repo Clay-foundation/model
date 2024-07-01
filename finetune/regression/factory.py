@@ -10,6 +10,7 @@ Paper URL: https://arxiv.org/abs/2105.15203
 import re
 
 import torch
+import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import nn
 
@@ -70,7 +71,9 @@ class SegmentEncoder(Encoder):
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
-        self.fpn5 = nn.Identity()
+        self.fpn5 = nn.Sequential(
+            nn.MaxPool2d(kernel_size=4, stride=4),
+        )
 
         # Set device
         self.device = (
@@ -152,9 +155,9 @@ class SegmentEncoder(Encoder):
                     patches[:, 1:, :], "B (H W) D -> B D H W", H=H // 8, W=W // 8
                 )
                 features.append(_cube)
-        patches = self.transformer.norm(patches)
-        _cube = rearrange(patches[:, 1:, :], "B (H W) D -> B D H W", H=H // 8, W=W // 8)
-        features.append(_cube)
+        # patches = self.transformer.norm(patches)
+        # _cube = rearrange(patches[:, 1:, :], "B (H W) D -> B D H W", H=H//8, W=W//8)
+        # features.append(_cube)
 
         # Apply FPN layers
         ops = [self.fpn1, self.fpn2, self.fpn3, self.fpn4, self.fpn5]
@@ -164,10 +167,36 @@ class SegmentEncoder(Encoder):
         return features
 
 
-class Segmentor(nn.Module):
+class FusionBlock(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super().__init__()
+        self.conv = nn.Conv2d(input_dim, output_dim, kernel_size=3, padding=1)
+        self.bn = nn.BatchNorm2d(output_dim)
+
+    def forward(self, x):
+        x = F.relu(self.bn(self.conv(x)))
+        return x
+
+
+class SegmentationHead(nn.Module):
+    def __init__(self, input_dim, num_classes):
+        super().__init__()
+        self.conv1 = nn.Conv2d(input_dim, input_dim // 2, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(
+            input_dim // 2, num_classes, kernel_size=1
+        )  # final conv to num_classes
+        self.bn1 = nn.BatchNorm2d(input_dim // 2)
+
+    def forward(self, x):
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = self.conv2(x)  # No activation before final layer
+        return x
+
+
+class Regressor(nn.Module):
     """
-    Clay Segmentor class that combines the Encoder with FPN layers for semantic
-    segmentation.
+    Clay Regressor class that combines the Encoder with FPN layers for semantic
+    regression.
 
     Attributes:
         num_classes (int): Number of output classes for segmentation.
@@ -190,15 +219,15 @@ class Segmentor(nn.Module):
             feature_maps=feature_maps,
             ckpt_path=ckpt_path,
         )
-        self.upsamples = [nn.Upsample(scale_factor=2**i) for i in range(4)] + [
-            nn.Upsample(scale_factor=4),
-        ]
-        self.fusion = nn.Conv2d(self.encoder.dim * 5, self.encoder.dim, kernel_size=1)
-        self.seg_head = nn.Conv2d(self.encoder.dim, num_classes, kernel_size=1)
+        self.upsamples = [nn.Upsample(scale_factor=2**i) for i in range(5)]
+        self.fusion = FusionBlock(self.encoder.dim, self.encoder.dim // 4)
+        self.seg_head = nn.Conv2d(
+            self.encoder.dim // 4, num_classes, kernel_size=3, padding=1
+        )
 
     def forward(self, datacube):
         """
-        Forward pass of the Segmentor.
+        Forward pass of the Regressor.
 
         Args:
             datacube (dict): A dictionary containing the input datacube and
@@ -211,7 +240,8 @@ class Segmentor(nn.Module):
         for i in range(len(features)):
             features[i] = self.upsamples[i](features[i])
 
-        fused = torch.cat(features, dim=1)
+        # fused = torch.cat(features, dim=1)
+        fused = torch.sum(torch.stack(features), dim=0)
         fused = self.fusion(fused)
 
         logits = self.seg_head(fused)
