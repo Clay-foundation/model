@@ -6,6 +6,11 @@
 
 An open source AI model and interface for Earth.
 
+
+| Zero to Hero technical Guide (For developers) | Non-Technical User Guide (upcoming webapps) |
+|:--:|:--:|
+| [![](https://github.com/Clay-foundation/model/assets/434029/0cbfb109-c391-4f73-99f0-abc8769a7a14)](https://www.youtube.com/live/Zd3rbBj56P0?si=_ts3aWBcso0KEH7K) | [![](https://github.com/Clay-foundation/model/assets/434029/5cd209ec-3571-4ae7-98a1-1cef9a898f25)](https://youtu.be/gFjbrGaAL6w?si=ampWKQi9bArVoJsy) |
+
 ## Quickstart
 
 Launch into a [JupyterLab](https://jupyterlab.readthedocs.io) environment on
