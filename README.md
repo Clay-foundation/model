@@ -32,7 +32,7 @@ to install the dependencies. A virtual environment will also be created with Pyt
 > [!NOTE]
 > The command above will only work for Linux devices with CUDA GPUs. For installation
 > on macOS devices (either Intel or ARM chips), follow the 'Advanced' section in
-> https://clay-foundation.github.io/model/installation.html#advanced
+> https://clay-foundation.github.io/model/getting-started/installation.html#advanced
 
 Activate the virtual environment first.
 
