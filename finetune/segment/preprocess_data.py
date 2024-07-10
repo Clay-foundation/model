@@ -19,12 +19,14 @@ segmentation downstream task.
    Using s5cmd for this: https://github.com/peak/s5cmd
    - Train:
    s5cmd cp \
+        --no-sign-request \
         --include "*_lc.tif" \
         --include "*_naip-new.tif" \
         "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-train_tiles/*" \
         data/cvpr/files/train/
    - Val:
    s5cmd cp \
+        --no-sign-request \
         --include "*_lc.tif" \
         --include "*_naip-new.tif" \
         "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-val_tiles/*" \
