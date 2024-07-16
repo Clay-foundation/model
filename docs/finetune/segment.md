@@ -1,7 +1,7 @@
 # Segmentation head fine tuning
 
 We have built an example for training a segmentation head on top of
-feature maps extracted from the frozen Clay encoder.  
+feature maps extracted from the frozen Clay encoder.
 
 All the code for this example can be found in the
 [segment finetuning folder](https://github.com/Clay-foundation/model/blob/main/finetune/segment)
