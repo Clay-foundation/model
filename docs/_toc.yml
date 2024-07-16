@@ -26,6 +26,14 @@ parts:
       file: tutorials/visualize-embeddings
     - title: Clay MAE reconstruction
       file: tutorials/reconstruction
+- caption: Finetune examples
+  chapters:
+    - title: Segmentation using Chesapeake
+      file: finetune/segment
+    - title: Classification using Eurosat
+      file: finetune/classify
+    - title: Regression using Biomasters
+      file: finetune/regression
     - title: Finetunig on an embeddings database
       file: tutorials/finetune-on-embeddings
 - caption: About Clay
