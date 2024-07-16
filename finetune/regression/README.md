@@ -175,3 +175,8 @@ python finetune/regression/preprocess_data.py \
   --sample=1 \
   --overwrite
 ```
+
+### Train the model
+    ```bash
+    python finetune/regression/regression.py fit --config configs/regression_biomasters.yaml
+    ```

@@ -112,7 +112,7 @@ The model can be run via LightningCLI using configurations in `finetune/segment/
 
 4. Train the model:
     ```bash
-    python segment.py fit --config configs/segment_chesapeake.yaml
+    python finetune/segment/segment.py fit --config configs/segment_chesapeake.yaml
     ```
 
 ## Acknowledgments
