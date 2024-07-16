@@ -1,4 +1,14 @@
+# Regression head fine tuning
+
+We have built an example for training a regression head on top of
+feature maps extracted from the frozen Clay encoder.
+
+All the code for this example can be found in the
+[regression finetuning folder](https://github.com/Clay-foundation/model/blob/main/finetune/regression)
+of this repository.
+
 ## Download data
+
 The data comes as multifile zip, it can be downloaded from the
 [BioMassters](https://huggingface.co/datasets/nascetti-a/BioMassters/)
 huggingface repository. Grab a coffee, this is about 250GB in size.

@@ -1,24 +1,33 @@
-# Segmentor
+# Segmentation head fine tuning
+
+We have built an example for training a segmentation head on top of
+feature maps extracted from the frozen Clay encoder.  
+
+All the code for this example can be found in the
+[segment finetuning folder](https://github.com/Clay-foundation/model/blob/main/finetune/segment)
+of this repository.
+
+## Segmentor
 
 The `Segmentor` class is designed for semantic segmentation tasks, extracting feature maps from intermediate layers of the Clay Encoder and adding a Feature Pyramid Network (FPN) on top of it.
 
-Decoder is inspired by the Segformer paper.
-Todo:
-- Add neck & head for segmentation task from other papers like UperNet, PPANet, etc. to compare with other GeoAI models.
+The decoder in this example is inspired by the Segformer paper.
+
+A possible future improvement will be to add a neck & head for segmentation
+task from other papers like UperNet, PPANet, etc. to compare with other
+GeoAI models.
 
 
-## Parameters
+### Parameters
 
 - `feature_maps (list)`: Indices of intermediate layers of the Clay Encoder used by FPN layers.
 - `ckpt_path (str)`: Path to the Clay model checkpoint.
 
-## Example
+### Example
 
 In this example, we will use the `Segmentor` class to segment Land Use Land Cover (LULC) classes for the Chesapeake Bay CVPR dataset. The implementation includes data preprocessing, data loading, and model training workflow using PyTorch Lightning.
 
-## Dataset
-
-### Citation
+## Dataset citation
 
 If you use this dataset, please cite the associated manuscript:
 
