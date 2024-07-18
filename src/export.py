@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 import torch
@@ -5,38 +6,47 @@ from torch.export import Dim
 
 from src.model import ClayMAEModule
 
+warnings.filterwarnings("ignore")
+
 CHECKPOINT_PATH = "checkpoints/clay-v1-base.ckpt"
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# device = torch.device("cpu")
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+CHIP_SIZE = 256
 
 
 def get_data():
-    # Load data
-    cube = torch.randn(128, 3, 224, 224).to(device)
-    time = torch.randn(128, 4).to(device)
-    latlon = torch.randn(128, 4).to(device)
-    waves = torch.randn(3).to(device)
-    gsd = torch.randn(1).to(device)
-    return cube, time, latlon, waves, gsd
+    """
+    Generate random data tensors for model input.
+    """
+    cube = torch.randn(128, 3, CHIP_SIZE, CHIP_SIZE).to(DEVICE)
+    timestep = torch.randn(128, 4).to(DEVICE)
+    latlon = torch.randn(128, 4).to(DEVICE)
+    waves = torch.randn(3).to(DEVICE)
+    gsd = torch.randn(1).to(DEVICE)
+    return cube, timestep, latlon, waves, gsd
 
 
 def load_model():
-    module = ClayMAEModule.load_from_checkpoint(CHECKPOINT_PATH)
-    encoder = module.model.encoder  # Get the encoder
-    encoder = encoder.to(device)  # Move to device
+    """
+    Load the model from a checkpoint and prepare it for evaluation.
+    """
+    module = ClayMAEModule.load_from_checkpoint(
+        CHECKPOINT_PATH, shuffle=False, mask_ratio=0.0
+    )
+    encoder = module.model.encoder.eval()  # Get the encoder in eval mode
+    encoder = encoder.to(DEVICE)  # Move to the appropriate device
     return encoder
 
 
-def main():
-    # Load data
-    cube, time, latlon, waves, gsd = get_data()
-
-    # Load model
+def export_model():
+    """
+    Export the model with dynamic shapes for deployment.
+    """
+    cube, timestep, latlon, waves, gsd = get_data()
     encoder = load_model()
 
     # Define dynamic shapes for model export
-    batch_size = Dim("batch_size", min=2, max=128)  # Define batch size range
-    channel_bands = Dim("channel_bands", min=1, max=12)  # Define channel bands range
+    batch_size = Dim("batch_size", min=32, max=1200)
+    channel_bands = Dim("channel_bands", min=1, max=10)
 
     dynamic_shapes = {
         "cube": {0: batch_size, 1: channel_bands},
@@ -47,22 +57,17 @@ def main():
     }
 
     # Export model
-    exp_compiled_encoder = torch.export.export(
+    ep = torch.export.export(
         mod=encoder,
-        args=(cube, time, latlon, waves, gsd),
+        args=(cube, timestep, latlon, waves, gsd),
         dynamic_shapes=dynamic_shapes,
-        strict=False,
+        strict=True,
     )
 
-    # tensortrt compiled model
-    # trt_encoder = torch_tensorrt.dynamo.compile(
-    #     exp_compiled_encoder, [cube, time, latlon, waves, gsd]
-    # )
-
-    # Save model
+    # Save the exported model
     Path("checkpoints/compiled").mkdir(parents=True, exist_ok=True)
-    torch.export.save(exp_compiled_encoder, "checkpoints/compiled/encoder.pt")
+    torch.export.save(ep, "checkpoints/compiled/encoder.pt")
 
 
 if __name__ == "__main__":
-    main()
+    export_model()
