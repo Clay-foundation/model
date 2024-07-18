@@ -39,6 +39,10 @@ class Encoder(nn.Module):
         self.dim = dim
         self.cls_token = nn.Parameter(torch.randn(1, 1, dim) * 0.02)
 
+        # Required to compile & export the model
+        self.grid_size = 256 // 8
+        self.num_patches = self.grid_size**2
+
         self.patch_embedding = DynamicEmbedding(
             wave_dim=128,
             num_latent_tokens=128,
@@ -64,8 +68,9 @@ class Encoder(nn.Module):
         """Add position encoding to the patches"""
         B, L, D = patches.shape
 
-        grid_size = int(math.sqrt(L))
-        self.num_patches = grid_size**2
+        # grid_size = int(math.sqrt(L))
+        # self.num_patches = grid_size**2
+        grid_size = self.grid_size
 
         pos_encoding = (
             posemb_sincos_2d_with_gsd(
