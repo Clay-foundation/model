@@ -35,7 +35,7 @@ parts:
     - title: Regression using Biomasters
       file: finetune/regression
     - title: Finetunig on an embeddings database
-      file: tutorials/finetune-on-embeddings
+      file: finetune/finetune-on-embeddings
 - caption: About Clay
   chapters:
     - title: GitHub
