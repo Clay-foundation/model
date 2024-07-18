@@ -103,9 +103,14 @@ The model can be run via LightningCLI using configurations in `finetune/classify
     ```
 
 4. Train the classification head:
-    ```bash
-    python finetune/classify/classify.py fit --config configs/classify_eurosat.yaml
-    ```
+
+To ensure that the imports work properly, ensure that the root of
+the repository is in the python path before running the script.
+
+```bash
+export PYTHONPATH=.:$PYTHONPATH
+python finetune/classify/classify.py fit --config configs/classify_eurosat.yaml
+```
 
 ## Acknowledgments
 
