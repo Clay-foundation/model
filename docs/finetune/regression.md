@@ -187,6 +187,12 @@ python finetune/regression/preprocess_data.py \
 ```
 
 ### Train the model
-    ```bash
-    python finetune/regression/regression.py fit --config configs/regression_biomasters.yaml
-    ```
+
+To ensure that the imports work properly, ensure that the root of
+the repository is in the python path before running the script.
+
+
+```bash
+export PYTHONPATH=.:$PYTHONPATH
+python finetune/regression/regression.py fit --config configs/regression_biomasters.yaml
+```
