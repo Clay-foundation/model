@@ -6,6 +6,12 @@ Clay is a [foundation model](https://www.adalovelaceinstitute.org/resource/found
 
 Clay’s model takes satellite imagery, along with information about location and time, as an input, and outputs embeddings, which are mathematical representations of a given area at a certain time on Earth’s surface. It uses a Vision Transformer architecture adapted to understand geospatial and temporal relations on Earth Observation data. The model is trained via Self-supervised learning (SSL) using a Masked Autoencoder (MAE) method.
 
+| Zero to Hero technical Guide (For developers) | Non-Technical User Guide (upcoming webapps) |
+|:--:|:--:|
+| [![](https://github.com/Clay-foundation/model/assets/434029/0cbfb109-c391-4f73-99f0-abc8769a7a14)](https://www.youtube.com/live/Zd3rbBj56P0?si=_ts3aWBcso0KEH7K) | [![](https://github.com/Clay-foundation/model/assets/434029/5cd209ec-3571-4ae7-98a1-1cef9a898f25)](https://youtu.be/gFjbrGaAL6w?si=ampWKQi9bArVoJsy) |
+
+## Usage
+
 The Clay model can be used in three main ways:
 - **Generate semantic embeddings for any location and time.** You can use embeddings for a variety of tasks, including to:
   - _Find features:_ Locate objects or features, such as surface mines, aquaculture, or concentrated animal feeding operations.

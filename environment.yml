@@ -27,6 +27,7 @@ dependencies:
   - stackstac~=0.5.0
   - timm~=0.9.16
   - torchdata~=0.7.1
+  - torchgeo~=0.5.2
   - torchvision~=0.16.1
   - transformers~=4.35.2
   - typeshed-client~=2.4.0
