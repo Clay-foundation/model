@@ -193,6 +193,5 @@ the repository is in the python path before running the script.
 
 
 ```bash
-export PYTHONPATH=.:$PYTHONPATH
-python finetune/regression/regression.py fit --config configs/regression_biomasters.yaml
+python -m finetune.regression.regression fit --config configs/regression_biomasters.yaml
 ```

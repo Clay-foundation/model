@@ -108,8 +108,7 @@ To ensure that the imports work properly, ensure that the root of
 the repository is in the python path before running the script.
 
 ```bash
-export PYTHONPATH=.:$PYTHONPATH
-python finetune/classify/classify.py fit --config configs/classify_eurosat.yaml
+python -m finetune.classify.classify fit --config configs/classify_eurosat.yaml
 ```
 
 ## Acknowledgments
