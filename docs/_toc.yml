@@ -28,6 +28,16 @@ parts:
       file: tutorials/reconstruction
     - title: NAIP Inference and Similarity Search with Clay
       file: tutorials/v1-inference-simsearch-naip-stacchip
+- caption: Finetune examples
+  chapters:
+    - title: Segmentation using Chesapeake
+      file: finetune/segment
+    - title: Classification using Eurosat
+      file: finetune/classify
+    - title: Regression using Biomasters
+      file: finetune/regression
+    - title: Finetunig on an embeddings database
+      file: finetune/finetune-on-embeddings
 - caption: About Clay
   chapters:
     - title: GitHub
