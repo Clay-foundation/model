@@ -11,6 +11,7 @@ dependencies:
   - jupyter-book~=1.0.0
   - jupyterlab~=4.0.7
   - jsonargparse~=4.27.0
+  - lancedb~=0.10.2
   - lightning~=2.1.0
   - matplotlib-base~=3.8.2
   - planetary-computer~=1.0.0
