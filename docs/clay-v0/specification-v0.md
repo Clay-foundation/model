@@ -19,7 +19,7 @@ The model was trained on AWS on 4 NVIDIA A10G GPUs for 25 epochs (~14h per epoch
 
 Model weights are available on HuggingFace [here](https://huggingface.co/made-with-clay/Clay/).
 
-We also generated embeddings for all trainning data, which can be found on Source Cooperative [here](https://source.coop/).
+We also generated embeddings for all training data, which can be found on Source Cooperative [here](https://source.coop/).
 
 ## Model Architecture
 

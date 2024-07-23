@@ -2,7 +2,7 @@
 
 Fine-tuning refers to a process in machine learning where a pre-trained model
 is further trained on a specific dataset to adapt its parameters to a
-downstream task characterized by a relevent domain. It's distinct from training
+downstream task characterized by a relevant domain. It's distinct from training
 a model from scratch using the downstream task dataset exclusively.
 
 Related to finetuning in the field of training Foundation models is linear
@@ -21,7 +21,7 @@ the Foundation model both during its pre-training and afterwards.
 Let's take a look at how we are finetuning on the benchmark datacube-adapted
 [Cloud to Street - Microsoft Flood Dataset](https://beta.source.coop/repositories/c2sms/c2smsfloods).
 As a reminder, that is a downstream
-segmentation task for identifiying water pixels in recorded flood events. It's
+segmentation task for identifying water pixels in recorded flood events. It's
 a binary segmentation problem, specifically.
 
 We process the datacubes into batches formatted in the way the pretrained Clay
@@ -150,7 +150,7 @@ segmentation problem, and on the predictions, we run sigmoid and max functions
 to obtain final segmentation results.
 
 The way we measure relative performance between the finetuned and
-"from scratch" model variants happens through calculation of evalution metrics
+"from scratch" model variants happens through calculation of evaluation metrics
 common for segmentation, such as Dice coefficient, Intersection over Union, F1
 score, precision and recall.
 
