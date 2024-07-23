@@ -19,7 +19,7 @@ from src.model import ClayMAEModule  # noqa: F401
 # %%
 def cli_main():
     """
-    Command-line inteface to run ClayMAE with ClayDataModule.
+    Command-line interface to run ClayMAE with ClayDataModule.
     """
     cli = LightningCLI(save_config_kwargs={"overwrite": True})
     return cli

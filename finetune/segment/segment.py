@@ -19,7 +19,7 @@ from finetune.segment.chesapeake_model import ChesapeakeSegmentor  # noqa: F401
 # %%
 def cli_main():
     """
-    Command-line inteface to run Segmentation Model with ChesapeakeDataModule.
+    Command-line interface to run Segmentation Model with ChesapeakeDataModule.
     """
     cli = LightningCLI(ChesapeakeSegmentor, ChesapeakeDataModule)
     return cli
