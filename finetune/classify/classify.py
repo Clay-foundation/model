@@ -19,7 +19,7 @@ from finetune.classify.eurosat_model import EuroSATClassifier  # noqa: F401
 # %%
 def cli_main():
     """
-    Command-line inteface to run Clasifier model with EuroSATDataModule.
+    Command-line interface to run Clasifier model with EuroSATDataModule.
     """
     cli = LightningCLI(EuroSATClassifier, EuroSATDataModule)
     return cli

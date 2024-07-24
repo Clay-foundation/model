@@ -157,7 +157,7 @@ Compressed: 729766400
 
 This will take the average of all timesteps available for each tile.
 The time steps for Sentinel-2 are not complete, not all months are
-provided for all tiles. In addtion, the Clay model does not take time
+provided for all tiles. In addition, the Clay model does not take time
 series as input. So aggregating the time element is simplifying but
 ok for the purpose of this example.
 

@@ -3,7 +3,7 @@
 This section shows in a few simple steps how the clay model can be run for
 custom AOIs and over custom date ranges.
 
-## Prepare folder strucutre for data
+## Prepare folder structure for data
 
 ```bash
 # Move into the model repository
@@ -87,7 +87,7 @@ outside of the AOI specified.
 
 To speed up processing in the example below, we use the subset argument to
 reduce each MGRS tile to a small pixel window. When subsetting, the script
-will only download a fraction of each MGRS tile. This will lead to discontinous
+will only download a fraction of each MGRS tile. This will lead to discontinuous
 datasets and should not be used in a real use case. Remove the subset argument
 when using the script for a real world application, where all the data should
 be downloaded for each MGRS tile.

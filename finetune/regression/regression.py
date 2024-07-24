@@ -19,7 +19,7 @@ from finetune.regression.biomasters_model import BioMastersClassifier  # noqa: F
 # %%
 def cli_main():
     """
-    Command-line inteface to run Regression with BioMastersDataModule.
+    Command-line interface to run Regression with BioMastersDataModule.
     """
     cli = LightningCLI(
         BioMastersClassifier,

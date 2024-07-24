@@ -20,7 +20,7 @@ The `Classifier` class is designed for classification tasks, utilizing the Clay 
 
 In this example, we will use the `Classifier` class to classify images from the [EuroSAT MS dataset](https://github.com/phelber/EuroSAT). The implementation includes data preprocessing, data loading, and model training workflow using [PyTorch Lightning](https://lightning.ai/) & [TorchGeo](https://github.com/microsoft/torchgeo).
 
-In this example we freeze the Clay encoder and only train a very simple 2 layer MLP head for classification. The MLP head recieves as input the Clay class token embedding, which already contains the essence of the image as seen by Clay. The model for classification can then be kept very simple while still guaranteeing high quality results.
+In this example we freeze the Clay encoder and only train a very simple 2 layer MLP head for classification. The MLP head receives as input the Clay class token embedding, which already contains the essence of the image as seen by Clay. The model for classification can then be kept very simple while still guaranteeing high quality results.
 
 Notice that the EuroSAT dataset comes without date stamps or location information. The Clay model requires encoded versions of a date stamp and a latitude and longitude information. These values can be set to zero if they are not available, which is what we are doing in the datamodule script.
 
@@ -72,7 +72,7 @@ data/ds
 ```
 
 
-### Training the Classifcation Head
+### Training the Classification Head
 
 The model can be run via LightningCLI using configurations in `finetune/classify/configs/classify_eurosat.yaml`.
 

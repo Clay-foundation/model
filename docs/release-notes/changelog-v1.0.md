@@ -37,7 +37,7 @@
 * Shorten comment line length by @yellowcap in https://github.com/Clay-foundation/model/pull/261
 * Refactor docs by moving v0 docs into separate section by @yellowcap in https://github.com/Clay-foundation/model/pull/262
 * Docs v1 continued by @yellowcap in https://github.com/Clay-foundation/model/pull/263
-* Documented metadata file for normalization and wavelenghts by @yellowcap in https://github.com/Clay-foundation/model/pull/266
+* Documented metadata file for normalization and wavelengths by @yellowcap in https://github.com/Clay-foundation/model/pull/266
 * [small change] add source.coop link by @brunosan in https://github.com/Clay-foundation/model/pull/137
 * Segmentation on Clay by @srmsoumya in https://github.com/Clay-foundation/model/pull/257
 

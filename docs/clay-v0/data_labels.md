@@ -26,7 +26,7 @@ then followed the same `datacube` creation logic to generate datacubes with
 Sentinel-1 VV and VH and the Copernicus Digital Elevation Model (DEM). We also
 ensured that the Sentinel-1 data was within a +/- 3 day interval of each
 reference Sentinel-2 scene (same method used by the benchmark dataset authors)
-and that the Sentinel-1 data was indeed already included in the bechmark
+and that the Sentinel-1 data was indeed already included in the benchmark
 dataset's list of granules. The datacubes generated have all three inputs
 matching the exact specs of the Foundation model's training data, at 512x512
 pixels.
