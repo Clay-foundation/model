@@ -4,3 +4,8 @@ ignore-words-list = [
     "socio-economic",
     "therefrom",
 ]
+skip = [
+    "docs/clay-v0/tutorial_digital_earth_pacific_patch_level.ipynb",
+    "docs/clay-v0/partial-inputs.ipynb",
+    "docs/tutorials/v1-inference-simsearch-naip-stacchip.ipynb",
+]
