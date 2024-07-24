@@ -39,10 +39,6 @@ class Encoder(nn.Module):
         self.dim = dim
         self.cls_token = nn.Parameter(torch.randn(1, 1, dim) * 0.02)
 
-        # Required to compile & export the model
-        self.grid_size = 256 // 8
-        self.num_patches = self.grid_size**2
-
         self.patch_embedding = DynamicEmbedding(
             wave_dim=128,
             num_latent_tokens=128,
@@ -68,9 +64,8 @@ class Encoder(nn.Module):
         """Add position encoding to the patches"""
         B, L, D = patches.shape
 
-        # grid_size = int(math.sqrt(L))
-        # self.num_patches = grid_size**2
-        grid_size = self.grid_size
+        grid_size = int(math.sqrt(L))
+        self.num_patches = grid_size**2
 
         pos_encoding = (
             posemb_sincos_2d_with_gsd(
@@ -165,14 +160,14 @@ class Encoder(nn.Module):
             masked_matrix,
         )  # [B L:(1 - mask_ratio) D], [(1-mask_ratio)], [mask_ratio], [B L]
 
-    def forward(self, cube, time, latlon, waves, gsd):
-        # cube, time, latlon, gsd, waves = (
-        #     datacube["pixels"],  # [B C H W]
-        #     datacube["time"],  # [B 2]
-        #     datacube["latlon"],  # [B 2]
-        #     datacube["gsd"],  # 1
-        #     datacube["waves"],  # [N]
-        # )  # [B C H W]
+    def forward(self, datacube):
+        cube, time, latlon, gsd, waves = (
+            datacube["pixels"],  # [B C H W]
+            datacube["time"],  # [B 2]
+            datacube["latlon"],  # [B 2]
+            datacube["gsd"],  # 1
+            datacube["waves"],  # [N]
+        )  # [B C H W]
 
         B, C, H, W = cube.shape
 
