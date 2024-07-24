@@ -1,2 +1,6 @@
 [tool.codespell]
-ignore-words-list = "linz"
+ignore-words-list = [
+    "linz",
+    "socio-economic",
+    "therefrom",
+]
