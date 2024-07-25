@@ -11,14 +11,13 @@ dependencies:
   - jupyter-book~=1.0.0
   - jupyterlab~=4.0.7
   - jsonargparse~=4.27.0
-  - lancedb~=0.10.2
   - lightning~=2.1.0
   - matplotlib-base~=3.8.2
   - onnx~=1.16.1
-  - onnxscript~=0.1.0.dev20240724
+  - onnxscript
   - planetary-computer~=1.0.0
   - python-box~=7.1.0
-  - pytorch~=2.1.0  # [osx]
+  - pytorch~=2.3.1  # [osx]
   - pytorch~=2.3.1 *cuda12*  # [linux]
   - python~=3.11.0
   - pyarrow~=16.1.0
@@ -29,13 +28,12 @@ dependencies:
   - scikit-learn~=1.4.0
   - stackstac~=0.5.0
   - timm~=0.9.16
-  - torchdata~=0.7.1
-  - torchgeo~=0.5.2
+  - torchgeo
   - torchvision~=0.18.1
   - transformers~=4.35.2
   - typeshed-client~=2.4.0
   - vit-pytorch~=1.6.4
-  - wandb~=0.15.12
+  - wandb
   - zarr~=2.16.1
 platforms:
   - linux-64
