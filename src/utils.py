@@ -24,6 +24,7 @@ def posemb_sincos_2d_with_gsd(
     y, x = torch.meshgrid(torch.arange(h), torch.arange(w), indexing="ij")
     assert (dim % 4) == 0, "feature dimension must be multiple of 4 for sincos emb"
 
+    gsd = gsd.to(x.device)
     omega = torch.arange(dim // 4) / (dim // 4 - 1)
     omega = 1.0 / (temperature ** (2 * omega / dim)) * (gsd / 1.0)  # Adjusted for g
 
@@ -33,16 +34,16 @@ def posemb_sincos_2d_with_gsd(
     return pe.type(dtype)
 
 
-def posemb_sincos_1d(pos, dim, temperature: int = 10000, dtype=torch.float32):
+def posemb_sincos_1d(waves, dim, temperature: int = 10000, dtype=torch.float32):
     assert (
         dim % 2 == 0
     ), "Feature dimension must be a multiple of 2 for sincos embedding"
-    pos = torch.arange(pos) if isinstance(pos, int) else pos
+    waves = torch.arange(waves) if isinstance(waves, int) else waves
 
-    omega = torch.arange(dim // 2) / (dim // 2 - 1)
+    omega = torch.arange(dim // 2, device=waves.device) / (dim // 2 - 1)
     omega = 1.0 / (temperature**omega)
 
-    scaled_pos = pos[:, None] * omega[None, :]
-    pe = torch.cat((scaled_pos.sin(), scaled_pos.cos()), dim=1)
+    scaled_waves = waves[:, None] * omega[None, :]
+    pe = torch.cat((scaled_waves.sin(), scaled_waves.cos()), dim=1)
 
     return pe.type(dtype)
