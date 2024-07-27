@@ -36,3 +36,5 @@ dependencies:
   - zarr~=2.16.1
 platforms:
   - linux-64
+  - osx-64
+  - osx-arm64
