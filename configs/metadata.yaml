@@ -236,6 +236,10 @@ modis:
     - sur_refl_b05
     - sur_refl_b06
     - sur_refl_b07
+  rgb_indices:
+    - 0
+    - 3
+    - 2
   gsd: 500
   bands:
     mean:
@@ -255,10 +259,10 @@ modis:
       sur_refl_b06: 1618.
       sur_refl_b07: 1396.
     wavelength:
-      sur_refl_b01: 645.
-      sur_refl_b02: 858.
-      sur_refl_b03: 469.
-      sur_refl_b04: 555.
-      sur_refl_b05: 1240.
-      sur_refl_b06: 1640.
-      sur_refl_b07: 2130.
+      sur_refl_b01: .645
+      sur_refl_b02: .858
+      sur_refl_b03: .469
+      sur_refl_b04: .555
+      sur_refl_b05: 1.240
+      sur_refl_b06: 1.640
+      sur_refl_b07: 2.130
