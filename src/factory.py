@@ -44,7 +44,7 @@ class WavesTransformer(nn.Module):
             activation="gelu",
             dropout=0,
             norm_first=False,
-            batch_first=False,
+            batch_first=True,
         )
         self.encoder = nn.TransformerEncoder(layer, num_layers)
 
