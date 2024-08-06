@@ -143,12 +143,14 @@ class ClayDataModule(L.LightningDataModule):
             "landsat-c2l1",
             "landsat-c2l2-sr",
             "linz",
+            "modis",
             "naip",
             "sentinel-1-rtc",
             "sentinel-2-l2a",
         ],
         batch_size: int = 10,
         num_workers: int = 8,
+        prefetch_factor: int = 2,
     ):
         super().__init__()
         self.data_dir = data_dir
@@ -157,6 +159,7 @@ class ClayDataModule(L.LightningDataModule):
         self.metadata = Box(yaml.safe_load(open(metadata_path)))
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.prefetch_factor = prefetch_factor
         self.split_ratio = 0.8
 
     def setup(self, stage: Literal["fit", "predict"] | None = None) -> None:
@@ -215,7 +218,7 @@ class ClayDataModule(L.LightningDataModule):
             batch_sampler=self.trn_sampler,
             collate_fn=batch_collate,
             pin_memory=True,
-            prefetch_factor=4,
+            prefetch_factor=self.prefetch_factor,
         )
 
     def val_dataloader(self):
@@ -225,7 +228,7 @@ class ClayDataModule(L.LightningDataModule):
             batch_sampler=self.val_sampler,
             collate_fn=batch_collate,
             pin_memory=True,
-            prefetch_factor=4,
+            prefetch_factor=self.prefetch_factor,
         )
 
     def predict_dataloader(self):
