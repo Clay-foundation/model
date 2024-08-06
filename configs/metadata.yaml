@@ -227,3 +227,38 @@ sentinel-1-rtc:
     wavelength:
       vv: 3.5
       vh: 4.0
+modis:
+  band_order:
+    - sur_refl_b01
+    - sur_refl_b02
+    - sur_refl_b03
+    - sur_refl_b04
+    - sur_refl_b05
+    - sur_refl_b06
+    - sur_refl_b07
+  gsd: 500
+  bands:
+    mean:
+      sur_refl_b01: 1072.
+      sur_refl_b02: 1624.
+      sur_refl_b03: 931.
+      sur_refl_b04: 1023.
+      sur_refl_b05: 1599.
+      sur_refl_b06: 1404.
+      sur_refl_b07: 1051.
+    std:
+      sur_refl_b01: 1643.
+      sur_refl_b02: 1878.
+      sur_refl_b03: 1449.
+      sur_refl_b04: 1538.
+      sur_refl_b05: 1763.
+      sur_refl_b06: 1618.
+      sur_refl_b07: 1396.
+    wavelength:
+      sur_refl_b01: 645.
+      sur_refl_b02: 858.
+      sur_refl_b03: 469.
+      sur_refl_b04: 555.
+      sur_refl_b05: 1240.
+      sur_refl_b06: 1640.
+      sur_refl_b07: 2130.
