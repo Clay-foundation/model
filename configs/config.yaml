@@ -20,7 +20,9 @@ model:
   patch_size: 8
   shuffle: True
   metadata_path: configs/metadata.yaml
-  teacher: vit_base_patch16_224.dino
+  teacher: samvit_base_patch16.sa1b
+  dolls: [16, 32, 64, 128, 256, 768]
+  doll_weights: [1, 1, 1, 1, 1, 1]
   lr: 1e-5
   wd: 0.05
   b1: 0.9
@@ -32,7 +34,7 @@ trainer:
   devices: auto
   num_nodes: 1
   precision: bf16-mixed
-  log_every_n_steps: 10
+  log_every_n_steps: 1
   max_epochs: 200
   accumulate_grad_batches: 1
   default_root_dir: s3://clay-model-ckpt/v1.0.0/
