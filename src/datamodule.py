@@ -3,6 +3,7 @@ LightningDataModule to load Earth Observation data from GeoTIFF files using
 rasterio.
 """
 
+import random
 from collections import defaultdict
 from pathlib import Path
 from typing import List, Literal
@@ -57,16 +58,23 @@ class EODataset(Dataset):
             platform = chip_path.parent.name
             pixels = self.transforms[platform](pixels)
 
+            time_tensor = torch.tensor(
+                np.hstack((chip["week_norm"], chip["hour_norm"]), dtype=np.float32)
+            )
+            latlon_tensor = torch.tensor(
+                np.hstack((chip["lat_norm"], chip["lon_norm"]), dtype=np.float32)
+            )
+
+            # Randomly set time & latlon to zero for 20% of the chips
+            if random.random() < 0.2:  # noqa: PLR2004
+                time_tensor.zero_()
+                latlon_tensor.zero_()
+
             # Prepare additional information
             additional_info = {
                 "platform": platform,
-                "time": torch.tensor(
-                    np.hstack((chip["week_norm"], chip["hour_norm"])),
-                    dtype=torch.float32,
-                ),
-                "latlon": torch.tensor(
-                    np.hstack((chip["lat_norm"], chip["lon_norm"])), dtype=torch.float32
-                ),
+                "time": time_tensor,
+                "latlon": latlon_tensor,
             }
 
         return {"pixels": pixels, **additional_info}
