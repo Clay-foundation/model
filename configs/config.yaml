@@ -59,10 +59,10 @@ trainer:
         save_top_k: 2
         save_weights_only: False
         verbose: True
-    # - class_path: lightning.pytorch.callbacks.LearningRateMonitor
-    #   init_args:
-    #     logging_interval: step
-    # - class_path: src.callbacks_wandb.LogIntermediatePredictions
+    - class_path: lightning.pytorch.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: step
+    - class_path: src.callbacks_wandb.LogIntermediatePredictions
   plugins:
     - class_path: lightning.pytorch.plugins.io.AsyncCheckpointIO
 ckpt_path: null

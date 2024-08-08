@@ -247,6 +247,8 @@ class LogIntermediatePredictions(L.Callback):
                 )
 
                 assert pixels.shape == batch["pixels"].shape
+                batch["pixels"] = batch["pixels"].detach().cpu().numpy()
+                pixels = pixels.detach().cpu().numpy()
 
                 n_rows = 4  # 2 for actual and 2 for predicted
                 n_cols = 8
@@ -256,13 +258,13 @@ class LogIntermediatePredictions(L.Callback):
                 for j in range(n_cols):
                     # Plot actual images in rows 0 and 2
                     axs[0, j].imshow(
-                        batch["pixels"][j][0].detach().cpu().numpy(), cmap="viridis"
+                        batch["pixels"][j][0], cmap="viridis"
                     )
                     axs[0, j].set_title(f"Actual {j}")
                     axs[0, j].axis("off")
 
                     axs[2, j].imshow(
-                        batch["pixels"][j + n_cols][0].detach().cpu().numpy(),
+                        batch["pixels"][j + n_cols][0],
                         cmap="viridis",
                     )
                     axs[2, j].set_title(f"Actual {j+n_cols}")
@@ -270,13 +272,13 @@ class LogIntermediatePredictions(L.Callback):
 
                     # Plot predicted images in rows 1 and 3
                     axs[1, j].imshow(
-                        pixels[j][0].detach().cpu().numpy(), cmap="viridis"
+                        pixels[j][0], cmap="viridis"
                     )
                     axs[1, j].set_title(f"Pred {j}")
                     axs[1, j].axis("off")
 
                     axs[3, j].imshow(
-                        pixels[j + n_cols][0].detach().cpu().numpy(), cmap="viridis"
+                        pixels[j + n_cols][0], cmap="viridis"
                     )
                     axs[3, j].set_title(f"Pred {j+n_cols}")
                     axs[3, j].axis("off")
