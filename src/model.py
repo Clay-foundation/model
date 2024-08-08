@@ -497,7 +497,7 @@ class ClayMAE(nn.Module):
             if platform == "sentinel-1-rtc":
                 r = datacube["pixels"][:, 0, :, :]
                 g = datacube["pixels"][:, 1, :, :]
-                b = r - g
+                b = (r + g)/2
                 rgb = torch.stack((r, g, b), dim=1)
             else:
                 # Read RGB bands from the sensor to feed the teacher model
@@ -507,7 +507,7 @@ class ClayMAE(nn.Module):
 
         representation_loss = self.mrl_loss(representations, target)
 
-        loss = 0.90 * reconstruction_loss + 0.10 * representation_loss
+        loss = 0.95 * reconstruction_loss + 0.05 * representation_loss
         return (loss, reconstruction_loss, representation_loss)
 
 

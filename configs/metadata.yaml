@@ -219,11 +219,11 @@ sentinel-1-rtc:
   gsd: 10
   bands:
     mean:
-      vv: 0.123
-      vh: 0.027
+      vv: -12.113
+      vh: -18.673
     std:
-      vv: 0.689
-      vh: 0.061
+      vv: 8.314
+      vh: 8.017
     wavelength:
       vv: 3.5
       vh: 4.0

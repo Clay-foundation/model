@@ -54,8 +54,15 @@ class EODataset(Dataset):
     def __getitem__(self, idx):
         chip_path = self.chips_path[idx]
         with np.load(chip_path, allow_pickle=False) as chip:
-            pixels = torch.from_numpy(chip["pixels"].astype(np.float32))
             platform = chip_path.parent.name
+            if platform == "sentinel-1-rtc":
+                pixels = chip["pixels"].astype(np.float32)
+                pixels[pixels <= 0] = 1e-10  # replace corrupted pixels in sentinel-1-rtc with small value
+                pixels = 10 * np.log10(pixels) # convert to dB scale, more interpretable pixels
+            else:
+                pixels = chip["pixels"].astype(np.float32)
+
+            pixels = torch.from_numpy(pixels)
             pixels = self.transforms[platform](pixels)
 
             time_tensor = torch.tensor(
