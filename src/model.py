@@ -497,7 +497,7 @@ class ClayMAE(nn.Module):
             if platform == "sentinel-1-rtc":
                 r = datacube["pixels"][:, 0, :, :]
                 g = datacube["pixels"][:, 1, :, :]
-                b = (r + g)/2
+                b = (r + g) / 2
                 rgb = torch.stack((r, g, b), dim=1)
             else:
                 # Read RGB bands from the sensor to feed the teacher model
@@ -558,11 +558,11 @@ def clay_mae_base(**kwargs):
         "dim_head": 64,
         "mlp_ratio": 4,
         # DECODER
-        "decoder_dim": 256,
-        "decoder_depth": 2,
-        "decoder_heads": 2,
+        "decoder_dim": 512,
+        "decoder_depth": 4,
+        "decoder_heads": 4,
         "decoder_dim_head": 64,
-        "decoder_mlp_ratio": 2,
+        "decoder_mlp_ratio": 4,
     }
     args.update(kwargs)
     return ClayMAE(**args)

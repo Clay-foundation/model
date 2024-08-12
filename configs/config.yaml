@@ -1,6 +1,6 @@
 seed_everything: 108
 data:
-  data_dir: /opt/dlami/nvme/pretrain/
+  data_dir: /fsx
   size: 224
   metadata_path: configs/metadata.yaml
   platforms:
@@ -12,7 +12,7 @@ data:
     - sentinel-1-rtc
     - sentinel-2-l2a
   batch_size: 1
-  num_workers: 4
+  num_workers: 12
 model:
   model_size: base
   mask_ratio: 0.75
@@ -23,24 +23,26 @@ model:
   teacher: samvit_base_patch16.sa1b
   dolls: [16, 32, 64, 128, 256, 768]
   doll_weights: [1, 1, 1, 1, 1, 1]
-  lr: 1e-5
+  lr: 5e-6
   wd: 0.05
   b1: 0.9
   b2: 0.95
   embeddings_level: mean
 trainer:
-  accelerator: auto
+  accelerator: gpu
   strategy: ddp
-  devices: auto
-  num_nodes: 1
+  devices: 4
+  num_nodes: 2
   precision: bf16-mixed
   log_every_n_steps: 1
   max_epochs: 200
   accumulate_grad_batches: 1
-  default_root_dir: checkpoints/v1.0.1/
+  default_root_dir: checkpoints/v1.0.4/
   fast_dev_run: False
   num_sanity_val_steps: 0
   use_distributed_sampler: False
+  limit_train_batches: 0.99
+  limit_val_batches: 0.99
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
@@ -50,9 +52,9 @@ trainer:
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
-        dirpath: checkpoints/v1.0.1/
+        dirpath: checkpoints/v1.0.4/
         auto_insert_metric_name: False
-        filename: mae_v1.0.1_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
+        filename: mae_v1.0.4_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
         monitor: val/loss
         mode: min
         save_last: True
