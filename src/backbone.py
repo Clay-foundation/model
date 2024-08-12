@@ -1,4 +1,4 @@
-"""Code for Transformer from Phil Wangs library
+"""Code for Transformer from Phil Wangs vit-pytorch library.
 Repository: https://github.com/lucidrains/vit-pytorch
 """
 
