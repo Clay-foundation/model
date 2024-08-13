@@ -489,6 +489,10 @@ class ClayMAE(nn.Module):
         reconstruction_loss = self.per_pixel_loss(
             datacube["pixels"], pixels, masked_matrix
         )
+        # MODIS has a 10x reconstruction loss compared to all the other sensors,
+        # so we need to scale it down to improve the learning capability.
+        if platform == "modis":
+            reconstruction_loss /= 10
 
         # MRL
         representations = self.mrl(encoded_unmasked_patches[:, 0, :])  # [(B D') ...]
@@ -507,7 +511,7 @@ class ClayMAE(nn.Module):
 
         representation_loss = self.mrl_loss(representations, target)
 
-        loss = 0.95 * reconstruction_loss + 0.05 * representation_loss
+        loss = 0.9 * reconstruction_loss + 0.1 * representation_loss
         return (loss, reconstruction_loss, representation_loss)
 
 
