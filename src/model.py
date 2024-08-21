@@ -1,5 +1,6 @@
 import math
 import os
+import random
 
 import timm
 import torch
@@ -457,6 +458,27 @@ class ClayMAE(nn.Module):
         waves = torch.tensor(list(self.metadata[platform].bands.wavelength.values()))
         gsd = torch.tensor(self.metadata[platform].gsd)
 
+        # Drop channels randomly
+        _pixels = datacube["pixels"].clone()
+        batch_size, channels, _, _ = _pixels.size()
+
+        # Define probabilities for dropping channels
+        prob_drop_all = 0.10  # 10% probability to drop all channels
+        prob_drop_half = 0.20  # 20% probability to drop half the channels
+
+        for i in range(batch_size):
+            if torch.any(
+                datacube["latlon"][i] != 0
+            ):  # Check if latlon is not all zeros
+                rand_val = random.random()
+                if rand_val < prob_drop_all:
+                    _pixels[i, :, :, :] = 0  # Drop all channels
+                elif rand_val < prob_drop_all + prob_drop_half:
+                    channel_indices = torch.randperm(channels)[
+                        : channels // 2
+                    ]  # Get 50% of channel indices
+                    _pixels[i, channel_indices, :, :] = 0  # Drop 50% of channels
+
         # ENCODER
         (
             encoded_unmasked_patches,  # [B (1 + L):(1 - mask_ratio) D]
@@ -465,7 +487,7 @@ class ClayMAE(nn.Module):
             masked_matrix,  # [B L]
         ) = self.encoder(
             {
-                "pixels": datacube["pixels"],
+                "pixels": _pixels,
                 "time": datacube["time"],
                 "latlon": datacube["latlon"],
                 "gsd": gsd,
