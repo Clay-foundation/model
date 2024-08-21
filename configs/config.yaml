@@ -37,7 +37,7 @@ trainer:
   log_every_n_steps: 1
   max_epochs: 200
   accumulate_grad_batches: 1
-  default_root_dir: checkpoints/v1.0.4/
+  default_root_dir: checkpoints/v1.0.5/
   fast_dev_run: False
   num_sanity_val_steps: 0
   use_distributed_sampler: False
@@ -48,13 +48,16 @@ trainer:
       init_args:
         entity: developmentseed
         project: clay
+        group: pixel-drop
+        # id: v8jh2pn9
+        # resume: must
         log_model: false
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
-        dirpath: checkpoints/v1.0.4/
+        dirpath: checkpoints/v1.0.5/
         auto_insert_metric_name: False
-        filename: mae_v1.0.4_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
+        filename: mae_v1.0.5_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
         monitor: val/loss
         mode: min
         save_last: True
