@@ -57,10 +57,10 @@ Download the Chesapeake Bay Land Cover dataset and organize your dataset directo
 1. Copy `*_lc.tif` and `*_naip-new.tif` files for segmentation downstream tasks using s5cmd:
    ```bash
    # train
-   s5cmd cp --no-sign-request --include "*_lc.tif" --include "*_naip-new.tif" "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-train_tiles/*" data/cvpr/files/train/
+   s5cmd --no-sign-request cp --include "*_lc.tif" --include "*_naip-new.tif" "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-train_tiles/*" data/cvpr/files/train/
 
    # val
-   s5cmd cp --no-sign-request --include "*_lc.tif" --include "*_naip-new.tif" "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-val_tiles/*" data/cvpr/files/val/
+   s5cmd --no-sign-request cp --include "*_lc.tif" --include "*_naip-new.tif" "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-val_tiles/*" data/cvpr/files/val/
    ```
 
 2. Create chips of size `224 x 224` to feed them to the model:
