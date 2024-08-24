@@ -198,7 +198,7 @@ linz:
     - 0
     - 1
     - 2
-  gsd: 0.5
+  gsd: 0.05
   bands:
     mean:
       red: 89.96
