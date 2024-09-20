@@ -1,7 +1,7 @@
 seed_everything: 108
 data:
   data_dir: /fsx
-  size: 224
+  size: 256
   metadata_path: configs/metadata.yaml
   platforms:
     - landsat-c2l1
@@ -14,15 +14,15 @@ data:
   batch_size: 1
   num_workers: 12
 model:
-  model_size: base
+  model_size: large
   mask_ratio: 0.75
   norm_pix_loss: False
   patch_size: 8
   shuffle: True
   metadata_path: configs/metadata.yaml
   teacher: samvit_base_patch16.sa1b
-  dolls: [16, 32, 64, 128, 256, 768]
-  doll_weights: [1, 1, 1, 1, 1, 1]
+  dolls: [16, 32, 64, 128, 256, 768, 1024]
+  doll_weights: [1, 1, 1, 1, 1, 1, 1]
   lr: 5e-6
   wd: 0.05
   b1: 0.9
@@ -31,13 +31,13 @@ model:
 trainer:
   accelerator: gpu
   strategy: ddp
-  devices: 4
-  num_nodes: 2
+  devices: 8
+  num_nodes: 20
   precision: bf16-mixed
   log_every_n_steps: 1
-  max_epochs: 200
+  max_epochs: 1000
   accumulate_grad_batches: 1
-  default_root_dir: checkpoints/v1.0.5/
+  default_root_dir: checkpoints/v1.5.0/
   fast_dev_run: False
   num_sanity_val_steps: 0
   use_distributed_sampler: False
@@ -48,16 +48,16 @@ trainer:
       init_args:
         entity: developmentseed
         project: clay
-        group: pixel-drop
+        group: v1.5
         # id: v8jh2pn9
         # resume: must
         log_model: false
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:
-        dirpath: checkpoints/v1.0.5/
+        dirpath: checkpoints/v1.5.0/
         auto_insert_metric_name: False
-        filename: mae_v1.0.5_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
+        filename: mae_v1.5.0_epoch-{epoch:02d}_val-loss-{val/loss:.4f}
         monitor: val/loss
         mode: min
         save_last: True
