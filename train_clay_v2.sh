@@ -1,10 +1,10 @@
 #!/bin/bash
 
 #SBATCH --job-name=clay-laucher
-#SBATCH --nodes=2
-#SBATCH --ntasks-per-node=4          # EDIT if it's not 8-gpus per node
+#SBATCH --nodes=20
+#SBATCH --ntasks-per-node=8          # EDIT if it's not 8-gpus per node
 #SBATCH --cpus-per-task=12           # EDIT this to how many cpu cores the node has divided by num of gpus
-#SBATCH --gres=gpu:4                 # EDIT this if it's not 8-gpus per node
+#SBATCH --gres=gpu:8                 # EDIT this if it's not 8-gpus per node
 #SBATCH --time=0-00:00:00            # EDIT the desired runtime
 #SBATCH --exclusive
 #SBATCH --partition=gpu      # EDIT to the desired partition name

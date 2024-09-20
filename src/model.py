@@ -604,8 +604,8 @@ def clay_mae_large(**kwargs):
         "mlp_ratio": 4,
         # DECODER
         "decoder_dim": 512,
-        "decoder_depth": 8,
-        "decoder_heads": 8,
+        "decoder_depth": 4,
+        "decoder_heads": 4,
         "decoder_dim_head": 64,
         "decoder_mlp_ratio": 4,
     }

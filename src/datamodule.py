@@ -45,7 +45,7 @@ class EODataset(Dataset):
             [
                 v2.RandomHorizontalFlip(p=0.5),
                 v2.RandomVerticalFlip(p=0.5),
-                v2.RandomCrop(size=(self.size, self.size)),
+                # v2.RandomCrop(size=(self.size, self.size)),
                 v2.Normalize(mean=mean, std=std),
             ]
         )
