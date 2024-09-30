@@ -1,5 +1,6 @@
 import datetime
 import io
+import logging
 import math
 import os
 import tempfile
@@ -16,6 +17,10 @@ from rio_stac import create_stac_item
 from stacchip.chipper import Chipper
 from stacchip.indexer import NoStatsChipIndexer
 from torchvision.transforms import v2
+
+logging.basicConfig()
+logger = logging.getLogger("clay")
+logger.setLevel(logging.DEBUG)
 
 
 def normalize_timestamp(date):
@@ -91,12 +96,12 @@ def get_pixels(item):
 
 def get_embeddings(clay, pixels_norm, time_norm, latlon_norm, waves, gsd, batchsize):  # noqa: PLR0913
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    print(f"Using device {device}")
+    logger.debug(f"Using device {device}")
     # Run the clay encoder
     embeddings = None
     for i in range(0, len(pixels_norm), batchsize):
         if i % 500 == 0:
-            print(f"Iteration {i}")
+            logger.debug(f"Iteration {i}")
         datacube = {
             "pixels": torch.tensor(
                 pixels_norm[i : (i + batchsize)], dtype=torch.float32, device=device
@@ -168,7 +173,7 @@ def process_scene(clay, path, destination_bucket, batchsize):
     datestr = path.split("/")[-1].split("_")[-1].split(".txt")[0]
     gsd = float(path.split("/")[2].replace("cm", "")) / 100
     date = datetime.datetime(int(datestr[:4]), int(datestr[4:6]), int(datestr[6:8]))
-    print(f"Processing {path} in state {state} and date {date}")
+    logger.debug(f"Processing {path} in state {state} and date {date}")
 
     with tempfile.NamedTemporaryFile(mode="w+b", suffix=".tif") as f:
         s3 = boto3.client("s3")
@@ -183,7 +188,7 @@ def process_scene(clay, path, destination_bucket, batchsize):
         try:
             bboxs, datetimes, pixels = get_pixels(item)
         except RasterioIOError:
-            print("Skipping scene due to rasterio io error")
+            logger.debug("Skipping scene due to rasterio io error")
             return
 
         waves, time_norm, latlon_norm, gsd, pixels_norm = prepare_datacube(
@@ -232,5 +237,6 @@ def process():
 
 
 if __name__ == "__main__":
+    logger.debug("Starting")
     process()
-    print("Done!")
+    logger.debug("Done!")

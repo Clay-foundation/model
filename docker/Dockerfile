@@ -4,8 +4,11 @@ RUN pip install stacchip
 
 WORKDIR /src
 
-ADD data data
-ADD checkpoints checkpoints
-ADD all-naip.py .
+ADD docker/data data
+ADD docker/checkpoints checkpoints
+ADD docker/all-naip.py .
+
+ADD environment.yml environment.yml
+RUN conda install -y environment.yml
 
 ENTRYPOINT [ "python", "all-naip.py" ]
