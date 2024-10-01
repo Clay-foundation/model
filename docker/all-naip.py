@@ -5,6 +5,7 @@ import math
 import os
 import tempfile
 import zipfile
+from pathlib import Path
 
 import boto3
 import geoarrow.pyarrow as ga
@@ -19,6 +20,9 @@ from stacchip.indexer import NoStatsChipIndexer
 from torchvision.transforms import v2
 
 from src.module import ClayMAEModule
+
+MANIFEST = "/data/naip-manifest.txt.zip"
+CHECKPOINT = "/data/clay-model-v1.5.0-september-30.ckpt"
 
 logging.basicConfig()
 logger = logging.getLogger("clay")
@@ -102,8 +106,9 @@ def get_embeddings(clay, pixels_norm, time_norm, latlon_norm, waves, gsd, batchs
     # Run the clay encoder
     embeddings = None
     for i in range(0, len(pixels_norm), batchsize):
-        if i % 500 == 0:
+        if i / batchsize % 5 == 0:
             logger.debug(f"Iteration {i}")
+
         datacube = {
             "pixels": torch.tensor(
                 pixels_norm[i : (i + batchsize)], dtype=torch.float32, device=device
@@ -119,20 +124,24 @@ def get_embeddings(clay, pixels_norm, time_norm, latlon_norm, waves, gsd, batchs
             "platform": ["naip"],
         }
         with torch.no_grad():
-            cls_embedding = clay(datacube)
+            unmsk_patch, unmsk_idx, msk_idx, msk_matrix = clay.model.encoder(datacube)
+        # The first embedding is the class token, which is the
+        # overall single embedding we want to keep.
+        cls_embeddings = unmsk_patch[:, 0, :]
         if embeddings is None:
-            embeddings = cls_embedding
+            embeddings = cls_embeddings
         else:
-            embeddings = torch.vstack((embeddings, cls_embedding))
+            embeddings = torch.vstack((embeddings, cls_embeddings))
 
     return embeddings
 
 
 def open_scene_list():
-    with zipfile.ZipFile("/data/naip-manifest.txt.zip") as zf:
+    with zipfile.ZipFile(MANIFEST) as zf:
         with io.TextIOWrapper(zf.open("naip-manifest.txt"), encoding="utf-8") as f:
             data = f.readlines()
-    data = [dat.rstrip() for dat in data if "rgbir_cog" in dat]
+    data = [Path(dat.rstrip()) for dat in data if "rgbir_cog"]
+    data = [dat for dat in data if dat.suffix == ".tif"]
     logger.debug(f"Found {len(data)} NAIP scenes in manifest")
     return data
 
@@ -140,7 +149,7 @@ def open_scene_list():
 def load_clay():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = ClayMAEModule.load_from_checkpoint(
-        checkpoint_path="/data/clay-model-v1.5.0-september-30.ckpt",
+        checkpoint_path=CHECKPOINT,
         metadata_path="configs/metadata.yaml",
         model_size="large",
         dolls=[16, 32, 64, 128, 256, 768, 1024],
@@ -153,7 +162,7 @@ def load_clay():
     return model.to(device)
 
 
-def write_to_table(embeddings, bboxs, datestr, gsd, destination_bucket, path, item_id):  # noqa: PLR0913
+def write_to_table(embeddings, bboxs, datestr, gsd, destination_bucket, path):
     index = {
         "embeddings": [np.ascontiguousarray(dat) for dat in embeddings.cpu().numpy()],
         "geometry": ga.as_geoarrow([dat.wkt for dat in bboxs]),
@@ -175,31 +184,31 @@ def write_to_table(embeddings, bboxs, datestr, gsd, destination_bucket, path, it
     s3_bucket = s3_resource.Bucket(name=destination_bucket)
     s3_bucket.put_object(
         Body=body,
-        Key=f"{item_id}.parquet",
+        Key=f"{path.parent}/{path.stem}.parquet",
     )
 
 
 def process_scene(clay, path, destination_bucket, batchsize):
-    state = path.split("/")[0]
-    datestr = path.split("/")[-1].split("_")[-1].split(".txt")[0]
-    gsd = float(path.split("/")[2].replace("cm", "")) / 100
+    state = path.parts[0]
+    datestr = path.stem.split("_")[-1]
     date = datetime.datetime(int(datestr[:4]), int(datestr[4:6]), int(datestr[6:8]))
+    gsd = float(path.parts[2].replace("cm", "")) / 100
     logger.debug(f"Processing {path} in state {state} and date {date}")
 
-    with tempfile.NamedTemporaryFile(mode="w+b", suffix=".tif") as f:
+    with tempfile.NamedTemporaryFile(mode="w+b", suffix=".tif") as fl:
         s3 = boto3.client("s3")
         s3.download_fileobj(
-            "naip-analytic", path, f, ExtraArgs={"RequestPayer": "requester"}
+            "naip-analytic", str(path), fl, ExtraArgs={"RequestPayer": "requester"}
         )
 
-        item = create_stac_item(f.name, with_proj=True)
+        item = create_stac_item(fl.name, with_proj=True)
         item.datetime = date
-        item.id = f"{state}_{path.split('/')[-1].replace('.tif', '')}"
+        item.id = f"{state}_{path.stem}"
 
         try:
             bboxs, datetimes, pixels = get_pixels(item)
         except RasterioIOError:
-            logger.debug("Skipping scene due to rasterio io error")
+            logger.warning("Skipping scene due to rasterio io error")
             return
 
         waves, time_norm, latlon_norm, gsd, pixels_norm = prepare_datacube(
@@ -223,7 +232,6 @@ def process_scene(clay, path, destination_bucket, batchsize):
             gsd=gsd,
             destination_bucket=destination_bucket,
             path=path,
-            item_id=item.id,
         )
 
 
