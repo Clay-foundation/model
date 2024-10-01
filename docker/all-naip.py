@@ -18,6 +18,8 @@ from stacchip.chipper import Chipper
 from stacchip.indexer import NoStatsChipIndexer
 from torchvision.transforms import v2
 
+from src.module import ClayMAEModule
+
 logging.basicConfig()
 logger = logging.getLogger("clay")
 logger.setLevel(logging.DEBUG)
@@ -96,7 +98,7 @@ def get_pixels(item):
 
 def get_embeddings(clay, pixels_norm, time_norm, latlon_norm, waves, gsd, batchsize):  # noqa: PLR0913
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    logger.debug(f"Using device {device}")
+    logger.debug(f"Using device {device} to create {len(pixels_norm)} embeddings")
     # Run the clay encoder
     embeddings = None
     for i in range(0, len(pixels_norm), batchsize):
@@ -114,6 +116,7 @@ def get_embeddings(clay, pixels_norm, time_norm, latlon_norm, waves, gsd, batchs
             ),
             "waves": torch.tensor(waves, dtype=torch.float32, device=device),
             "gsd": torch.tensor(gsd, dtype=torch.float32, device=device),
+            "platform": ["naip"],
         }
         with torch.no_grad():
             cls_embedding = clay(datacube)
@@ -126,20 +129,28 @@ def get_embeddings(clay, pixels_norm, time_norm, latlon_norm, waves, gsd, batchs
 
 
 def open_scene_list():
-    with zipfile.ZipFile("data/naip-manifest.txt.zip") as zf:
+    with zipfile.ZipFile("/data/naip-manifest.txt.zip") as zf:
         with io.TextIOWrapper(zf.open("naip-manifest.txt"), encoding="utf-8") as f:
             data = f.readlines()
     data = [dat.rstrip() for dat in data if "rgbir_cog" in dat]
+    logger.debug(f"Found {len(data)} NAIP scenes in manifest")
     return data
 
 
 def load_clay():
-    if torch.cuda.is_available():
-        checkpoint = "checkpoints/clay-v1-encoder.pt2"
-    else:
-        checkpoint = "checkpoints/clay-v1-encoder-cpu.pt2"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = ClayMAEModule.load_from_checkpoint(
+        checkpoint_path="/data/clay-model-v1.5.0-september-30.ckpt",
+        metadata_path="configs/metadata.yaml",
+        model_size="large",
+        dolls=[16, 32, 64, 128, 256, 768, 1024],
+        doll_weights=[1, 1, 1, 1, 1, 1, 1],
+        mask_ratio=0.0,
+        shuffle=False,
+    )
+    model.eval()
 
-    return torch.export.load(checkpoint).module()
+    return model.to(device)
 
 
 def write_to_table(embeddings, bboxs, datestr, gsd, destination_bucket, path, item_id):  # noqa: PLR0913

@@ -1,14 +1,16 @@
 FROM 763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-inference:2.3.0-gpu-py311-cu121-ubuntu20.04-ec2
 
-RUN pip install stacchip
+WORKDIR /code
 
-WORKDIR /src
+ADD src src
 
-ADD docker/data data
-ADD docker/checkpoints checkpoints
+ADD docker/environment.yml docker-environment.yml
+RUN mamba env create --file docker-environment.yml
+
+ADD data/naip-manifest.txt.zip /data/naip-manifest.txt.zip
+ADD data/checkpoints/clay-model-v1.5.0-september-30.ckpt /data/clay-model-v1.5.0-september-30.ckpt
+
 ADD docker/all-naip.py .
+ADD configs configs
 
-ADD environment.yml environment.yml
-RUN conda install -y environment.yml
-
-ENTRYPOINT [ "python", "all-naip.py" ]
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "claymodel", "python", "all-naip.py"]
