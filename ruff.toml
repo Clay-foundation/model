@@ -1,7 +1,3 @@
-[per-file-ignores]
-"docs/clay_over_aoi.ipynb" = ["E501"]
-"scripts/worldcover/worldcover_vrt.py" = ["E501"]
-
 [format]
 # https://docs.astral.sh/ruff/settings/#format
 line-ending = "lf"  # Use UNIX `\n` line endings for all files
@@ -17,6 +13,10 @@ select = [
     "UP",   # pyupgrade
     "W",    # pycodestyle warnings
 ]
+
+[lint.per-file-ignores]
+"docs/clay_over_aoi.ipynb" = ["E501"]
+"scripts/worldcover/worldcover_vrt.py" = ["E501"]
 
 [lint.pylint]
 max-args = 6
