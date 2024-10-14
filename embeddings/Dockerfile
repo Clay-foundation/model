@@ -10,4 +10,4 @@ RUN git clone -b all-of-naip https://github.com/Clay-foundation/model.git /model
 # ADD docker/environment.yml docker-environment.yml
 RUN mamba env create --file environment.yml
 
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "claymodel", "python", "docker/all-naip.py"]
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "claymodel", "python", "embeddings/all-naip.py"]
