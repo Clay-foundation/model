@@ -36,7 +36,7 @@ dependencies:
     - onnxruntime
     - torchdata==0.7.1
     - torchgeo==0.5.2
-    - stacchip==0.1.35
+    - stacchip==0.1.38
     - wandb==0.17.5
 platforms:
   - linux-64
