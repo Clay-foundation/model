@@ -11,6 +11,19 @@ to choose which files from the archives to process. This is set automatically
 by AWS Batch when using array jobs. Outside of array jobs, this index variable
 needs to be specified manually.
 
+### Build docker image
+
+Build the docker image from the embeddings directory and push to ECR
+or another docker repository of your choice.
+
+```bash
+aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 763104351884.dkr.ecr.us-east-2.amazonaws.com
+docker pull 763104351884.dkr.ecr.us-east-2.amazonaws.com/pytorch-inference:2.3.0-gpu-py311-cu121-ubuntu20.04-ec2
+docker build -t clay-embeddings -f embeddings/Dockerfile  .
+docker tag clay-embeddings:latest 875815656045.dkr.ecr.us-east-2.amazonaws.com/clay-embeddings:latest
+docker push 875815656045.dkr.ecr.us-east-2.amazonaws.com/clay-embeddings:latest
+```
+
 ### NAIP
 
 For NAIP, we use the `naip-analytic` bucket. We leverage the manifest file that
