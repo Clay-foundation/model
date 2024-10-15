@@ -5,14 +5,25 @@ import os
 
 import boto3
 from pystac import Item
+from rasterio.errors import RasterioIOError
+from stacchip.chipper import Chipper
 from stacchip.indexer import Sentinel2Indexer
 
-from embeddings.utils import load_clay
+from embeddings.utils import (
+    get_embeddings,
+    get_pixels,
+    load_clay,
+    load_metadata,
+    prepare_datacube,
+    write_to_table,
+)
 
 logger = logging.getLogger("clay")
 
 
 SCENES_LIST = "data/element84-tiles-2023.gz"
+EMBEDDINGS_BUCKET = "clay-embeddings-sentinel-2"
+GSD = 10
 
 
 def open_scenes_list():
@@ -22,6 +33,8 @@ def open_scenes_list():
 
 
 def process_scene(clay, path, batchsize):
+    bands, waves, mean, std = load_metadata("sentinel_2_l2a")
+
     key = path.replace("s3://sentinel-cogs/", "")
 
     s3 = boto3.resource("s3")
@@ -30,9 +43,41 @@ def process_scene(clay, path, batchsize):
 
     item = Item.from_dict(stac_json)
 
-    indexer = Sentinel2Indexer(item, chip_max_nodata=0.1)
+    bands, waves, mean, std = load_metadata("naip")
 
-    return indexer
+    try:
+        indexer = Sentinel2Indexer(item, chip_max_nodata=0.1)
+        chipper = Chipper(item, assets=bands)
+        bboxs, datetimes, pixels = get_pixels(
+            item=item, indexer=indexer, chipper=chipper
+        )
+    except RasterioIOError:
+        logger.warning("Skipping scene due to rasterio io error")
+        return
+
+    time_norm, latlon_norm, gsd, pixels_norm = prepare_datacube(
+        mean=mean, std=std, datetimes=datetimes, bboxs=bboxs, pixels=pixels, gsd=GSD
+    )
+    # Embed data
+    cls_embeddings, patch_embeddings = get_embeddings(
+        clay=clay,
+        pixels_norm=pixels_norm,
+        time_norm=time_norm,
+        latlon_norm=latlon_norm,
+        waves=waves,
+        gsd=gsd,
+        batchsize=batchsize,
+    )
+    kwargs = dict(
+        bboxs=bboxs,
+        datestr=str(item.datetime.date()),
+        gsd=gsd,
+        destination_bucket=EMBEDDINGS_BUCKET,
+        path=path,
+    )
+
+    write_to_table(embeddings=cls_embeddings, **kwargs)
+    write_to_table(embeddings=patch_embeddings, **kwargs)
 
 
 def process():
