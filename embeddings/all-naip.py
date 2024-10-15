@@ -11,7 +11,7 @@ from rasterio.errors import RasterioIOError
 from rio_stac import create_stac_item
 from stacchip.indexer import NoStatsChipIndexer
 
-from utils import (
+from embeddings.utils import (
     get_embeddings,
     get_pixels,
     load_clay,
