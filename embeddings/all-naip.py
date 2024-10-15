@@ -9,12 +9,14 @@ from pathlib import Path
 import boto3
 from rasterio.errors import RasterioIOError
 from rio_stac import create_stac_item
+from stacchip.chipper import Chipper
 from stacchip.indexer import NoStatsChipIndexer
 
 from embeddings.utils import (
     get_embeddings,
     get_pixels,
     load_clay,
+    load_metadata,
     prepare_datacube,
     write_to_table,
 )
@@ -25,14 +27,6 @@ logger.setLevel(logging.DEBUG)
 
 
 MANIFEST = "data/naip-manifest.txt.zip"
-MEAN = [
-    110.16,
-    115.41,
-    98.15,
-    139.04,
-]
-STD = [47.23, 39.82, 35.43, 49.86]
-WAVES = [0.65, 0.56, 0.48, 0.842]
 EMBEDDINGS_BUCKET = "clay-embeddings-naip"
 
 
@@ -60,6 +54,8 @@ def process_scene(clay, path, batchsize):
     datestr = path.stem.split("_")[-1]
     date = datetime.datetime(int(datestr[:4]), int(datestr[4:6]), int(datestr[6:8]))
     gsd = float(path.parts[2].replace("cm", "")) / 100
+    bands, waves, mean, std = load_metadata("naip")
+
     logger.debug(f"Processing {path} in state {state} and date {date}")
 
     with tempfile.NamedTemporaryFile(mode="w+b", suffix=".tif") as fl:
@@ -74,13 +70,17 @@ def process_scene(clay, path, batchsize):
         item.id = f"{state}_{path.stem}"
 
         try:
-            bboxs, datetimes, pixels = get_pixels(item, NoStatsChipIndexer)
+            indexer = NoStatsChipIndexer(item)
+            chipper = Chipper(indexer, assets=bands)
+            bboxs, datetimes, pixels = get_pixels(
+                item=item, indexer=indexer, chipper=chipper
+            )
         except RasterioIOError:
             logger.warning("Skipping scene due to rasterio io error")
             return
 
         time_norm, latlon_norm, gsd, pixels_norm = prepare_datacube(
-            mean=MEAN, std=STD, datetimes=datetimes, bboxs=bboxs, pixels=pixels, gsd=gsd
+            mean=mean, std=std, datetimes=datetimes, bboxs=bboxs, pixels=pixels, gsd=gsd
         )
         # Embed data
         cls_embeddings, patch_embeddings = get_embeddings(
@@ -88,12 +88,11 @@ def process_scene(clay, path, batchsize):
             pixels_norm=pixels_norm,
             time_norm=time_norm,
             latlon_norm=latlon_norm,
-            waves=WAVES,
+            waves=waves,
             gsd=gsd,
             batchsize=batchsize,
         )
         # Write class embeddings
-
         kwargs = dict(
             bboxs=bboxs,
             datestr=datestr,

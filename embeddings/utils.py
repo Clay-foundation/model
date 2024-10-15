@@ -6,8 +6,9 @@ import geoarrow.pyarrow as ga
 import numpy as np
 import pyarrow as pa
 import torch
+import yaml
+from box import Box
 from geoarrow.pyarrow import io as gaio
-from stacchip.chipper import Chipper
 from torchvision.transforms import v2
 
 from src.module import ClayMAEModule
@@ -17,6 +18,18 @@ EMBEDDING_SHAPE_CLASS = 2
 EMBEDDING_SHAPE_PATCH = 3
 
 logger = logging.getLogger("clay")
+
+
+def load_metadata(platform):
+    metadata = Box(yaml.safe_load(open("configs/metadata.yaml")))
+    platform_meta = getattr(metadata, platform)
+
+    bands = list(platform_meta.bands.wavelength.keys())
+    waves = list(platform_meta.bands.wavelength.values())
+    mean = list(platform_meta.bands.mean.values())
+    std = list(platform_meta.bands.std.values())
+
+    return bands, waves, mean, std
 
 
 def normalize_timestamp(date):
@@ -57,13 +70,7 @@ def prepare_datacube(mean, std, datetimes, bboxs, pixels, gsd):
     return time_norm, latlon_norm, gsd, pixels_norm
 
 
-def get_pixels(item, indexer_class):
-    indexer = indexer_class(item)
-
-    # Instanciate the chipper
-    chipper = Chipper(indexer)
-
-    # Get first chip for the "image" asset key
+def get_pixels(item, indexer, chipper):
     chips = []
     datetimes = []
     bboxs = []
