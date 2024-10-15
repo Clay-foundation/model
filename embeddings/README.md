@@ -13,14 +13,18 @@ needs to be specified manually.
 
 ### Build docker image
 
-Build the docker image from the embeddings directory and push to ECR
-or another docker repository of your choice.
+Embedding runs are dockerized for parallel computing. To build the docker image
+use the Dockerfile in the embeddings directory. Then push the image to ECR or
+another docker repository of your choice.
 
 ```bash
 aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 763104351884.dkr.ecr.us-east-2.amazonaws.com
 docker pull 763104351884.dkr.ecr.us-east-2.amazonaws.com/pytorch-inference:2.3.0-gpu-py311-cu121-ubuntu20.04-ec2
+
 docker build -t clay-embeddings -f embeddings/Dockerfile  .
+
 docker tag clay-embeddings:latest 875815656045.dkr.ecr.us-east-2.amazonaws.com/clay-embeddings:latest
+aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 875815656045.dkr.ecr.us-east-2.amazonaws.com
 docker push 875815656045.dkr.ecr.us-east-2.amazonaws.com/clay-embeddings:latest
 ```
 

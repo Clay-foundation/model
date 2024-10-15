@@ -11,7 +11,7 @@ from rasterio.errors import RasterioIOError
 from rio_stac import create_stac_item
 from stacchip.indexer import NoStatsChipIndexer
 
-from embeddings.utils import (
+from utils import (
     get_embeddings,
     get_pixels,
     load_clay,
@@ -112,7 +112,7 @@ def process():
         raise ValueError("AWS_BATCH_JOB_ARRAY_INDEX env var not set")
     index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 0))
     items_per_job = int(os.environ.get("ITEMS_PER_JOB", 2))
-    batchsize = int(os.environ.get("EMBEDDING_BATCH_SIZE", 2))
+    batchsize = int(os.environ.get("EMBEDDING_BATCH_SIZE", 50))
 
     scenes = open_scene_list()
     clay = load_clay()
