@@ -12,7 +12,7 @@ from torchvision.transforms import v2
 
 from src.module import ClayMAEModule
 
-CHECKPOINT = "/data/clay-model-v1.5.0-october-12.ckpt"
+CHECKPOINT = "data/clay-model-v1.5.0-october-12.ckpt"
 EMBEDDING_SHAPE_CLASS = 2
 EMBEDDING_SHAPE_PATCH = 3
 
