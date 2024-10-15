@@ -71,7 +71,7 @@ def process_scene(clay, path, batchsize):
 
         try:
             indexer = NoStatsChipIndexer(item)
-            chipper = Chipper(indexer, assets=bands)
+            chipper = Chipper(indexer)
             bboxs, datetimes, pixels = get_pixels(
                 item=item, indexer=indexer, chipper=chipper
             )
