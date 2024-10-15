@@ -9,4 +9,8 @@ RUN git clone -b all-of-naip https://github.com/Clay-foundation/model.git /model
 
 RUN mamba env create --file embeddings/environment.yml
 
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "claymodel", "python", "embeddings/all-naip.py"]
+# Move file to home directory so that relative imports work
+RUN cp embeddings/all-naip.py .
+RUN cp embeddings/all-sentinel.py .
+
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "claymodel", "python", "all-naip.py"]
