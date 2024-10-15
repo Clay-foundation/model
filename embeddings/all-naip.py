@@ -24,8 +24,7 @@ logger = logging.getLogger("clay")
 logger.setLevel(logging.DEBUG)
 
 
-# MANIFEST = "/data/naip-manifest.txt.zip"
-MANIFEST = "/Users/tam/Documents/repos/model/data/naip-manifest.txt.zip"
+MANIFEST = "data/naip-manifest.txt.zip"
 MEAN = [
     110.16,
     115.41,
