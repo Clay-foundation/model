@@ -126,6 +126,7 @@ def get_embeddings(clay, pixels_norm, time_norm, latlon_norm, waves, gsd, batchs
 
 def load_clay():
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    logger.debug(f"Loading model on device {device}")
     model = ClayMAEModule.load_from_checkpoint(
         checkpoint_path=CHECKPOINT,
         metadata_path="configs/metadata.yaml",
