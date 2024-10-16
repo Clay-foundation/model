@@ -16,6 +16,8 @@ RUN pip install \
   pyarrow~=16.1.0 \
   rasterio~=1.3.10 \
   s3fs~=2024.3.1 \
+  boto3~=1.34.122 \
+  botocore~=1.34.122 \
   scikit-image~=0.22.0 \
   scikit-learn~=1.4.0 \
   stackstac~=0.5.0 \
