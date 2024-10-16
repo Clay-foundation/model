@@ -34,6 +34,8 @@ For NAIP, we use the `naip-analytic` bucket. We leverage the manifest file that
 lists all files in the bucket. This list is parsed in the beginning and each
 job processes a section of the naip scenes.
 
+At the moment of processing there were 1'231'441 NAIP scenes.
+
 ### Sentinel-2
 
 For Sentinel-2 we use the `sentinel-cogs` bucket. Also here we use the manifest
