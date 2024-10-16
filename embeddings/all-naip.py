@@ -102,8 +102,6 @@ def process_scene(clay, path, batchsize):
         )
         logger.debug("Writing class embeddings")
         write_to_table(embeddings=cls_embeddings, **kwargs)
-        logger.debug("Writing patch embeddings")
-        write_to_table(embeddings=patch_embeddings, **kwargs)
 
 
 def process():
