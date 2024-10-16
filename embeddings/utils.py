@@ -147,14 +147,12 @@ def write_to_table(embeddings, bboxs, datestr, gsd, destination_bucket, path):
     if len(embeddings.shape) == EMBEDDING_SHAPE_CLASS:
         # Handle class embeddings
         index["embeddings"] = [np.ascontiguousarray(dat) for dat in np_embeddings]
-        embedding_level = "class"
     elif len(embeddings.shape) == EMBEDDING_SHAPE_PATCH:
         # Handle patch embeddings
         for i in range(embeddings.shape[1]):
             index[f"patch_embeddings_{i}"] = [
                 np.ascontiguousarray(dat) for dat in np_embeddings[:, i, :]
             ]
-        embedding_level = "patch"
 
     table = pa.table(
         index,
@@ -172,5 +170,5 @@ def write_to_table(embeddings, bboxs, datestr, gsd, destination_bucket, path):
     s3_bucket = s3_resource.Bucket(name=destination_bucket)
     s3_bucket.put_object(
         Body=body,
-        Key=f"{embedding_level}/{path.parent}/{path.stem}.parquet",
+        Key=f"{path.parent}/{path.stem}.parquet",
     )
