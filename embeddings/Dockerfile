@@ -24,7 +24,6 @@ RUN pip install \
   transformers~=4.35.2 \
   typeshed-client~=2.4.0 \
   vit-pytorch~=1.6.4 \
-  torch~=2.3.0 \
   zarr~=2.16.1 \
   geoarrow-pyarrow==0.1.2 \
   torchdata==0.7.1 \
