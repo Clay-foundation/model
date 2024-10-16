@@ -10,12 +10,12 @@ RUN pip install \
   geopandas~=0.14.1 \
   jsonargparse~=4.27.0 \
   lightning~=2.1.0 \
-  matplotlib~=3.8.2 \
+  matplotlib~=3.9.0 \
   planetary-computer~=1.0.0 \
   python-box~=7.1.0 \
-  pyarrow~=16.1.0 \
+  pyarrow~=15.0.2 \
   rasterio~=1.3.10 \
-  s3fs~=2024.3.1 \
+  s3fs~=2024.6.0 \
   boto3~=1.34.122 \
   botocore~=1.34.122 \
   scikit-image~=0.22.0 \
@@ -33,7 +33,7 @@ RUN pip install \
 
 
 RUN aws s3 cp s3://clay-model-ckpt/v1.5.0/mae_v1.5.0_epoch-76_val-loss-0.1612.ckpt data/clay-model-v1.5.0-october-12.ckpt
-RUN aws s3 cp s3://clay-mgrs-samples/naipgi-manifest.txt.zip data/naip-manifest.txt.zip
+RUN aws s3 cp s3://clay-mgrs-samples/naip-manifest.txt.zip data/naip-manifest.txt.zip
 
 # Move file to home directory so that relative imports work
 RUN cp embeddings/all-naip.py .
