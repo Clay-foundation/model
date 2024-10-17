@@ -30,7 +30,7 @@ MANIFEST = "data/naip-manifest.txt.zip"
 EMBEDDINGS_BUCKET = "clay-embeddings-naip"
 
 
-def open_scene_list():
+def open_scene_list(limit_to_state=None):
     """
     Read the naip-analytic manifest file and extract a list of NAIP
     scenes as tif files to process.
@@ -42,7 +42,13 @@ def open_scene_list():
             data = f.readlines()
     data = [Path(dat.rstrip()) for dat in data if "rgbir_cog"]
     data = [dat for dat in data if dat.suffix == ".tif"]
+
     logger.debug(f"Found {len(data)} NAIP scenes in manifest")
+
+    if limit_to_state is not None:
+        data = [dat for dat in data if str(dat).startswith(limit_to_state)]
+        logger.debug(f"Found {len(data)} NAIP scenes for state {limit_to_state}")
+
     return data
 
 
@@ -110,8 +116,9 @@ def process():
     index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 0))
     items_per_job = int(os.environ.get("ITEMS_PER_JOB", 2))
     batchsize = int(os.environ.get("EMBEDDING_BATCH_SIZE", 50))
+    limit_to_state = os.environ.get("LIMIT_TO_STATE", None)
 
-    scenes = open_scene_list()
+    scenes = open_scene_list(limit_to_state)
     clay = load_clay()
 
     for i in range(index * items_per_job, (index + 1) * items_per_job):
