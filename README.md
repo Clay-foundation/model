@@ -23,7 +23,7 @@ To help out with development, start by cloning this [repo-url](/../../)
     git clone <repo-url>
     cd model
 
-Then we recommend [using mamba](https://mamba.readthedocs.io/en/latest/installation.html)
+Then we recommend [using mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html)
 to install the dependencies. A virtual environment will also be created with Python and
 [JupyterLab](https://github.com/jupyterlab/jupyterlab) installed.
 
