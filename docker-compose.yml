@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  claymodel:
+    image: claymodel
+    platform: linux/amd64 # Specify the target platform for run
+    ports:
+      - "8888:8888" # Expose port 8888 on the host and bind it to port 8888 in the container
+    environment:
+      - ENV_NAME=claymodel # Ensure the claymodel conda environment is activated
