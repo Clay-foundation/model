@@ -1,6 +1,8 @@
 from torch import nn
 
 
+from torch import nn
+
 class MRL(nn.Module):
     """
     Matryoshka Representation Learning from the paper: https://arxiv.org/abs/2205.13147
@@ -9,12 +11,13 @@ class MRL(nn.Module):
     def __init__(self, features, dolls: list = [16, 32, 64, 128, 256, 768]) -> None:
         super().__init__()
         self.dolls = dolls
+        self.layers = nn.ModuleDict()
         for doll in dolls:
-            setattr(self, f"mrl_{doll}", nn.Linear(doll, features))
+            self.layers[f"mrl_{doll}"] = nn.Linear(doll, features)
 
     def forward(self, x):
         "x: (batch, features)"
-        logits = [getattr(self, f"mrl_{doll}")(x[:, :doll]) for doll in self.dolls]
+        logits = [self.layers[f"mrl_{doll}"](x[:, :doll]) for doll in self.dolls]
         return logits
 
 

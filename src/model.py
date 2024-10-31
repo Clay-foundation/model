@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 from einops import rearrange, reduce, repeat
 from torch import nn
+from torchvision.transforms import v2
 
 from src.backbone import Transformer
 from src.factory import DynamicEmbedding
@@ -386,8 +387,13 @@ class ClayMAE(nn.Module):
         self.shuffle = shuffle
         self.metadata = metadata
         self.teacher = timm.create_model(teacher, pretrained=True, num_classes=0)
-        self.mrl = MRL(features=self.teacher.num_features, dolls=dolls)
-        self.mrl_loss = MRLLoss(weights=doll_weights)
+        self.teacher_chip_size = 518
+        self.teacher_resize = v2.Resize(
+            size=(self.teacher_chip_size, self.teacher_chip_size)
+        )
+        # self.mrl = MRL(features=self.teacher.num_features, dolls=dolls)
+        # self.mrl_loss = MRLLoss(weights=doll_weights)
+        self.proj = nn.Linear(dim, self.teacher.num_features)
 
         self.encoder = Encoder(
             mask_ratio=mask_ratio,
@@ -516,8 +522,11 @@ class ClayMAE(nn.Module):
         if platform == "modis":
             reconstruction_loss /= 10
 
-        # MRL
-        representations = self.mrl(encoded_unmasked_patches[:, 0, :])  # [(B D') ...]
+        # # MRL
+        # representations = self.mrl(encoded_unmasked_patches[:, 0, :])  # [(B D') ...]
+
+        # PROJ
+        representations = self.proj(encoded_unmasked_patches[:, 0, :])  # [B D']
 
         with torch.no_grad():
             if platform == "sentinel-1-rtc":
@@ -529,9 +538,13 @@ class ClayMAE(nn.Module):
                 # Read RGB bands from the sensor to feed the teacher model
                 indices = self.metadata[platform].rgb_indices
                 rgb = datacube["pixels"][:, indices, :, :]
+            rgb = self.teacher_resize(rgb)
             target = self.teacher(rgb)
+            # target = self.teacher(rgb)
 
-        representation_loss = self.mrl_loss(representations, target)
+        # representation_loss = self.mrl_loss(representations, target)
+        representation_loss = 1.0 - F.cosine_similarity(representations, target).mean()
+
 
         loss = 0.9 * reconstruction_loss + 0.1 * representation_loss
         return (loss, reconstruction_loss, representation_loss)

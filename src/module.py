@@ -1,4 +1,5 @@
 from typing import Literal
+from collections import OrderedDict
 
 import lightning as L
 import torch
@@ -27,6 +28,7 @@ class ClayMAEModule(L.LightningModule):
         embeddings_level: Literal["mean", "patch", "group"] = "mean",
     ):
         super().__init__()
+        self.strict_loading = False # Allow partial loading to check if MRL was the bug
         self.save_hyperparameters(logger=True)
         self.metadata = Box(yaml.safe_load(open(metadata_path)))
         model_map = {
@@ -47,6 +49,26 @@ class ClayMAEModule(L.LightningModule):
                 "doll_weights": doll_weights,
             }
             self.model = model_map[model_size](**model_args)
+            checkpoint_path = 'mae_v1.5.0_epoch-76_val-loss-0.1612.ckpt'
+            checkpoint = torch.load(checkpoint_path, map_location="cpu")
+            # Extract the state dictionary
+            state_dict = checkpoint['state_dict']
+
+            # Modify the state dictionary
+            new_state_dict = OrderedDict()
+            for k, v in state_dict.items():
+                # Remove 'model.' prefix if it exists
+                if k.startswith('model.'):
+                    k = k[len('model.'):]
+                # Exclude keys related to the 'teacher'
+                if not (k.startswith('teacher') or k.startswith('mrl')):
+                    new_state_dict[k] = v
+            with torch.no_grad():
+                # Load the modified state dictionary into your model
+                missing_keys, unexpected_keys = self.model.load_state_dict(new_state_dict, strict=False)
+            # Optionally, print missing and unexpected keys
+            print(f"Missing keys: {missing_keys}")
+            print(f"Unexpected keys: {unexpected_keys}")
         else:
             raise ValueError(
                 f"Invalid model size {model_size}. Expected one of {model_map.keys()}"

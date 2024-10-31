@@ -1,13 +1,14 @@
 #!/bin/bash
 
 #SBATCH --job-name=clay-laucher
-#SBATCH --nodes=20
+#SBATCH --nodes=36
 #SBATCH --ntasks-per-node=8          # EDIT if it's not 8-gpus per node
 #SBATCH --cpus-per-task=12           # EDIT this to how many cpu cores the node has divided by num of gpus
 #SBATCH --gres=gpu:8                 # EDIT this if it's not 8-gpus per node
 #SBATCH --time=0-00:00:00            # EDIT the desired runtime
 #SBATCH --exclusive
 #SBATCH --partition=gpu      # EDIT to the desired partition name
+#SBATCH --nodelist=gpu-dy-g5-[1-24],gpu-dy-g6-[1-6],gpu-dy-g6e-[1-6]
 #SBATCH --output=%x-%j-%N.out
 
 echo "START TIME: $(date)"
@@ -31,8 +32,11 @@ LOG_PATH="main_log.txt"
 # PTL doesn't need a special launcher
 LAUNCHER="python -u"
 
+# Capture the number of nodes allocated by Slurm
+NUM_NODES=$SLURM_JOB_NUM_NODES
+
 # EDIT the path+name of the python script and whatever args it needs
-PROGRAM="trainer.py fit --config configs/config.yaml"
+PROGRAM="trainer.py fit --config configs/config.yaml --trainer.num_nodes=$NUM_NODES"
 
 export CMD="$LAUNCHER $PROGRAM"
 
