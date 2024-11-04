@@ -31,20 +31,32 @@ class Classifier(nn.Module):
 
         # Initialize Clay Encoder with parameters from base model. Set
         # mask_ratio to 0.0 & shuffle to False for downstream tasks.
+        # self.clay_encoder = Encoder(
+        #     mask_ratio=0.0,
+        #     patch_size=8,
+        #     shuffle=False,
+        #     dim=768,
+        #     depth=12,
+        #     heads=12,
+        #     dim_head=64,
+        #     mlp_ratio=4.0,
+        # )
         self.clay_encoder = Encoder(
             mask_ratio=0.0,
             patch_size=8,
             shuffle=False,
-            dim=768,
-            depth=12,
-            heads=12,
+            dim=1024,
+            depth=24,
+            heads=16,
             dim_head=64,
             mlp_ratio=4.0,
+            # feature_maps=feature_maps,
+            # ckpt_path=ckpt_path,
         )
 
         # Simple 2 layer MLP head for classification
         self.head = nn.Sequential(
-            nn.Linear(768, 512),
+            nn.Linear(1024, 512),
             nn.ReLU(),
             nn.Dropout(0.25),
             nn.Linear(512, num_classes),

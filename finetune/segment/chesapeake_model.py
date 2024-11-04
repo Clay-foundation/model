@@ -99,9 +99,9 @@ class ChesapeakeSegmentor(L.LightningModule):
         )
         scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
             optimizer,
-            T_0=1000,
+            T_0=100,
             T_mult=1,
-            eta_min=self.hparams.lr * 100,
+            eta_min=self.hparams.lr * 10,
             last_epoch=-1,
         )
         return {
