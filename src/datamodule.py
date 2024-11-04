@@ -253,7 +253,7 @@ class ClayDataModule(L.LightningDataModule):
         #     chips_path = list(dp.list_files_by_s3(masks="*.npz"))
         # else:  # if self.data_dir is a local data path
         chips_path = sorted(list(Path(self.data_dir).glob("**/*.npz")))
-        chips_platform = [chip.parent.parent.name for chip in chips_path]
+        chips_platform = [chip.parent.name for chip in chips_path]
         # chips_platform = [chip.parent.parent.name for chip in chips_path]
         print(f"Total number of chips: {len(chips_path)}")
 
