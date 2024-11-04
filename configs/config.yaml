@@ -48,9 +48,9 @@ trainer:
       init_args:
         entity: developmentseed
         project: clay
-        group: v1.5-dinov2-large-reg4
-        # id: v8jh2pn9
-        # resume: must
+        group: v1.5-nomrl-dinov2
+        id: 0uy3in7l
+        resume: must
         log_model: false
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
@@ -70,4 +70,4 @@ trainer:
     - class_path: src.callbacks_wandb.LogIntermediatePredictions
   plugins:
     - class_path: lightning.pytorch.plugins.io.AsyncCheckpointIO
-ckpt_path:  null
+ckpt_path: checkpoints/v1.5.0/last.ckpt
