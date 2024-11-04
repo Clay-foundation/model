@@ -1,8 +1,6 @@
 from torch import nn
 
 
-from torch import nn
-
 class MRL(nn.Module):
     """
     Matryoshka Representation Learning from the paper: https://arxiv.org/abs/2205.13147

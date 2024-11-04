@@ -11,7 +11,6 @@ from torchvision.transforms import v2
 
 from src.backbone import Transformer
 from src.factory import DynamicEmbedding
-from src.mrl import MRL, MRLLoss
 from src.utils import posemb_sincos_2d_with_gsd
 
 torch.set_float32_matmul_precision("medium")
@@ -544,7 +543,6 @@ class ClayMAE(nn.Module):
 
         # representation_loss = self.mrl_loss(representations, target)
         representation_loss = 1.0 - F.cosine_similarity(representations, target).mean()
-
 
         loss = 0.9 * reconstruction_loss + 0.1 * representation_loss
         return (loss, reconstruction_loss, representation_loss)
