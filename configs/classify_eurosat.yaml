@@ -2,12 +2,12 @@
 seed_everything: 42
 data:
   metadata_path: configs/metadata.yaml
-  batch_size: 256
+  batch_size: 128
   num_workers: 8
 model:
   num_classes: 10
-  ckpt_path: checkpoints/clay-v1-base.ckpt
-  lr: 1e-4
+  ckpt_path: checkpoints/v1.5.0-no-mrl-dinov2/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt
+  lr: 5e-5
   wd: 0.05
   b1: 0.9
   b2: 0.95
@@ -28,6 +28,7 @@ trainer:
       init_args:
         entity: developmentseed
         project: clay-classify
+        group: v1.5-test
         log_model: false
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint

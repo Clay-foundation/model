@@ -21,7 +21,9 @@ def cli_main():
     """
     Command-line inteface to run Clasifier model with EuroSATDataModule.
     """
-    cli = LightningCLI(EuroSATClassifier, EuroSATDataModule)
+    cli = LightningCLI(
+        EuroSATClassifier, EuroSATDataModule, save_config_kwargs={"overwrite": True}
+    )
     return cli
 
 
