@@ -20,7 +20,7 @@ model:
   patch_size: 8
   shuffle: True
   metadata_path: configs/metadata.yaml
-  teacher: samvit_base_patch16.sa1b
+  teacher: vit_large_patch14_reg4_dinov2.lvd142m
   dolls: [16, 32, 64, 128, 256, 768, 1024]
   doll_weights: [1, 1, 1, 1, 1, 1, 1]
   lr: 5e-6
@@ -32,7 +32,7 @@ trainer:
   accelerator: gpu
   strategy: ddp
   devices: 8
-  num_nodes: 20
+  num_nodes: 48
   precision: bf16-mixed
   log_every_n_steps: 1
   max_epochs: 1000
@@ -48,9 +48,9 @@ trainer:
       init_args:
         entity: developmentseed
         project: clay
-        group: v1.5
-        # id: v8jh2pn9
-        # resume: must
+        group: v1.5-nomrl-dinov2
+        id: 0uy3in7l
+        resume: must
         log_model: false
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
@@ -70,4 +70,4 @@ trainer:
     - class_path: src.callbacks_wandb.LogIntermediatePredictions
   plugins:
     - class_path: lightning.pytorch.plugins.io.AsyncCheckpointIO
-ckpt_path: null
+ckpt_path: checkpoints/v1.5.0/last.ckpt
