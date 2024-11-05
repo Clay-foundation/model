@@ -32,8 +32,8 @@ RUN pip install \
   wandb==0.17.5
 
 
-RUN aws s3 cp s3://clay-model-ckpt/v1.5.0/mae_v1.5.0_epoch-76_val-loss-0.1612.ckpt data/clay-model-v1.5.0-october-12.ckpt
-RUN aws s3 cp s3://clay-mgrs-samples/naip-manifest.txt.zip data/naip-manifest.txt.zip
+RUN aws s3 cp --no-sign-request s3://clay-model-ckpt/v1.5.0-no-mrl-dinov2/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt data/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt
+RUN aws s3 cp --no-sign-request s3://clay-mgrs-samples/naip-manifest.txt.zip data/naip-manifest.txt.zip
 
 # Move file to home directory so that relative imports work
 RUN cp embeddings/all-naip.py .
