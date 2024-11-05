@@ -70,10 +70,12 @@ def process_scene(clay, path, batchsize):
             "naip-analytic", str(path), fl, ExtraArgs={"RequestPayer": "requester"}
         )
 
-        item = create_stac_item(fl.name, with_proj=True)
-
-        item.datetime = date
-        item.id = f"{state}_{path.stem}"
+        item = create_stac_item(
+            fl.name,
+            with_proj=True,
+            input_datetime=date,
+            id=f"{state}_{path.stem}",
+        )
 
         try:
             indexer = NoStatsChipIndexer(item)

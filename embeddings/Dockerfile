@@ -29,7 +29,8 @@ RUN pip install \
   geoarrow-pyarrow==0.1.2 \
   torchdata==0.7.1 \
   stacchip==0.1.35 \
-  wandb==0.17.5
+  wandb==0.17.5 \
+  rio_stac~=0.10.0
 
 
 RUN aws s3 cp --no-sign-request s3://clay-model-ckpt/v1.5.0-no-mrl-dinov2/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt data/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt
