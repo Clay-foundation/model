@@ -70,11 +70,16 @@ def process_scene(clay, path, batchsize):
             "naip-analytic", str(path), fl, ExtraArgs={"RequestPayer": "requester"}
         )
 
+        # Prepare properties, some NAIP imagery contains date stamps that
+        # raise an error in create_stac_item.
+        props = {"start_datetime": date, "end_datetime": date}
+
         item = create_stac_item(
             fl.name,
             with_proj=True,
             input_datetime=date,
             id=f"{state}_{path.stem}",
+            properties=props,
         )
 
         try:
