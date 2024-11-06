@@ -7,6 +7,7 @@ import zipfile
 from pathlib import Path
 
 import boto3
+import botocore
 from rasterio.errors import RasterioIOError
 from rio_stac import create_stac_item
 from stacchip.chipper import Chipper
@@ -117,6 +118,18 @@ def process_scene(clay, path, batchsize):
         write_to_table(embeddings=cls_embeddings, **kwargs)
 
 
+def check_exists(path):
+    s3 = boto3.client("s3")
+    try:
+        s3.head_object(
+            Bucket=EMBEDDINGS_BUCKET,
+            Key=f"{path.parent}/{path.stem}.parquet",
+        )
+        return True
+    except botocore.exceptions.ClientError:
+        return False
+
+
 def process():
     if "AWS_BATCH_JOB_ARRAY_INDEX" not in os.environ:
         raise ValueError("AWS_BATCH_JOB_ARRAY_INDEX env var not set")
@@ -129,9 +142,14 @@ def process():
     clay = load_clay()
 
     for i in range(index * items_per_job, (index + 1) * items_per_job):
+        scene = scenes[i]
+        if check_exists(scene):
+            logger.debug(f"Skipping scene because exists: {scene}")
+            continue
+
         process_scene(
             clay=clay,
-            path=scenes[i],
+            path=scene,
             batchsize=batchsize,
         )
 
