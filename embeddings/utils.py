@@ -115,15 +115,12 @@ def get_embeddings(clay, pixels_norm, time_norm, latlon_norm, waves, gsd, batchs
         # The first embedding is the class token, which is the
         # overall single embedding we want to keep.
         batch_cls_embeddings = unmsk_patch[:, 0, :].cpu().numpy()
-        batch_patch_embeddings = unmsk_patch[:, 1:, :].cpu().numpy()
         if cls_embeddings is None:
             cls_embeddings = batch_cls_embeddings
-            patch_embeddings = batch_patch_embeddings
         else:
             cls_embeddings = np.vstack((cls_embeddings, batch_cls_embeddings))
-            patch_embeddings = np.vstack((patch_embeddings, batch_patch_embeddings))
 
-    return cls_embeddings, patch_embeddings
+    return cls_embeddings
 
 
 def load_clay():

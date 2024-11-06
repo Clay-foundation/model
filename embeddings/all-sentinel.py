@@ -59,7 +59,7 @@ def process_scene(clay, path, batchsize):
         mean=mean, std=std, datetimes=datetimes, bboxs=bboxs, pixels=pixels, gsd=GSD
     )
     # Embed data
-    cls_embeddings, patch_embeddings = get_embeddings(
+    cls_embeddings = get_embeddings(
         clay=clay,
         pixels_norm=pixels_norm,
         time_norm=time_norm,
@@ -77,7 +77,6 @@ def process_scene(clay, path, batchsize):
     )
 
     write_to_table(embeddings=cls_embeddings, **kwargs)
-    write_to_table(embeddings=patch_embeddings, **kwargs)
 
 
 def process():
