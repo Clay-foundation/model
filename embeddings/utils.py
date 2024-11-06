@@ -114,12 +114,14 @@ def get_embeddings(clay, pixels_norm, time_norm, latlon_norm, waves, gsd, batchs
             unmsk_patch, unmsk_idx, msk_idx, msk_matrix = clay.model.encoder(datacube)
         # The first embedding is the class token, which is the
         # overall single embedding we want to keep.
+        batch_cls_embeddings = unmsk_patch[:, 0, :].cpu().numpy()
+        batch_patch_embeddings = unmsk_patch[:, 1:, :].cpu().numpy()
         if cls_embeddings is None:
-            cls_embeddings = unmsk_patch[:, 0, :]
-            patch_embeddings = unmsk_patch[:, 1:, :]
+            cls_embeddings = batch_cls_embeddings
+            patch_embeddings = batch_patch_embeddings
         else:
-            cls_embeddings = torch.vstack((cls_embeddings, unmsk_patch[:, 0, :]))
-            patch_embeddings = torch.vstack((patch_embeddings, unmsk_patch[:, 1:, :]))
+            cls_embeddings = np.vstack((cls_embeddings, batch_cls_embeddings))
+            patch_embeddings = np.vstack((patch_embeddings, batch_patch_embeddings))
 
     return cls_embeddings, patch_embeddings
 
@@ -142,16 +144,15 @@ def load_clay():
 
 
 def write_to_table(embeddings, bboxs, datestr, gsd, destination_bucket, path):
-    np_embeddings = embeddings.cpu().numpy()
     index = {"geometry": ga.as_geoarrow([dat.wkt for dat in bboxs])}
     if len(embeddings.shape) == EMBEDDING_SHAPE_CLASS:
         # Handle class embeddings
-        index["embeddings"] = [np.ascontiguousarray(dat) for dat in np_embeddings]
+        index["embeddings"] = [np.ascontiguousarray(dat) for dat in embeddings]
     elif len(embeddings.shape) == EMBEDDING_SHAPE_PATCH:
         # Handle patch embeddings
         for i in range(embeddings.shape[1]):
             index[f"patch_embeddings_{i}"] = [
-                np.ascontiguousarray(dat) for dat in np_embeddings[:, i, :]
+                np.ascontiguousarray(dat) for dat in embeddings[:, i, :]
             ]
 
     table = pa.table(
