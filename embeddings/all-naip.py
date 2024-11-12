@@ -113,6 +113,7 @@ def process_scene(clay, path, batchsize):
             gsd=gsd,
             destination_bucket=EMBEDDINGS_BUCKET,
             path=path,
+            source_bucket="naip-analytic",
         )
         logger.debug("Writing class embeddings")
         write_to_table(embeddings=cls_embeddings, **kwargs)

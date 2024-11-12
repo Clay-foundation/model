@@ -2,6 +2,7 @@ import gzip
 import json
 import logging
 import os
+from pathlib import Path
 
 import boto3
 from pystac import Item
@@ -34,6 +35,7 @@ def open_scenes_list():
     data = [dat for dat in data if dat.split("/")[7] == "2024"]
     # Process the X, C, and D regions last
     data = sorted(data, key=lambda dat: dat.split("/")[5] in ["X", "C", "D"])
+    data = [Path(dat.replace("s3://sentinel-cogs/", "")) for dat in data]
     logger.debug(f"Found {len(data)} scenes to process")
     return data
 
@@ -41,20 +43,18 @@ def open_scenes_list():
 def process_scene(clay, path, batchsize):
     bands, waves, mean, std = load_metadata("sentinel-2-l2a")
 
-    key = path.replace("s3://sentinel-cogs/", "")
-
     s3 = boto3.resource("s3")
 
-    stac_json = json.load(s3.Object("sentinel-cogs", key).get()["Body"])
+    stac_json = json.load(s3.Object("sentinel-cogs", str(path)).get()["Body"])
 
     item = Item.from_dict(stac_json)
 
     # Sanity checks
     if "red" not in item.assets:
-        logger.debug(f"No red band for {key}")
+        logger.debug(f"No red band for {path}")
         return
     elif not item.ext.has("proj"):
-        logger.debug(f"No proj for {key}")
+        logger.debug(f"No proj for {path}")
         return
 
     try:
@@ -91,6 +91,7 @@ def process_scene(clay, path, batchsize):
         gsd=gsd,
         destination_bucket=EMBEDDINGS_BUCKET,
         path=path,
+        source_bucket="sentinel-cogs",
     )
 
     write_to_table(embeddings=cls_embeddings, **kwargs)

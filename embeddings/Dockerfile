@@ -40,4 +40,4 @@ RUN pip install \
 RUN cp embeddings/all-naip.py .
 RUN cp embeddings/all-sentinel.py .
 
-ENTRYPOINT ["python", "all-naip.py"]
+ENTRYPOINT ["python"]

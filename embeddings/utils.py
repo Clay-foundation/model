@@ -156,7 +156,9 @@ def load_clay():
     return model.to(device)
 
 
-def write_to_table(embeddings, bboxs, datestr, gsd, destination_bucket, path):
+def write_to_table(  # noqa: PLR0913
+    embeddings, bboxs, datestr, gsd, destination_bucket, path, source_bucket
+):
     index = {"geometry": ga.as_geoarrow([dat.wkt for dat in bboxs])}
     if len(embeddings.shape) == EMBEDDING_SHAPE_CLASS:
         # Handle class embeddings
@@ -173,7 +175,7 @@ def write_to_table(embeddings, bboxs, datestr, gsd, destination_bucket, path):
         metadata={
             "date": datestr,
             "gsd": str(gsd[0]),
-            "uri": f"s3://naip-analytic/{path}",
+            "uri": f"s3://{source_bucket}/{path}",
         },
     )
 
