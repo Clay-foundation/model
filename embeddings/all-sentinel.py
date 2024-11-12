@@ -18,8 +18,9 @@ from embeddings.utils import (
     write_to_table,
 )
 
+logging.basicConfig()
 logger = logging.getLogger("clay")
-
+logger.setLevel(logging.DEBUG)
 
 SCENES_LIST = "data/element84-tiles-2023.gz"
 EMBEDDINGS_BUCKET = "clay-embeddings-sentinel-2"
@@ -29,11 +30,16 @@ GSD = 10
 def open_scenes_list():
     with gzip.open(SCENES_LIST) as fl:
         data = fl.readlines()
-    return [dat.decode().rstrip() for dat in data]
+    data = [dat.decode().rstrip() for dat in data]
+    data = [dat for dat in data if dat.split("/")[7] == "2024"]
+    # Process the X, C, and D regions last
+    data = sorted(data, key=lambda dat: dat.split("/")[5] in ["X", "C", "D"])
+    logger.debug(f"Found {len(data)} scenes to process")
+    return data
 
 
 def process_scene(clay, path, batchsize):
-    bands, waves, mean, std = load_metadata("sentinel_2_l2a")
+    bands, waves, mean, std = load_metadata("sentinel-2-l2a")
 
     key = path.replace("s3://sentinel-cogs/", "")
 
@@ -43,11 +49,17 @@ def process_scene(clay, path, batchsize):
 
     item = Item.from_dict(stac_json)
 
-    bands, waves, mean, std = load_metadata("naip")
+    # Sanity checks
+    if "red" not in item.assets:
+        logger.debug(f"No red band for {key}")
+        return
+    elif not item.ext.has("proj"):
+        logger.debug(f"No proj for {key}")
+        return
 
     try:
         indexer = Sentinel2Indexer(item, chip_max_nodata=0.1)
-        chipper = Chipper(item, assets=bands)
+        chipper = Chipper(indexer, assets=bands)
         bboxs, datetimes, pixels = get_pixels(
             item=item, indexer=indexer, chipper=chipper
         )
@@ -55,9 +67,14 @@ def process_scene(clay, path, batchsize):
         logger.warning("Skipping scene due to rasterio io error")
         return
 
+    if not len(pixels):
+        logger.debug("Finishing early, no valid data found in scene.")
+        return
+
     time_norm, latlon_norm, gsd, pixels_norm = prepare_datacube(
         mean=mean, std=std, datetimes=datetimes, bboxs=bboxs, pixels=pixels, gsd=GSD
     )
+
     # Embed data
     cls_embeddings = get_embeddings(
         clay=clay,

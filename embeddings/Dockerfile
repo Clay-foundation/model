@@ -6,6 +6,7 @@ RUN git clone -b all-of-naip https://github.com/Clay-foundation/model.git .
 
 RUN aws s3 cp --no-sign-request s3://clay-model-ckpt/v1.5.0-no-mrl-dinov2/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt data/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt
 RUN aws s3 cp --no-sign-request s3://clay-mgrs-samples/naip-manifest.txt.zip data/naip-manifest.txt.zip
+RUN aws s3 cp --no-sign-request s3://clay-mgrs-samples/element84-tiles-2023.gz data/element84-tiles-2023.gz
 
 RUN pip install \
   einops~=0.7.0 \

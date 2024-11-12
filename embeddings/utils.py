@@ -17,6 +17,9 @@ CHECKPOINT = "data/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt"
 EMBEDDING_SHAPE_CLASS = 2
 EMBEDDING_SHAPE_PATCH = 3
 
+CLOUD_LIMIT = 0.1
+NODATA_LIMIT = 0.01
+
 logger = logging.getLogger("clay")
 
 
@@ -76,7 +79,19 @@ def get_pixels(item, indexer, chipper):
     bboxs = []
     chip_ids = []
     item_ids = []
-    for x, y, chip in chipper:
+    for index in range(len(chipper)):
+        y = index // chipper.indexer.x_size
+        x = index % chipper.indexer.x_size
+
+        cloud_percentage, nodata_percentage = chipper.indexer.get_stats(x, y)
+        print(index, y, x, cloud_percentage, nodata_percentage)
+        if cloud_percentage > CLOUD_LIMIT:
+            continue
+        elif nodata_percentage > NODATA_LIMIT:
+            continue
+
+        chip = chipper.chip(x, y)
+
         chips.append(chip)
         datetimes.append(item.datetime)
         bboxs.append(indexer.get_chip_bbox(x, y))
@@ -84,6 +99,7 @@ def get_pixels(item, indexer, chipper):
         item_ids.append(item.id)
 
     pixels = np.array([np.array(list(chip.values())).squeeze() for chip in chips])
+
     return bboxs, datetimes, pixels
 
 
