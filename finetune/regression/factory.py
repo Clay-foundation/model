@@ -1,10 +1,8 @@
 """
-Clay Segmentor for semantic segmentation tasks.
+Clay Regressor for semantic regression tasks using PixelShuffle.
 
 Attribution:
-Decoder from Segformer: Simple and Efficient Design for Semantic Segmentation
-with Transformers
-Paper URL: https://arxiv.org/abs/2105.15203
+Decoder inspired by PixelShuffle-based upsampling.
 """
 
 import re
@@ -17,18 +15,15 @@ from torch import nn
 from src.model import Encoder
 
 
-class SegmentEncoder(Encoder):
+class RegressionEncoder(Encoder):
     """
-    Encoder class for segmentation tasks, incorporating a feature pyramid
-    network (FPN).
+    Encoder class for regression tasks.
 
     Attributes:
-        feature_maps (list): Indices of layers to be used for generating
-        feature maps.
         ckpt_path (str): Path to the clay checkpoint file.
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         mask_ratio,
         patch_size,
@@ -38,7 +33,6 @@ class SegmentEncoder(Encoder):
         heads,
         dim_head,
         mlp_ratio,
-        feature_maps,
         ckpt_path=None,
     ):
         super().__init__(
@@ -51,30 +45,6 @@ class SegmentEncoder(Encoder):
             dim_head,
             mlp_ratio,
         )
-        self.feature_maps = feature_maps
-
-        # Define Feature Pyramid Network (FPN) layers
-        self.fpn1 = nn.Sequential(
-            nn.ConvTranspose2d(dim, dim, kernel_size=2, stride=2),
-            nn.BatchNorm2d(dim),
-            nn.GELU(),
-            nn.ConvTranspose2d(dim, dim, kernel_size=2, stride=2),
-        )
-
-        self.fpn2 = nn.Sequential(
-            nn.ConvTranspose2d(dim, dim, kernel_size=2, stride=2),
-        )
-
-        self.fpn3 = nn.Identity()
-
-        self.fpn4 = nn.Sequential(
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-
-        self.fpn5 = nn.Sequential(
-            nn.MaxPool2d(kernel_size=4, stride=4),
-        )
-
         # Set device
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -119,14 +89,14 @@ class SegmentEncoder(Encoder):
 
     def forward(self, datacube):
         """
-        Forward pass of the SegmentEncoder.
+        Forward pass of the RegressionEncoder.
 
         Args:
             datacube (dict): A dictionary containing the input datacube and
                 meta information like time, latlon, gsd & wavelenths.
 
         Returns:
-            list: A list of feature maps extracted from the datacube.
+            torch.Tensor: The embeddings from the final layer.
         """
         cube, time, latlon, gsd, waves = (
             datacube["pixels"],  # [B C H W]
@@ -146,84 +116,56 @@ class SegmentEncoder(Encoder):
         cls_tokens = repeat(self.cls_token, "1 1 D -> B 1 D", B=B)  # [B 1 D]
         patches = torch.cat((cls_tokens, patches), dim=1)  # [B (1 + L) D]
 
-        features = []
-        for idx, (attn, ff) in enumerate(self.transformer.layers):
-            patches = attn(patches) + patches
-            patches = ff(patches) + patches
-            if idx in self.feature_maps:
-                _cube = rearrange(
-                    patches[:, 1:, :], "B (H W) D -> B D H W", H=H // 8, W=W // 8
-                )
-                features.append(_cube)
-        # patches = self.transformer.norm(patches)
-        # _cube = rearrange(patches[:, 1:, :], "B (H W) D -> B D H W", H=H//8, W=W//8)
-        # features.append(_cube)
+        # Transformer encoder
+        patches = self.transformer(patches)
 
-        # Apply FPN layers
-        ops = [self.fpn1, self.fpn2, self.fpn3, self.fpn4, self.fpn5]
-        for i in range(len(features)):
-            features[i] = ops[i](features[i])
+        # Remove class token
+        patches = patches[:, 1:, :]  # [B, L, D]
 
-        return features
-
-
-class FusionBlock(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super().__init__()
-        self.conv = nn.Conv2d(input_dim, output_dim, kernel_size=3, padding=1)
-        self.bn = nn.BatchNorm2d(output_dim)
-
-    def forward(self, x):
-        x = F.relu(self.bn(self.conv(x)))
-        return x
-
-
-class SegmentationHead(nn.Module):
-    def __init__(self, input_dim, num_classes):
-        super().__init__()
-        self.conv1 = nn.Conv2d(input_dim, input_dim // 2, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(
-            input_dim // 2, num_classes, kernel_size=1
-        )  # final conv to num_classes
-        self.bn1 = nn.BatchNorm2d(input_dim // 2)
-
-    def forward(self, x):
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = self.conv2(x)  # No activation before final layer
-        return x
+        return patches
 
 
 class Regressor(nn.Module):
     """
-    Clay Regressor class that combines the Encoder with FPN layers for semantic
-    regression.
+    Clay Regressor class that combines the Encoder with PixelShuffle for regression.
 
     Attributes:
-        num_classes (int): Number of output classes for segmentation.
-        feature_maps (list): Indices of layers to be used for generating feature maps.
+        num_classes (int): Number of output classes for regression.
         ckpt_path (str): Path to the checkpoint file.
     """
 
-    def __init__(self, num_classes, feature_maps, ckpt_path):
+    def __init__(self, num_classes, ckpt_path):
         super().__init__()
-        # Default values are for the clay mae base model.
-        self.encoder = SegmentEncoder(
+        # Initialize the encoder
+        self.encoder = RegressionEncoder(
             mask_ratio=0.0,
             patch_size=8,
             shuffle=False,
-            dim=768,
-            depth=12,
-            heads=12,
+            dim=1024,
+            depth=24,
+            heads=16,
             dim_head=64,
             mlp_ratio=4.0,
-            feature_maps=feature_maps,
             ckpt_path=ckpt_path,
         )
-        self.upsamples = [nn.Upsample(scale_factor=2**i) for i in range(5)]
-        self.fusion = FusionBlock(self.encoder.dim, self.encoder.dim // 4)
-        self.seg_head = nn.Conv2d(
-            self.encoder.dim // 4, num_classes, kernel_size=3, padding=1
-        )
+
+        # Freeze the encoder parameters
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+
+        # Define layers after the encoder
+        D = self.encoder.dim  # embedding dimension
+        hidden_dim = 512
+        C_out = 64
+        r = self.encoder.patch_size  # upscale factor (patch_size)
+
+        self.conv1 = nn.Conv2d(D, hidden_dim, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(hidden_dim)
+        self.conv2 = nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(hidden_dim)
+        self.conv_ps = nn.Conv2d(hidden_dim, C_out * r * r, kernel_size=3, padding=1)
+        self.pixel_shuffle = nn.PixelShuffle(upscale_factor=r)
+        self.conv_out = nn.Conv2d(C_out, num_classes, kernel_size=3, padding=1)
 
     def forward(self, datacube):
         """
@@ -234,15 +176,28 @@ class Regressor(nn.Module):
                 meta information like time, latlon, gsd & wavelenths.
 
         Returns:
-            torch.Tensor: The segmentation logits.
+            torch.Tensor: The regression output.
         """
-        features = self.encoder(datacube)
-        for i in range(len(features)):
-            features[i] = self.upsamples[i](features[i])
+        cube = datacube["pixels"]  # [B C H_in W_in]
+        B, C, H_in, W_in = cube.shape
 
-        # fused = torch.cat(features, dim=1)
-        fused = torch.sum(torch.stack(features), dim=0)
-        fused = self.fusion(fused)
+        # Get embeddings from the encoder
+        patches = self.encoder(datacube)  # [B, L, D]
 
-        logits = self.seg_head(fused)
-        return logits
+        # Reshape embeddings to [B, D, H', W']
+        H_patches = H_in // self.encoder.patch_size
+        W_patches = W_in // self.encoder.patch_size
+        x = rearrange(patches, "B (H W) D -> B D H W", H=H_patches, W=W_patches)
+
+        # Pass through convolutional layers
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = self.conv_ps(x)  # [B, C_out * r^2, H', W']
+
+        # Upsample using PixelShuffle
+        x = self.pixel_shuffle(x)  # [B, C_out, H_in, W_in]
+
+        # Final convolution to get desired output channels
+        x = self.conv_out(x)  # [B, num_outputs, H_in, W_in]
+
+        return x
