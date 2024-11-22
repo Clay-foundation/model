@@ -73,13 +73,17 @@ def prepare_datacube(mean, std, datetimes, bboxs, pixels, gsd):
     return time_norm, latlon_norm, gsd, pixels_norm
 
 
-def get_pixels(item, indexer, chipper):
+def get_pixels(item, indexer, chipper, start=None, end=None):
     chips = []
     datetimes = []
     bboxs = []
     chip_ids = []
     item_ids = []
-    for index in range(len(chipper)):
+    if start:
+        index_range = range(start, min(end, len(chipper)))
+    else:
+        index_range = range(len(chipper))
+    for index in index_range:
         y = index // chipper.indexer.x_size
         x = index % chipper.indexer.x_size
 

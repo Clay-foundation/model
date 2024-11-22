@@ -2,18 +2,18 @@ import gzip
 import json
 import logging
 import os
+import tempfile
 from pathlib import Path
 
 import boto3
+import numpy as np
 from pystac import Item
-from rasterio.errors import RasterioIOError
 from stacchip.chipper import Chipper
 from stacchip.indexer import Sentinel2Indexer
 
 from embeddings.utils import (
     get_embeddings,
     get_pixels,
-    load_clay,
     load_metadata,
     prepare_datacube,
     write_to_table,
@@ -26,6 +26,7 @@ logger.setLevel(logging.DEBUG)
 SCENES_LIST = "data/element84-tiles-2023.gz"
 EMBEDDINGS_BUCKET = "clay-embeddings-sentinel-2"
 GSD = 10
+S2_BUCKET = "sentinel-2-cogs"
 
 
 def open_scenes_list():
@@ -38,6 +39,21 @@ def open_scenes_list():
     data = [Path(dat.replace("s3://sentinel-cogs/", "")) for dat in data]
     logger.debug(f"Found {len(data)} scenes to process")
     return data
+
+
+def download_scenes_local(tmp, item, bands):
+    s3 = boto3.client("s3")
+    for band in bands:
+        local_asset_path = f"{tmp}/{band}.tif"
+        remote_asset_key = item.assets[band].href.replace(
+            "https://sentinel-cogs.s3.us-west-2.amazonaws.com/", ""
+        )
+        print(f"Downloading band {band} to {local_asset_path}")
+        with open(local_asset_path, mode="w+b") as fl:
+            s3.download_fileobj("sentinel-cogs", remote_asset_key, fl)
+        item.assets[band].href = local_asset_path
+
+    return item
 
 
 def process_scene(clay, path, batchsize):
@@ -57,36 +73,54 @@ def process_scene(clay, path, batchsize):
         logger.debug(f"No proj for {path}")
         return
 
-    try:
+    all_bboxs = []
+    all_cls_embeddings = None
+
+    with tempfile.TemporaryDirectory() as tmp:
+        item = download_scenes_local(tmp, item, bands)
         indexer = Sentinel2Indexer(item, chip_max_nodata=0.1)
         chipper = Chipper(indexer, assets=bands)
-        bboxs, datetimes, pixels = get_pixels(
-            item=item, indexer=indexer, chipper=chipper
-        )
-    except RasterioIOError:
-        logger.warning("Skipping scene due to rasterio io error")
-        return
+        logger.debug(f"Creating chips for {item.id}")
+        STEP = 50
+        for index in range(0, len(chipper), STEP):
+            bboxs, datetimes, pixels = get_pixels(
+                item=item,
+                indexer=indexer,
+                chipper=chipper,
+                start=index,
+                end=index + STEP,
+            )
 
-    if not len(pixels):
-        logger.debug("Finishing early, no valid data found in scene.")
-        return
+            if not len(pixels):
+                continue
 
-    time_norm, latlon_norm, gsd, pixels_norm = prepare_datacube(
-        mean=mean, std=std, datetimes=datetimes, bboxs=bboxs, pixels=pixels, gsd=GSD
-    )
+            time_norm, latlon_norm, gsd, pixels_norm = prepare_datacube(
+                mean=mean,
+                std=std,
+                datetimes=datetimes,
+                bboxs=bboxs,
+                pixels=pixels,
+                gsd=GSD,
+            )
 
-    # Embed data
-    cls_embeddings = get_embeddings(
-        clay=clay,
-        pixels_norm=pixels_norm,
-        time_norm=time_norm,
-        latlon_norm=latlon_norm,
-        waves=waves,
-        gsd=gsd,
-        batchsize=batchsize,
-    )
+            # Embed data
+            cls_embeddings = get_embeddings(
+                clay=clay,
+                pixels_norm=pixels_norm,
+                time_norm=time_norm,
+                latlon_norm=latlon_norm,
+                waves=waves,
+                gsd=gsd,
+                batchsize=batchsize,
+            )
+            all_bboxs += bboxs
+            if all_cls_embeddings is None:
+                all_cls_embeddings = cls_embeddings
+            else:
+                all_cls_embeddings = np.vstack((all_cls_embeddings, cls_embeddings))
+
     kwargs = dict(
-        bboxs=bboxs,
+        bboxs=all_bboxs,
         datestr=str(item.datetime.date()),
         gsd=gsd,
         destination_bucket=EMBEDDINGS_BUCKET,
@@ -94,7 +128,7 @@ def process_scene(clay, path, batchsize):
         source_bucket="sentinel-cogs",
     )
 
-    write_to_table(embeddings=cls_embeddings, **kwargs)
+    write_to_table(embeddings=all_cls_embeddings, **kwargs)
 
 
 def process():
@@ -105,7 +139,8 @@ def process():
     batchsize = int(os.environ.get("EMBEDDING_BATCH_SIZE", 50))
 
     scenes = open_scenes_list()
-    clay = load_clay()
+    # clay = load_clay()
+    clay = None
 
     for i in range(index * items_per_job, (index + 1) * items_per_job):
         process_scene(
