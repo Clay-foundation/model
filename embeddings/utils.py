@@ -68,7 +68,7 @@ def prepare_datacube(mean, std, datetimes, bboxs, pixels, gsd):
 
     gsd = [gsd]
 
-    pixels_norm = transform(pixels)
+    pixels_norm = transform(torch.tensor(pixels, dtype=torch.float32)).numpy()
 
     return time_norm, latlon_norm, gsd, pixels_norm
 
