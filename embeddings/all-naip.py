@@ -28,7 +28,7 @@ logger.setLevel(logging.DEBUG)
 
 
 MANIFEST = "data/naip-manifest.txt.zip"
-EMBEDDINGS_BUCKET = "clay-embeddings-naip"
+EMBEDDINGS_BUCKET = os.environ["EMBEDDINGS_BUCKET"]
 
 
 def open_scene_list(limit_to_state=None):
@@ -120,7 +120,15 @@ def process_scene(clay, path, batchsize):
 
 
 def check_exists(path):
-    s3 = boto3.client("s3")
+    if "ENDPOINT_URL" in os.environ:
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=os.environ.get("ENDPOINT_URL"),
+            aws_access_key_id=os.environ.get("ENDPOINT_KEY_ID"),
+            aws_secret_access_key=os.environ.get("ENDPOINT_ACCESS_KEY"),
+        )
+    else:
+        s3 = boto3.client("s3")
     try:
         s3.head_object(
             Bucket=EMBEDDINGS_BUCKET,
@@ -135,7 +143,7 @@ def process():
     if "AWS_BATCH_JOB_ARRAY_INDEX" not in os.environ:
         raise ValueError("AWS_BATCH_JOB_ARRAY_INDEX env var not set")
     index = int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 0))
-    items_per_job = int(os.environ.get("ITEMS_PER_JOB", 2))
+    items_per_job = int(os.environ.get("ITEMS_PER_JOB", 100))
     batchsize = int(os.environ.get("EMBEDDING_BATCH_SIZE", 50))
     limit_to_state = os.environ.get("LIMIT_TO_STATE", None)
 

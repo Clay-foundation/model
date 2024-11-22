@@ -1,5 +1,6 @@
 import logging
 import math
+import os
 
 import boto3
 import geoarrow.pyarrow as ga
@@ -186,7 +187,16 @@ def write_to_table(  # noqa: PLR0913
     writer = pa.BufferOutputStream()
     gaio.write_geoparquet_table(table, writer)
     body = bytes(writer.getvalue())
-    s3_resource = boto3.resource("s3")
+    if "ENDPOINT_URL" in os.environ:
+        s3_resource = boto3.resource(
+            "s3",
+            endpoint_url=os.environ.get("ENDPOINT_URL"),
+            aws_access_key_id=os.environ.get("ENDPOINT_KEY_ID"),
+            aws_secret_access_key=os.environ.get("ENDPOINT_ACCESS_KEY"),
+        )
+    else:
+        s3_resource = boto3.resource("s3")
+
     s3_bucket = s3_resource.Bucket(name=destination_bucket)
     s3_bucket.put_object(
         Body=body,
