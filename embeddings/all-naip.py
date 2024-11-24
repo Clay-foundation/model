@@ -7,13 +7,13 @@ import zipfile
 from pathlib import Path
 
 import boto3
-import botocore
 from rasterio.errors import RasterioIOError
 from rio_stac import create_stac_item
 from stacchip.chipper import Chipper
 from stacchip.indexer import NoStatsChipIndexer
 
 from embeddings.utils import (
+    check_exists,
     get_embeddings,
     get_pixels,
     load_clay,
@@ -29,6 +29,7 @@ logger.setLevel(logging.DEBUG)
 
 MANIFEST = "data/naip-manifest.txt.zip"
 EMBEDDINGS_BUCKET = os.environ["EMBEDDINGS_BUCKET"]
+HOUR_OF_DAY = 12
 
 
 def open_scene_list(limit_to_state=None):
@@ -59,7 +60,9 @@ def process_scene(clay, path, batchsize):
     """
     state = path.parts[0]
     datestr = path.stem.split("_")[-1]
-    date = datetime.datetime(int(datestr[:4]), int(datestr[4:6]), int(datestr[6:8]))
+    date = datetime.datetime(
+        int(datestr[:4]), int(datestr[4:6]), int(datestr[6:8]), HOUR_OF_DAY
+    )
     gsd = float(path.parts[2].replace("cm", "")) / 100
     bands, waves, mean, std = load_metadata("naip")
 
@@ -87,7 +90,9 @@ def process_scene(clay, path, batchsize):
             indexer = NoStatsChipIndexer(item)
             chipper = Chipper(indexer)
             bboxs, datetimes, pixels = get_pixels(
-                item=item, indexer=indexer, chipper=chipper
+                item=item,
+                indexer=indexer,
+                chipper=chipper,
             )
         except RasterioIOError:
             logger.warning("Skipping scene due to rasterio io error")
@@ -117,26 +122,6 @@ def process_scene(clay, path, batchsize):
         )
         logger.debug("Writing class embeddings")
         write_to_table(embeddings=cls_embeddings, **kwargs)
-
-
-def check_exists(path):
-    if "ENDPOINT_URL" in os.environ:
-        s3 = boto3.client(
-            "s3",
-            endpoint_url=os.environ.get("ENDPOINT_URL"),
-            aws_access_key_id=os.environ.get("ENDPOINT_KEY_ID"),
-            aws_secret_access_key=os.environ.get("ENDPOINT_ACCESS_KEY"),
-        )
-    else:
-        s3 = boto3.client("s3")
-    try:
-        s3.head_object(
-            Bucket=EMBEDDINGS_BUCKET,
-            Key=f"{path.parent}/{path.stem}.parquet",
-        )
-        return True
-    except botocore.exceptions.ClientError:
-        return False
 
 
 def process():

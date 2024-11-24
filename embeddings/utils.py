@@ -3,6 +3,7 @@ import math
 import os
 
 import boto3
+import botocore
 import geoarrow.pyarrow as ga
 import numpy as np
 import pyarrow as pa
@@ -17,11 +18,32 @@ from src.module import ClayMAEModule
 CHECKPOINT = "data/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt"
 EMBEDDING_SHAPE_CLASS = 2
 EMBEDDING_SHAPE_PATCH = 3
+EMBEDDINGS_BUCKET = os.environ["EMBEDDINGS_BUCKET"]
 
 CLOUD_LIMIT = 0.1
 NODATA_LIMIT = 0.01
 
 logger = logging.getLogger("clay")
+
+
+def check_exists(path):
+    if "ENDPOINT_URL" in os.environ:
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=os.environ.get("ENDPOINT_URL"),
+            aws_access_key_id=os.environ.get("ENDPOINT_KEY_ID"),
+            aws_secret_access_key=os.environ.get("ENDPOINT_ACCESS_KEY"),
+        )
+    else:
+        s3 = boto3.client("s3")
+    try:
+        s3.head_object(
+            Bucket=EMBEDDINGS_BUCKET,
+            Key=f"{path.parent}/{path.stem}.parquet",
+        )
+        return True
+    except botocore.exceptions.ClientError:
+        return False
 
 
 def load_metadata(platform):
@@ -89,7 +111,7 @@ def get_pixels(item, indexer, chipper, start=None, end=None):
         x = index % chipper.indexer.x_size
 
         cloud_percentage, nodata_percentage = chipper.indexer.get_stats(x, y)
-        print(index, y, x, cloud_percentage, nodata_percentage)
+
         if cloud_percentage > CLOUD_LIMIT:
             continue
         elif nodata_percentage > NODATA_LIMIT:

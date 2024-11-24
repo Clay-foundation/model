@@ -12,8 +12,10 @@ from stacchip.chipper import Chipper
 from stacchip.indexer import Sentinel2Indexer
 
 from embeddings.utils import (
+    check_exists,
     get_embeddings,
     get_pixels,
+    load_clay,
     load_metadata,
     prepare_datacube,
     write_to_table,
@@ -139,10 +141,13 @@ def process():
     batchsize = int(os.environ.get("EMBEDDING_BATCH_SIZE", 50))
 
     scenes = open_scenes_list()
-    # clay = load_clay()
-    clay = None
+    clay = load_clay()
 
     for i in range(index * items_per_job, (index + 1) * items_per_job):
+        if check_exists(scenes[i]):
+            logger.debug(f"Skipping scene because exists: {scenes[i]}")
+            continue
+
         process_scene(
             clay=clay,
             path=scenes[i],

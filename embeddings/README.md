@@ -11,6 +11,14 @@ to choose which files from the archives to process. This is set automatically
 by AWS Batch when using array jobs. Outside of array jobs, this index variable
 needs to be specified manually.
 
+The script also requires the `EMBEDDINGS_BUCKET` environment variable,
+specifying the name of the output bucket.
+
+To specify a custom bucket location (for source coop for instance), use the
+`ENDPOINT_URL`, `ENDPOINT_KEY_ID`, and `ENDPOINT_ACCESS_KEY` environment
+variables.
+
+
 ### Build docker image
 
 Embedding runs are dockerized for parallel computing. To build the docker image
