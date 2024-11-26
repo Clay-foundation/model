@@ -13,7 +13,7 @@ References:
 from lightning.pytorch.cli import LightningCLI
 
 from src.datamodule import ClayDataModule  # noqa: F401
-from src.model import ClayMAEModule  # noqa: F401
+from src.module import ClayMAEModule  # noqa: F401
 
 
 # %%
@@ -21,7 +21,9 @@ def cli_main():
     """
     Command-line inteface to run ClayMAE with ClayDataModule.
     """
-    cli = LightningCLI(save_config_kwargs={"overwrite": True})
+    cli = LightningCLI(
+        ClayMAEModule, ClayDataModule, save_config_kwargs={"overwrite": True}
+    )
     return cli
 
 

@@ -28,7 +28,6 @@ class ChesapeakeSegmentor(L.LightningModule):
     def __init__(  # # noqa: PLR0913
         self,
         num_classes,
-        feature_maps,
         ckpt_path,
         lr,
         wd,
@@ -39,7 +38,6 @@ class ChesapeakeSegmentor(L.LightningModule):
         self.save_hyperparameters()  # Save hyperparameters for checkpointing
         self.model = Segmentor(
             num_classes=num_classes,
-            feature_maps=feature_maps,
             ckpt_path=ckpt_path,
         )
 
@@ -99,7 +97,7 @@ class ChesapeakeSegmentor(L.LightningModule):
         )
         scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
             optimizer,
-            T_0=1000,
+            T_0=100,
             T_mult=1,
             eta_min=self.hparams.lr * 100,
             last_epoch=-1,

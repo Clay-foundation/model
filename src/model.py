@@ -1,18 +1,15 @@
 import math
 import os
-from typing import Literal
+import random
 
-import lightning as L
 import timm
 import torch
 import torch.nn.functional as F
-import yaml
-from box import Box
 from einops import rearrange, reduce, repeat
 from torch import nn
 from torchvision.transforms import v2
-from vit_pytorch.simple_vit import Transformer
 
+from src.backbone import Transformer
 from src.factory import DynamicEmbedding
 from src.utils import posemb_sincos_2d_with_gsd
 
@@ -53,6 +50,7 @@ class Encoder(nn.Module):
             heads=heads,
             dim_head=dim_head,
             mlp_dim=int(dim * mlp_ratio),
+            fused_attn=True,
         )
 
     def to_patch_embed(self, cube, waves):
@@ -239,6 +237,7 @@ class Decoder(nn.Module):
             heads=heads,
             dim_head=dim_head,
             mlp_dim=int(dim * mlp_ratio),
+            fused_attn=True,
         )
         self.embed_to_pixels = DynamicEmbedding(
             wave_dim=128,
@@ -364,6 +363,8 @@ class ClayMAE(nn.Module):
         shuffle,
         metadata,
         teacher,
+        dolls,
+        doll_weights,
         # ENCODER
         dim,
         depth,
@@ -385,10 +386,12 @@ class ClayMAE(nn.Module):
         self.shuffle = shuffle
         self.metadata = metadata
         self.teacher = timm.create_model(teacher, pretrained=True, num_classes=0)
-        self.teacher_chip_size = 224
+        self.teacher_chip_size = 518
         self.teacher_resize = v2.Resize(
             size=(self.teacher_chip_size, self.teacher_chip_size)
         )
+        # self.mrl = MRL(features=self.teacher.num_features, dolls=dolls)
+        # self.mrl_loss = MRLLoss(weights=doll_weights)
         self.proj = nn.Linear(dim, self.teacher.num_features)
 
         self.encoder = Encoder(
@@ -418,6 +421,7 @@ class ClayMAE(nn.Module):
     def freeze_teacher(self):
         for param in self.teacher.parameters():
             param.requires_grad = False
+        self.teacher.eval()
 
     def per_pixel_loss(self, cube, pixels, masked_matrix):
         """
@@ -459,6 +463,27 @@ class ClayMAE(nn.Module):
         waves = torch.tensor(list(self.metadata[platform].bands.wavelength.values()))
         gsd = torch.tensor(self.metadata[platform].gsd)
 
+        # Drop channels randomly
+        _pixels = datacube["pixels"].clone()
+        batch_size, channels, _, _ = _pixels.size()
+
+        # Define probabilities for dropping channels
+        prob_drop_all = 0.10  # 10% probability to drop all channels
+        prob_drop_half = 0.20  # 20% probability to drop half the channels
+
+        for i in range(batch_size):
+            if torch.any(
+                datacube["latlon"][i] != 0
+            ):  # Check if latlon is not all zeros
+                rand_val = random.random()
+                if rand_val < prob_drop_all:
+                    _pixels[i, :, :, :] = 0  # Drop all channels
+                elif rand_val < prob_drop_all + prob_drop_half:
+                    channel_indices = torch.randperm(channels)[
+                        : channels // 2
+                    ]  # Get 50% of channel indices
+                    _pixels[i, channel_indices, :, :] = 0  # Drop 50% of channels
+
         # ENCODER
         (
             encoded_unmasked_patches,  # [B (1 + L):(1 - mask_ratio) D]
@@ -467,7 +492,7 @@ class ClayMAE(nn.Module):
             masked_matrix,  # [B L]
         ) = self.encoder(
             {
-                "pixels": datacube["pixels"],
+                "pixels": _pixels,
                 "time": datacube["time"],
                 "latlon": datacube["latlon"],
                 "gsd": gsd,
@@ -487,32 +512,39 @@ class ClayMAE(nn.Module):
             waves,
         )  # [B L (C P P)]
 
-        # LOSS
+        # MAE
         reconstruction_loss = self.per_pixel_loss(
             datacube["pixels"], pixels, masked_matrix
         )
+        # MODIS has a 10x reconstruction loss compared to all the other sensors,
+        # so we need to scale it down to improve the learning capability.
+        if platform == "modis":
+            reconstruction_loss /= 10
 
-        # TEACHER
-        encoder_output = self.proj(encoded_unmasked_patches[:, 0, :])  # [B D']
+        # # MRL
+        # representations = self.mrl(encoded_unmasked_patches[:, 0, :])  # [(B D') ...]
+
+        # PROJ
+        representations = self.proj(encoded_unmasked_patches[:, 0, :])  # [B D']
+
         with torch.no_grad():
             if platform == "sentinel-1-rtc":
                 r = datacube["pixels"][:, 0, :, :]
                 g = datacube["pixels"][:, 1, :, :]
-                b = r - g
+                b = (r + g) / 2
                 rgb = torch.stack((r, g, b), dim=1)
             else:
                 # Read RGB bands from the sensor to feed the teacher model
                 indices = self.metadata[platform].rgb_indices
                 rgb = datacube["pixels"][:, indices, :, :]
             rgb = self.teacher_resize(rgb)
-            teacher_output = self.teacher(rgb)
+            target = self.teacher(rgb)
+            # target = self.teacher(rgb)
 
-        representation_loss = -(
-            F.cosine_similarity(encoder_output, teacher_output).mean()
-            - 1.0  # change range from [-1, 1] to [-2, 0]
-        )  # negative cosine similarity, [0, 2] -> 0 is similar & 2 is opposite
+        # representation_loss = self.mrl_loss(representations, target)
+        representation_loss = 1.0 - F.cosine_similarity(representations, target).mean()
 
-        loss = 0.90 * reconstruction_loss + 0.10 * representation_loss
+        loss = 0.9 * reconstruction_loss + 0.1 * representation_loss
         return (loss, reconstruction_loss, representation_loss)
 
 
@@ -564,8 +596,8 @@ def clay_mae_base(**kwargs):
         "mlp_ratio": 4,
         # DECODER
         "decoder_dim": 512,
-        "decoder_depth": 6,
-        "decoder_heads": 6,
+        "decoder_depth": 4,
+        "decoder_heads": 4,
         "decoder_dim_head": 64,
         "decoder_mlp_ratio": 4,
     }
@@ -583,114 +615,10 @@ def clay_mae_large(**kwargs):
         "mlp_ratio": 4,
         # DECODER
         "decoder_dim": 512,
-        "decoder_depth": 8,
-        "decoder_heads": 8,
+        "decoder_depth": 4,
+        "decoder_heads": 4,
         "decoder_dim_head": 64,
         "decoder_mlp_ratio": 4,
     }
     args.update(kwargs)
     return ClayMAE(**args)
-
-
-class ClayMAEModule(L.LightningModule):
-    def __init__(  # noqa: PLR0913
-        self,
-        model_size="base",
-        mask_ratio=0.75,
-        norm_pix_loss=False,
-        patch_size=16,
-        shuffle=False,
-        metadata_path="configs/metadata.yaml",
-        teacher="vit_base_patch16_224.dino",
-        lr=1e-4,
-        wd=0.05,
-        b1=0.9,
-        b2=0.95,
-        embeddings_level: Literal["mean", "patch", "group"] = "mean",
-    ):
-        super().__init__()
-        self.save_hyperparameters(logger=True)
-        self.metadata = Box(yaml.safe_load(open(metadata_path)))
-        model_map = {
-            "tiny": clay_mae_tiny,
-            "small": clay_mae_small,
-            "base": clay_mae_base,
-            "large": clay_mae_large,
-        }
-        if model_size in model_map:
-            model_args = {
-                "mask_ratio": mask_ratio,
-                "patch_size": patch_size,
-                "norm_pix_loss": norm_pix_loss,
-                "shuffle": shuffle,
-                "metadata": self.metadata,
-                "teacher": teacher,
-            }
-            self.model = model_map[model_size](**model_args)
-        else:
-            raise ValueError(
-                f"Invalid model size {model_size}. Expected one of {model_map.keys()}"
-            )
-
-    def on_train_epoch_start(self):
-        self.model.teacher.eval()
-
-    def forward(self, datacube: dict[str, torch.Tensor]):
-        return self.model(datacube)
-
-    def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(
-            self.parameters(),
-            lr=self.hparams.lr,
-            weight_decay=self.hparams.wd,
-            betas=(self.hparams.b1, self.hparams.b2),
-        )
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer, T_0=1000, T_mult=2, eta_min=self.hparams.lr * 100, last_epoch=-1
-        )
-
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                "interval": "step",
-            },
-        }
-
-    def shared_step(self, batch: dict[str, torch.Tensor], batch_idx: int, phase: str):
-        datacube = batch
-        loss, reconstruction_loss, representation_loss = self(datacube)
-        self.log(
-            name=f"{phase}/loss",
-            value=loss,
-            on_step=True,
-            on_epoch=True,
-            prog_bar=True,
-            logger=True,
-            sync_dist=True,
-        )
-        self.log(
-            name=f"{phase}/rec_loss",
-            value=reconstruction_loss,
-            on_step=True,
-            on_epoch=True,
-            prog_bar=True,
-            logger=True,
-            sync_dist=True,
-        )
-        self.log(
-            name=f"{phase}/rep_loss",
-            value=representation_loss,
-            on_step=True,
-            on_epoch=True,
-            prog_bar=True,
-            logger=True,
-            sync_dist=True,
-        )
-        return loss
-
-    def training_step(self, batch: dict[str, torch.Tensor], batch_idx: int):
-        return self.shared_step(batch, batch_idx, phase="train")
-
-    def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int):
-        return self.shared_step(batch, batch_idx, phase="val")

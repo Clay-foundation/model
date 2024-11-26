@@ -1,0 +1,61 @@
+Region: us-east-2
+
+# DL AMI
+Image:
+  Os: ubuntu2004
+  CustomAmi: <ami-id>
+
+# FSx LUSTRE SHARED STORAGE
+SharedStorage:
+  - MountDir: /fsx
+    Name: fsx
+    StorageType: FsxLustre
+    FsxLustreSettings:
+      FileSystemId: <fsx-id>
+
+# HEAD NODE
+HeadNode:
+  InstanceType: c5.12xlarge
+  Networking:
+    SubnetId: <subnet-public-id>
+    SecurityGroups:
+    - <sg-id>  # EFA enabled SG
+  Ssh:
+    KeyName: <ssh-key>
+  LocalStorage:
+    RootVolume:
+      Size: 200
+  Iam:
+    S3Access:
+      - BucketName: <read-data-mount>
+        EnableWriteAccess: false
+      - BucketName: <write-data-mount>
+        EnableWriteAccess: true
+
+
+# SCHEDULER
+Scheduling:
+  Scheduler: slurm
+  SlurmQueues:
+  - Name: gpu-queue
+    ComputeResources:
+    - Name: <g-series or p-series>
+      Instances:
+      - InstanceType: <type>
+      MinCount: 0
+      MaxCount: 8
+      Efa:
+        Enabled: true
+    Networking:
+      SubnetIds:
+      - <subnet-private-id>
+      SecurityGroups:
+      - <sg-id>  # EFA enabled SG
+      PlacementGroup:
+        Enabled: true
+    Iam:
+      S3Access:
+        - BucketName: <read-data-mount>
+          EnableWriteAccess: false
+        - BucketName: <write-data-mount>
+          EnableWriteAccess: true

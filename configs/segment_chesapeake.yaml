@@ -6,17 +6,12 @@ data:
   val_chip_dir: data/cvpr/ny/val/chips/
   val_label_dir: data/cvpr/ny/val/labels/
   metadata_path: configs/metadata.yaml
-  batch_size: 40
+  batch_size: 16
   num_workers: 8
   platform: naip
 model:
   num_classes: 7
-  feature_maps:
-    - 3
-    - 5
-    - 7
-    - 11
-  ckpt_path: checkpoints/clay-v1-base.ckpt
+  ckpt_path: checkpoints/clay_v1.5.ckpt
   lr: 1e-5
   wd: 0.05
   b1: 0.9
@@ -28,7 +23,7 @@ trainer:
   num_nodes: 1
   precision: bf16-mixed
   log_every_n_steps: 5
-  max_epochs: 10
+  max_epochs: 100
   accumulate_grad_batches: 1
   default_root_dir: checkpoints/segment
   fast_dev_run: False
@@ -38,6 +33,7 @@ trainer:
       init_args:
         entity: developmentseed
         project: clay-segment
+        group: v1.5-test
         log_model: false
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint

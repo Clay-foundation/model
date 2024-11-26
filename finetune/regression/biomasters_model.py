@@ -42,13 +42,11 @@ class BioMastersClassifier(L.LightningModule):
         b2 (float): Beta2 parameter for the Adam optimizer.
     """
 
-    def __init__(self, ckpt_path, feature_maps, lr, wd, b1, b2):  # noqa: PLR0913
+    def __init__(self, ckpt_path, lr, wd, b1, b2):  # noqa: PLR0913
         super().__init__()
         self.save_hyperparameters()
         # self.model = Classifier(num_classes=1, ckpt_path=ckpt_path)
-        self.model = Regressor(
-            num_classes=1, feature_maps=feature_maps, ckpt_path=ckpt_path
-        )
+        self.model = Regressor(num_classes=1, ckpt_path=ckpt_path)
         self.loss_fn = NoNaNRMSE()
         self.score_fn = MeanSquaredError()
 
@@ -110,7 +108,7 @@ class BioMastersClassifier(L.LightningModule):
             weight_decay=self.hparams.wd,
             betas=(self.hparams.b1, self.hparams.b2),
         )
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.5)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {

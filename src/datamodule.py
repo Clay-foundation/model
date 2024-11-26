@@ -3,6 +3,8 @@ LightningDataModule to load Earth Observation data from GeoTIFF files using
 rasterio.
 """
 
+import math
+import random
 from collections import defaultdict
 from pathlib import Path
 from typing import List, Literal
@@ -10,7 +12,8 @@ from typing import List, Literal
 import lightning as L
 import numpy as np
 import torch
-import torchdata
+
+# import torchdata
 import yaml
 from box import Box
 from einops import rearrange
@@ -42,7 +45,7 @@ class EODataset(Dataset):
             [
                 v2.RandomHorizontalFlip(p=0.5),
                 v2.RandomVerticalFlip(p=0.5),
-                v2.RandomCrop(size=(self.size, self.size)),
+                # v2.RandomCrop(size=(self.size, self.size)),
                 v2.Normalize(mean=mean, std=std),
             ]
         )
@@ -53,20 +56,38 @@ class EODataset(Dataset):
     def __getitem__(self, idx):
         chip_path = self.chips_path[idx]
         with np.load(chip_path, allow_pickle=False) as chip:
-            pixels = torch.from_numpy(chip["pixels"].astype(np.float32))
             platform = chip_path.parent.name
+            if platform == "sentinel-1-rtc":
+                pixels = chip["pixels"].astype(np.float32)
+                pixels[pixels <= 0] = (
+                    1e-10  # replace corrupted pixels in sentinel-1-rtc with small value
+                )
+                pixels = 10 * np.log10(
+                    pixels
+                )  # convert to dB scale, more interpretable pixels
+            else:
+                pixels = chip["pixels"].astype(np.float32)
+
+            pixels = torch.from_numpy(pixels)
             pixels = self.transforms[platform](pixels)
+
+            time_tensor = torch.tensor(
+                np.hstack((chip["week_norm"], chip["hour_norm"]), dtype=np.float32)
+            )
+            latlon_tensor = torch.tensor(
+                np.hstack((chip["lat_norm"], chip["lon_norm"]), dtype=np.float32)
+            )
+
+            # Randomly set time & latlon to zero for 20% of the chips
+            if random.random() < 0.2:  # noqa: PLR2004
+                time_tensor.zero_()
+                latlon_tensor.zero_()
 
             # Prepare additional information
             additional_info = {
                 "platform": platform,
-                "time": torch.tensor(
-                    np.hstack((chip["week_norm"], chip["hour_norm"])),
-                    dtype=torch.float32,
-                ),
-                "latlon": torch.tensor(
-                    np.hstack((chip["lat_norm"], chip["lon_norm"])), dtype=torch.float32
-                ),
+                "time": time_tensor,
+                "latlon": latlon_tensor,
             }
 
         return {"pixels": pixels, **additional_info}
@@ -106,6 +127,77 @@ class ClaySampler(Sampler):
         return len(self.dataset.chips_path) // self.batch_size
 
 
+class ClayDistributedSampler(Sampler):
+    def __init__(  # noqa: PLR0913
+        self,
+        dataset,
+        platforms,
+        batch_size,
+        num_replicas=None,
+        rank=None,
+        shuffle=True,
+    ):
+        self.dataset = dataset
+        self.platforms = platforms
+        self.batch_size = batch_size
+        self.num_replicas = (
+            num_replicas
+            if num_replicas is not None
+            else torch.distributed.get_world_size()
+        )
+        self.rank = rank if rank is not None else torch.distributed.get_rank()
+        self.shuffle = shuffle
+        self.epoch = 0
+
+        self.platform_indices = {platform: [] for platform in platforms}
+        for idx, chip_path in enumerate(self.dataset.chips_path):
+            platform = chip_path.parent.name
+            self.platform_indices[platform].append(idx)
+
+        self.max_len = max(len(indices) for indices in self.platform_indices.values())
+        self.adjusted_indices = {}
+        # Normalize the length of indices for each platform by replicating the indices
+        # to match the max_len
+        for platform, indices in self.platform_indices.items():
+            if len(indices) < self.max_len:
+                extended_indices = np.tile(indices, (self.max_len // len(indices) + 1))[
+                    : self.max_len
+                ]
+                self.adjusted_indices[platform] = extended_indices
+            else:
+                self.adjusted_indices[platform] = indices
+
+        self.num_samples = math.ceil(
+            ((self.max_len * len(self.platforms)) - self.num_replicas)
+            / self.num_replicas
+        )
+        self.total_size = self.num_samples * self.num_replicas
+        self.num_samples_per_platform = self.max_len // self.num_replicas
+
+    def __iter__(self):
+        rng = np.random.default_rng(self.epoch)
+        platform_batches = {}
+        for platform, indices in self.adjusted_indices.items():
+            if self.shuffle:
+                rng.shuffle(indices)
+            # Distribute the indices to each process
+            start_idx = self.rank * self.num_samples_per_platform
+            end_idx = start_idx + self.num_samples_per_platform
+            platform_batches[platform] = indices[start_idx:end_idx]
+
+        for i in range(0, self.num_samples_per_platform, self.batch_size):
+            for platform in self.platforms:
+                batch = platform_batches[platform][i : i + self.batch_size]
+                if len(batch) == self.batch_size:
+                    yield batch
+
+    def __len__(self) -> int:
+        return self.num_samples
+
+    def set_epoch(self, epoch: int) -> None:
+        self.epoch = epoch
+
+
 def batch_collate(batch):
     """Collate function for DataLoader.
 
@@ -135,12 +227,14 @@ class ClayDataModule(L.LightningDataModule):
             "landsat-c2l1",
             "landsat-c2l2-sr",
             "linz",
+            "modis",
             "naip",
             "sentinel-1-rtc",
             "sentinel-2-l2a",
         ],
         batch_size: int = 10,
         num_workers: int = 8,
+        prefetch_factor: int = 2,
     ):
         super().__init__()
         self.data_dir = data_dir
@@ -149,17 +243,18 @@ class ClayDataModule(L.LightningDataModule):
         self.metadata = Box(yaml.safe_load(open(metadata_path)))
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.prefetch_factor = prefetch_factor
         self.split_ratio = 0.8
 
     def setup(self, stage: Literal["fit", "predict"] | None = None) -> None:
         # Get list of GeoTIFF filepaths from s3 bucket or data/ folder
-        if self.data_dir.startswith("s3://"):
-            dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_dir])
-            chips_path = list(dp.list_files_by_s3(masks="*.npz"))
-        else:  # if self.data_dir is a local data path
-            chips_path = sorted(list(Path(self.data_dir).glob("**/*.npz")))
-            chips_platform = [chip.parent.parent.name for chip in chips_path]
-            # chips_platform = [chip.parent.parent.name for chip in chips_path]
+        # if self.data_dir.startswith("s3://"):
+        #     dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_dir])
+        #     chips_path = list(dp.list_files_by_s3(masks="*.npz"))
+        # else:  # if self.data_dir is a local data path
+        chips_path = sorted(list(Path(self.data_dir).glob("**/*.npz")))
+        chips_platform = [chip.parent.name for chip in chips_path]
+        # chips_platform = [chip.parent.parent.name for chip in chips_path]
         print(f"Total number of chips: {len(chips_path)}")
 
         if stage == "fit":
@@ -176,7 +271,7 @@ class ClayDataModule(L.LightningDataModule):
                 platforms=self.platforms,
                 metadata=self.metadata,
             )
-            self.trn_sampler = ClaySampler(
+            self.trn_sampler = ClayDistributedSampler(
                 dataset=self.trn_ds,
                 platforms=self.platforms,
                 batch_size=self.batch_size,
@@ -187,7 +282,7 @@ class ClayDataModule(L.LightningDataModule):
                 platforms=self.platforms,
                 metadata=self.metadata,
             )
-            self.val_sampler = ClaySampler(
+            self.val_sampler = ClayDistributedSampler(
                 dataset=self.val_ds,
                 platforms=self.platforms,
                 batch_size=self.batch_size,
@@ -207,7 +302,7 @@ class ClayDataModule(L.LightningDataModule):
             batch_sampler=self.trn_sampler,
             collate_fn=batch_collate,
             pin_memory=True,
-            prefetch_factor=4,
+            prefetch_factor=self.prefetch_factor,
         )
 
     def val_dataloader(self):
@@ -217,7 +312,7 @@ class ClayDataModule(L.LightningDataModule):
             batch_sampler=self.val_sampler,
             collate_fn=batch_collate,
             pin_memory=True,
-            prefetch_factor=4,
+            prefetch_factor=self.prefetch_factor,
         )
 
     def predict_dataloader(self):

@@ -219,11 +219,50 @@ sentinel-1-rtc:
   gsd: 10
   bands:
     mean:
-      vv: 0.123273
-      vh: 0.027337
+      vv: -12.113
+      vh: -18.673
     std:
-      vv: 1.492154
-      vh: 0.122182
+      vv: 8.314
+      vh: 8.017
     wavelength:
       vv: 3.5
       vh: 4.0
+modis:
+  band_order:
+    - sur_refl_b01
+    - sur_refl_b02
+    - sur_refl_b03
+    - sur_refl_b04
+    - sur_refl_b05
+    - sur_refl_b06
+    - sur_refl_b07
+  rgb_indices:
+    - 0
+    - 3
+    - 2
+  gsd: 500
+  bands:
+    mean:
+      sur_refl_b01: 1072.
+      sur_refl_b02: 1624.
+      sur_refl_b03: 931.
+      sur_refl_b04: 1023.
+      sur_refl_b05: 1599.
+      sur_refl_b06: 1404.
+      sur_refl_b07: 1051.
+    std:
+      sur_refl_b01: 1643.
+      sur_refl_b02: 1878.
+      sur_refl_b03: 1449.
+      sur_refl_b04: 1538.
+      sur_refl_b05: 1763.
+      sur_refl_b06: 1618.
+      sur_refl_b07: 1396.
+    wavelength:
+      sur_refl_b01: .645
+      sur_refl_b02: .858
+      sur_refl_b03: .469
+      sur_refl_b04: .555
+      sur_refl_b05: 1.240
+      sur_refl_b06: 1.640
+      sur_refl_b07: 2.130
