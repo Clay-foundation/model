@@ -36,6 +36,8 @@ RUN pip install \
   wandb==0.17.5 \
   rio_stac~=0.10.0
 
+RUN git pull && git checkout ceecb6138705cb28a5f4d3f61f22b19a2f625edb
+
 # Move file to home directory so that relative imports work
 RUN cp embeddings/all-naip.py .
 RUN cp embeddings/all-sentinel.py .

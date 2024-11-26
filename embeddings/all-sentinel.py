@@ -124,7 +124,7 @@ def process_scene(clay, path, batchsize):
     kwargs = dict(
         bboxs=all_bboxs,
         datestr=str(item.datetime.date()),
-        gsd=gsd,
+        gsd=GSD,
         destination_bucket=EMBEDDINGS_BUCKET,
         path=path,
         source_bucket="sentinel-cogs",
