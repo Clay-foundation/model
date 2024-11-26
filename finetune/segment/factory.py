@@ -158,7 +158,7 @@ class Segmentor(nn.Module):
         for param in self.encoder.parameters():
             param.requires_grad = False
 
-         # Define layers after the encoder
+        # Define layers after the encoder
         D = self.encoder.dim  # embedding dimension
         hidden_dim = 512
         C_out = 64
