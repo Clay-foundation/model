@@ -8,9 +8,9 @@ How to use:
 ```bash
 python -m finetune.embedder.factory \
     --img_size 256 \
-    --ckpt_path checkpoints/clay-v1-base.ckpt \
+    --ckpt_path checkpoints/clay_v1.5.ckpt \
     --device cuda \
-    --name clay-v1-encoder.onnx \
+    --name clay-v1.5-encoder.onnx \
     --onnx
 # exports Clay encoder to ONNX format that can handle chips of size 256x256
 # for different sensors like Sentinel-2, Landsat-8, NAIP, LINZ & Sentinel 1.
@@ -19,9 +19,9 @@ python -m finetune.embedder.factory \
 ```bash
 python -m finetune.embedder.factory \
     --img_size 224 \
-    --ckpt_path checkpoints/clay-v1-base.ckpt \
+    --ckpt_path checkpoints/clay_v1.5.ckpt \
     --device cuda \
-    --name clay-v1-encoder.pt2 \
+    --name clay-v1.5-encoder.pt2 \
     --ep
 # exports Clay encoder to pytorch ExportedProgram format that can handle chips
 # of size 224x224 for different sensors like Sentinel-2, Landsat-8, NAIP, LINZ
@@ -146,9 +146,9 @@ class Embedder(nn.Module):
             EmbeddingEncoder(  # Default parameters for the Clay base model
                 img_size=img_size,
                 patch_size=8,
-                dim=768,
-                depth=12,
-                heads=12,
+                dim=1024,
+                depth=24,
+                heads=16,
                 dim_head=64,
                 mlp_ratio=4.0,
             ).to(device)
