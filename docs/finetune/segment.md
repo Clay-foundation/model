@@ -88,7 +88,7 @@ data/
 
 The model can be run via LightningCLI using configurations in `finetune/segment/configs/segment_chesapeake.yaml`.
 
-1. Download the Clay model checkpoint from [Huggingface model hub](https://huggingface.co/made-with-clay/Clay/blob/main/clay-v1-base.ckpt) and save it in the `checkpoints/` directory.
+1. Download the Clay model checkpoint from [Huggingface model hub](https://huggingface.co/made-with-clay/Clay/blob/main/v1.5/clay-v1.5.ckpt) and save it in the `checkpoints/` directory.
 
 2. Modify the batch size, learning rate, and other hyperparameters in the configuration file as needed:
     ```yaml
