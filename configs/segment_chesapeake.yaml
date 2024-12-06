@@ -33,7 +33,7 @@ trainer:
       init_args:
         entity: developmentseed
         project: clay-segment
-        group: v1.5-test
+        group: v1.5
         log_model: false
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
