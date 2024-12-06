@@ -76,16 +76,16 @@ data/ds
 
 The model can be run via LightningCLI using configurations in `finetune/classify/configs/classify_eurosat.yaml`.
 
-1. Download the Clay model checkpoint from [Huggingface model hub](https://huggingface.co/made-with-clay/Clay/blob/main/clay-v1-base.ckpt) and save it in the `checkpoints/` directory.
+1. Download the Clay model checkpoint from [Huggingface model hub](https://huggingface.co/made-with-clay/Clay/resolve/main/v1.5/clay-v1.5.ckpt) and save it in the `checkpoints/` directory.
 
 2. Modify the batch size, learning rate, and other hyperparameters in the configuration file as needed:
     ```yaml
     data:
-      batch_size: 256
+      batch_size: 128
       num_workers: 8
     model:
       num_classes: 10
-      ckpt_path: checkpoints/clay-v1-base.pt
+      ckpt_path: checkpoints/clay-v1.5.ckpt
       lr: 1e-4
       wd: 0.05
       b1: 0.9
@@ -99,6 +99,7 @@ The model can be run via LightningCLI using configurations in `finetune/classify
         init_args:
           entity: <wandb-entity>
           project: <wandb-project>
+          group: <wandb-group>
           log_model: false
     ```
 

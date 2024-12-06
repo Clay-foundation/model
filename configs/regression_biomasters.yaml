@@ -9,7 +9,7 @@ data:
   val_chip_dir: data/biomasters/test_cube
   val_label_dir: data/biomasters/test_agbm
 model:
-  ckpt_path: checkpoints/clay_v1.5.ckpt
+  ckpt_path: checkpoints/clay-v1.5.ckpt
   lr: 1e-2
   wd: 0.05
   b1: 0.9

@@ -1,7 +1,7 @@
 # Segmentation head fine tuning
 
 We have built an example for training a segmentation head on top of
-feature maps extracted from the frozen Clay encoder.
+feature map extracted from the frozen Clay encoder.
 
 All the code for this example can be found in the
 [segment finetuning folder](https://github.com/Clay-foundation/model/blob/main/finetune/segment)
@@ -9,18 +9,11 @@ of this repository.
 
 ## Segmentor
 
-The `Segmentor` class is designed for semantic segmentation tasks, extracting feature maps from intermediate layers of the Clay Encoder and adding a Feature Pyramid Network (FPN) on top of it.
-
-The decoder in this example is inspired by the Segformer paper.
-
-A possible future improvement will be to add a neck & head for segmentation
-task from other papers like UperNet, PPANet, etc. to compare with other
-GeoAI models.
-
+The `Segmentor` class extracts the final feature map from the frozen Clay encoder. It then upsamples the feature map to the original image size using a series of convolution & pixel shuffle operations.
 
 ### Parameters
 
-- `feature_maps (list)`: Indices of intermediate layers of the Clay Encoder used by FPN layers.
+- `num_classes (int)`: Number of classes to segment.
 - `ckpt_path (str)`: Path to the Clay model checkpoint.
 
 ### Example
@@ -63,9 +56,9 @@ Download the Chesapeake Bay Land Cover dataset and organize your dataset directo
    s5cmd --no-sign-request cp --include "*_lc.tif" --include "*_naip-new.tif" "s3://us-west-2.opendata.source.coop/agentmorris/lila-wildlife/lcmcvpr2019/cvpr_chesapeake_landcover/ny_1m_2013_extended-debuffered-val_tiles/*" data/cvpr/files/val/
    ```
 
-2. Create chips of size `224 x 224` to feed them to the model:
+2. Create chips of size `256 x 256` to feed them to the model:
     ```bash
-    python finetune/segment/preprocess_data.py data/cvpr/files data/cvpr/ny 224
+    python finetune/segment/preprocess_data.py data/cvpr/files data/cvpr/ny 256
     ```
 
 Directory structure:
@@ -93,16 +86,11 @@ The model can be run via LightningCLI using configurations in `finetune/segment/
 2. Modify the batch size, learning rate, and other hyperparameters in the configuration file as needed:
     ```yaml
     data:
-      batch_size: 40
+      batch_size: 16
       num_workers: 8
     model:
       num_classes: 7
-      feature_maps:
-        - 3
-        - 5
-        - 7
-        - 11
-      ckpt_path: checkpoints/clay-v1-base.ckpt
+      ckpt_path: checkpoints/clay-v1.5.ckpt
       lr: 1e-5
       wd: 0.05
       b1: 0.9
@@ -116,6 +104,7 @@ The model can be run via LightningCLI using configurations in `finetune/segment/
         init_args:
           entity: <wandb-entity>
           project: <wandb-project>
+          group: <wandb-group>
           log_model: false
     ```
 
@@ -126,12 +115,4 @@ the repository is in the python path before running the script.
 
 ```bash
 python -m finetune.segment.segment fit --config configs/segment_chesapeake.yaml
-```
-
-## Acknowledgments
-
-Decoder implementation is inspired by the Segformer paper:
-```
-Segformer: Simple and Efficient Design for Semantic Segmentation with Transformers
-Paper URL: https://arxiv.org/abs/2105.15203
 ```
