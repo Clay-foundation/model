@@ -11,8 +11,8 @@ only_build_toc_files: true
 execute:
   execute_notebooks: cache
   exclude_patterns:
-    - clay-v1-wall-to-wall.ipynb
-    - visualize-embeddings.ipynb
+    - wall-to-wall.ipynb
+    - embeddings.ipynb
     - reconstruction.ipynb
 
 # Define the name of the latex output file for PDF builds

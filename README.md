@@ -2,7 +2,6 @@
 
 [![Jupyter Book Badge](https://jupyterbook.org/badge.svg)](https://clay-foundation.github.io/model)
 [![Deploy Book Status](https://github.com/Clay-foundation/model/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/Clay-foundation/model/actions/workflows/deploy-docs.yml)
-[![Continuous Integration Tests Status](https://github.com/Clay-foundation/model/actions/workflows/test.yml/badge.svg)](https://github.com/Clay-foundation/model/actions/workflows/test.yml)
 
 An open source AI model and interface for Earth.
 
@@ -30,9 +29,7 @@ to install the dependencies. A virtual environment will also be created with Pyt
     mamba env create --file environment.yml
 
 > [!NOTE]
-> The command above will only work for Linux devices with CUDA GPUs. For installation
-> on macOS devices (either Intel or ARM chips), follow the 'Advanced' section in
-> https://clay-foundation.github.io/model/getting-started/installation.html#advanced
+> The command above has been tested on Linux devices with CUDA GPUs.
 
 Activate the virtual environment first.
 

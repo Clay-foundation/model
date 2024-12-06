@@ -1,42 +1,23 @@
 name: claymodel
 channels:
   - conda-forge
-  - nodefaults
+  - nvidia
+  - pytorch
 dependencies:
-  - conda-lock~=2.5.6
-  - einops~=0.7.0
-  - fiona~=1.9.5
-  - geopandas-base~=0.14.1
-  - jsonargparse~=4.27.0
-  - lightning~=2.1.0
-  - matplotlib-base~=3.8.2
-  - planetary-computer~=1.0.0
-  - python-box~=7.1.0
-  - pytorch~=2.3.1  # [osx]
-  - pytorch~=2.3.1 *cuda12*  # [linux]
-  - python~=3.11.0
-  - pyarrow~=16.1.0
-  - rasterio~=1.3.10
-  - s3fs~=2024.3.1
-  - scikit-image~=0.22.0
-  - scikit-learn~=1.4.0
-  - stackstac~=0.5.0
-  - timm~=0.9.16
-  - torchvision~=0.18.1
-  - transformers~=4.35.2
-  - typeshed-client~=2.4.0
-  - vit-pytorch~=1.6.4
-  - zarr~=2.16.1
+  - python=3.11
+  - pip
   - pip:
-    - geoarrow-pyarrow==0.1.2
-    - jupyter-book==1.0.2
-    - jupyterlab==4.2.4
-    - onnx==1.16.1
-    - onnxscript
-    - onnxruntime
-    - torchdata==0.7.1
-    - torchgeo==0.5.2
-    - stacchip==0.1.35
-    - wandb==0.17.5
-platforms:
-  - linux-64
+    - --extra-index-url https://download.pytorch.org/whl/cu121
+    - torch==2.4.0+cu121
+    - torchvision==0.19.0+cu121
+    - einops~=0.7.0
+    - geopandas
+    - jsonargparse[signatures]>=4.27.7
+    - lightning
+    - matplotlib
+    - python-box
+    - scikit-image
+    - scikit-learn
+    - timm
+    - vit-pytorch
+    - wandb

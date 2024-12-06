@@ -27,8 +27,7 @@ included in the training for Clay v1
 | Sentinel 2 L2A | Global | 10 optical bands | 10 |
 | Sentinel 1 RTC | Global | 2 radar bands | 10 |
 | NAIP | USA | 4 optical bands | < 1 |
-| LINZ | New Zealand | 3 optical bands | < 0.5 |
-
+| MODIS | Global | 7 bands | 250 |
 
 ## Sampling strategy
 
@@ -112,6 +111,67 @@ and a maximum of 2000 scenes for each catalog that was included.
 We selected the latest imagery for each of the available regions
 of new zealand. The list of catalogs is in the linz processor file.
 
+### MODIS sampling strategy
+
+For MODIS we used the [Surface Reflectance 8-Day (500m)](https://planetarycomputer.microsoft.com/dataset/modis-09A1-061)
+product. The data is distributed in SIN grid tiles. We included all SIN grid
+tiles that do not have any nodata inside. The selected SIN grid tiles are then
+transform to EPSG:3857 for all tiles. This results in some variation between the
+nominal resolution, although the original resolution from the SIN projection is
+500 meters. For input to the model, we assumed the 500m resolution as a fixed
+resolution size for all tiles.
+
+Algorithm to determine which tiles do not have nodata is shown in the code block
+below. This resulted in 233 SIN grid tiles to be selected. For each of these
+we sampled the first STAC search result for each month in each year from 2018
+until 2023. This therefore resulted in 72 (`6 years * 12 months`) separate scenes
+for each of the 233 SIN grid tiles.
+
+Script for selection of SIN grid tiles included in the sampling:
+
+```python
+from multiprocessing import Pool
+import rasterio
+import planetary_computer as pc
+import pystac_client
+import numpy as np
+
+SIN_GRID_TILES = []
+for i in SIN_VERTICAL_RANGE:
+    for j in SIN_HORIZONTAL_RANGE:
+        SIN_GRID_TILES.append((i, j))
+
+def evaluate_nodata(i, j):
+    catalog = pystac_client.Client.open(STAC_API, modifier=pc.sign_inplace)
+    items = catalog.search(
+        collections=[COLLECTION],
+        query={
+            "modis:vertical-tile": {
+                "eq": i,
+            },
+            "modis:horizontal-tile": {
+                "eq": j,
+            },
+        },
+        max_items=1,
+    )
+    item = list(items.item_collection())[0]
+
+    with rasterio.open(item.assets["sur_refl_b01"].href) as src:
+        data = src.read()
+
+    nodata = np.sum(data == -28672)
+
+    if nodata == 0:
+        print(i, j)
+        return i, j
+
+if __name__ == '__main__':
+    with Pool(16) as p:
+        indexes = p.starmap(evaluate_nodata, SIN_GRID_TILES)
+    print("done")
+    print(indexes)
+```
 
 ## Data preparation
 
@@ -130,12 +190,13 @@ Using stacchip, we created a dataset with a size of 33.8 TB of imagery, with abo
 
 | Source | Number of chips |
 | ------ | --------------- |
-| NAIP           | 20984171 |
-| LINZ            | 3299006 |
-| Sentinel-2-l2a | 18683945 |
-| Landsat-c2l1    | 5827333 |
-| Landsat-c2l2-sr | 5790651 |
-| Sentinel-1-rtc | 16133394 |
+| NAIP           | 20,984,171 |
+| LINZ            | 3,299,006 |
+| Sentinel-2-l2a | 18,683,945 |
+| Landsat-c2l1    | 5,827,333 |
+| Landsat-c2l2-sr | 5,790,651 |
+| Sentinel-1-rtc | 16,133,394 |
+| MODIS | 1350864|
 
 # Older versions
 
