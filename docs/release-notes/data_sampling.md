@@ -27,7 +27,7 @@ included in the training for Clay v1
 | Sentinel 2 L2A | Global | 10 optical bands | 10 |
 | Sentinel 1 RTC | Global | 2 radar bands | 10 |
 | NAIP | USA | 4 optical bands | < 1 |
-| MODIS | Global | 7 bands | 250 |
+| MODIS | Global | 7 bands | 500 |
 
 ## Sampling strategy
 
