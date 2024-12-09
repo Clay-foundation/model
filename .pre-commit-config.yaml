@@ -6,7 +6,7 @@ repos:
   hooks:
     - id: check-added-large-files
       args: [ '--maxkb=512', '--enforce-all' ]
-      exclude: conda-lock.yml
+      exclude: '^docs/tutorials/.*\.ipynb$'
     - id: check-yaml
     - id: end-of-file-fixer
     - id: trailing-whitespace
