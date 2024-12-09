@@ -9,7 +9,7 @@ data:
   val_chip_dir: data/biomasters/test_cube
   val_label_dir: data/biomasters/test_agbm
 model:
-  ckpt_path: checkpoints/clay_v1.5.ckpt
+  ckpt_path: checkpoints/clay-v1.5.ckpt
   lr: 1e-2
   wd: 0.05
   b1: 0.9
@@ -25,8 +25,8 @@ trainer:
   default_root_dir: checkpoints/regression
   fast_dev_run: False
   num_sanity_val_steps: 0
-  # limit_train_batches: 0.25
-  # limit_val_batches: 0.25
+  limit_train_batches: 0.25
+  limit_val_batches: 0.25
   accumulate_grad_batches: 1
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
@@ -34,7 +34,7 @@ trainer:
         entity: developmentseed
         project: clay-regression
         log_model: false
-        group: v1.5-test
+        group: v1.5
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
       init_args:

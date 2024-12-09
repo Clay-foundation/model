@@ -16,6 +16,7 @@ select = [
 
 [lint.per-file-ignores]
 "docs/clay_over_aoi.ipynb" = ["E501"]
+"finetune/embedder/how-to-embed.ipynb" = ["E501", "PLR2004"]
 "scripts/worldcover/worldcover_vrt.py" = ["E501"]
 
 [lint.pylint]

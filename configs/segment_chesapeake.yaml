@@ -11,7 +11,7 @@ data:
   platform: naip
 model:
   num_classes: 7
-  ckpt_path: checkpoints/clay_v1.5.ckpt
+  ckpt_path: checkpoints/clay-v1.5.ckpt
   lr: 1e-5
   wd: 0.05
   b1: 0.9
@@ -33,7 +33,7 @@ trainer:
       init_args:
         entity: developmentseed
         project: clay-segment
-        group: v1.5-test
+        group: v1.5
         log_model: false
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint

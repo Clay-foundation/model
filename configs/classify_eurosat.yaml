@@ -6,7 +6,7 @@ data:
   num_workers: 8
 model:
   num_classes: 10
-  ckpt_path: checkpoints/v1.5.0-no-mrl-dinov2/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt
+  ckpt_path: checkpoints/clay-v1.5.ckpt
   lr: 5e-5
   wd: 0.05
   b1: 0.9

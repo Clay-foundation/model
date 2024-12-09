@@ -23,7 +23,7 @@ class RegressionEncoder(Encoder):
         ckpt_path (str): Path to the clay checkpoint file.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         mask_ratio,
         patch_size,
