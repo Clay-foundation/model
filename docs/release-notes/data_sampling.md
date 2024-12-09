@@ -191,6 +191,7 @@ Using stacchip, we created a dataset with a size of 33.8 TB of imagery, with abo
 
 | Source | Number of chips |
 | ------ | --------------- |
+<<<<<<< HEAD
 | NAIP           | 20,984,171 |
 | LINZ            | 3,299,006 |
 | Sentinel-2-l2a | 18,683,945 |
@@ -198,6 +199,15 @@ Using stacchip, we created a dataset with a size of 33.8 TB of imagery, with abo
 | Landsat-c2l2-sr | 5,790,651 |
 | Sentinel-1-rtc | 16,133,394 |
 | MODIS | 1350864|
+=======
+| NAIP           | 20984171 |
+| LINZ            | 3299006 |
+| Sentinel-2-l2a | 18683945 |
+| Landsat-c2l1    | 5827333 |
+| Landsat-c2l2-sr | 5790651 |
+| Sentinel-1-rtc | 16133394 |
+| MODIS          |  1350864 |
+>>>>>>> main
 
 # Older versions
 
