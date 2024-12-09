@@ -27,7 +27,6 @@ class ClayMAEModule(L.LightningModule):
         embeddings_level: Literal["mean", "patch", "group"] = "mean",
     ):
         super().__init__()
-        # self.strict_loading = False # Allow partial loading to check if MRL was the bug
         self.save_hyperparameters(logger=True)
         self.metadata = Box(yaml.safe_load(open(metadata_path)))
         model_map = {
@@ -64,10 +63,12 @@ class ClayMAEModule(L.LightningModule):
             #         new_state_dict[k] = v
             # with torch.no_grad():
             #     # Load the modified state dictionary into your model
-            #     missing_keys, unexpected_keys = self.model.load_state_dict(new_state_dict, strict=False)
-            # # Optionally, print missing and unexpected keys
-            # print(f"Missing keys: {missing_keys}")
-            # print(f"Unexpected keys: {unexpected_keys}")
+            #     missing_keys, unexpected_keys = (
+            #         self.model.load_state_dict(new_state_dict, strict=False)
+            #     )
+            #     # Optionally, print missing and unexpected keys
+            #     print(f"Missing keys: {missing_keys}")
+            #     print(f"Unexpected keys: {unexpected_keys}")
         else:
             raise ValueError(
                 f"Invalid model size {model_size}. Expected one of {model_map.keys()}"
