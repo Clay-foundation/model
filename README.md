@@ -92,3 +92,52 @@ python -m http.server --directory _build/html
 ```
 
 There is a GitHub Action on `./github/workflows/deploy-docs.yml` that builds the site and pushes it to GitHub Pages.
+
+## Docker
+
+In order to avoid installing dependencies directly onto the machine, a Dockerized version of the Clay model has been provided. To run it using [docker compose](https://docs.docker.com/compose/) run the following command from the repo root:
+```bash
+docker-compose up # using the --build flag to force a rebuild, if necessary
+```
+
+Alternatively, you can build and run the Docker image using docker directly with:
+```bash
+docker build . -t claymodel --platform linux/amd64 # build image
+docker run --rm -it -v $(pwd):/model -p 8888:8888 -e ENV_NAME=claymodel --platform linux/amd64 claymodel:latest # run container
+```
+
+In both cases, the default command will be run, which instantiates a [jupyter-lab](https://jupyterlab.readthedocs.io/en/stable/getting_started/starting.html) instance, from which the documentation notebooks can be run. The jupyter notebook will be accssible on the exposed port (`8888`).
+### Note: accessing the jupyter-lab instance in the browser requires an authentication token that can be found in the container logs. Look for the following lines:
+```bash
+model-claymodel-1  |
+model-claymodel-1  |     To access the server, open this file in a browser:
+model-claymodel-1  |         file:///home/mambauser/.local/share/jupyter/runtime/jpserver-1-open.html
+model-claymodel-1  |     Or copy and paste one of these URLs:
+model-claymodel-1  |         http://3a2045c995b0:8888/lab?token=587bc427e6a84b14bae0f4783567e792cfb3b95e6131f569
+model-claymodel-1  |         http://127.0.0.1:8888/lab?token=587bc427e6a84b14bae0f4783567e792cfb3b95e6131f569
+```
+
+Additionally the project root will be mounted as volume to the running container so any modifications made to the code base locally will be immediately reflected within the docker container.
+
+### Custom commands:
+
+This default command can be overridden with a custom command:
+```bash
+docker-compose run claymodel {custom command}
+```
+or using docker directly:
+```bash
+docker run --rm -it -v $(pwd):/model -p 8888:8888 -e ENV_NAME=claymodel --platform linux/amd64 claymodel:latest {custom command}
+```
+
+For example, the `bash` command can be used to access an interactive bash session within the running docker container, with the `micromamba` environment already activated:
+```bash
+# with docker-compose
+docker-compose run claymodel bash
+(claymodel) mambauser@f04261284e87:/model$
+```
+```bash
+# with straight docker
+docker run --rm -it -v $(pwd):/model -p 8888:8888 -e ENV_NAME=claymodel --platform linux/amd64 claymodel:latest bash
+(claymodel) mambauser@f04261284e87:/model$
+```
