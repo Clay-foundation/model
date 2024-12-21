@@ -201,7 +201,7 @@ def write_to_table(  # noqa: PLR0913
         index,
         metadata={
             "date": datestr,
-            "gsd": str(gsd[0]),
+            "gsd": str(gsd),
             "uri": f"s3://{source_bucket}/{path}",
         },
     )
