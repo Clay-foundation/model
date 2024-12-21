@@ -30,6 +30,19 @@ aws ecr get-login-password --region us-east-2 | docker login --username AWS --pa
 docker pull 763104351884.dkr.ecr.us-east-2.amazonaws.com/pytorch-inference:2.3.0-gpu-py311-cu121-ubuntu20.04-ec2
 
 docker build -t clay-embeddings -f embeddings/Dockerfile  .
+```
+
+Before uploading to ECR, you can test the docker image locally with the following command. This command also includes limiting the execution to the same number of of CPUs and memory as the AWS Batch job, included AWS credentials (that are automatically available when using AWS Batch) and passes the AWS_BATCH_JOB_ARRAY_INDEX environment variable that will be used to select the slot in the queue to process.
+
+```bash
+docker run \
+    -v ~/.aws:/root/.aws:ro -e AWS_PROFILE=your_profile_name \ #not needed when using AWS Batch
+    --cpus 2 --memory 15g \
+    -e EMBEDDINGS_BUCKET="clay-embeddings-sentinel-2" \
+    -e AWS_BATCH_JOB_ARRAY_INDEX=0 \
+    clay-embeddings brazil-23-24-sentinel2.py
+```
+Once this runs successfully, it should also run in AWS Batch.
 
 docker tag clay-embeddings:latest 875815656045.dkr.ecr.us-east-2.amazonaws.com/clay-embeddings:latest
 aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 875815656045.dkr.ecr.us-east-2.amazonaws.com

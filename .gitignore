@@ -67,3 +67,4 @@ datadisk/
 
 # vscode
 .vscode
+embeddings/data/stac_manifest_brazil_sentinel_2023_2024.csv.gz

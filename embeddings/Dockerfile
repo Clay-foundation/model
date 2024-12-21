@@ -6,7 +6,7 @@ RUN git clone -b all-of-naip https://github.com/Clay-foundation/model.git .
 
 RUN aws s3 cp --no-sign-request s3://clay-model-ckpt/v1.5.0-no-mrl-dinov2/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt data/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt
 RUN aws s3 cp --no-sign-request s3://clay-mgrs-samples/naip-manifest.txt.zip data/naip-manifest.txt.zip
-RUN aws s3 cp --no-sign-request s3://clay-mgrs-samples/element84-tiles-2023.gz data/element84-tiles-2023.gz
+COPY embeddings/data/stac_manifest_brazil_sentinel_2023_2024.csv.gz data/
 
 RUN pip install \
   einops~=0.7.0 \
@@ -38,8 +38,6 @@ RUN pip install \
 
 RUN git pull && git checkout ceecb6138705cb28a5f4d3f61f22b19a2f625edb
 
-# Move file to home directory so that relative imports work
-RUN cp embeddings/all-naip.py .
-RUN cp embeddings/all-sentinel.py .
+COPY embeddings/brazil-23-24-sentinel2.py .
 
 ENTRYPOINT ["python"]

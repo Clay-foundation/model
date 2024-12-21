@@ -20,8 +20,8 @@ EMBEDDING_SHAPE_CLASS = 2
 EMBEDDING_SHAPE_PATCH = 3
 EMBEDDINGS_BUCKET = os.environ["EMBEDDINGS_BUCKET"]
 
-CLOUD_LIMIT = 0.1
-NODATA_LIMIT = 0.01
+CLOUD_LIMIT = 0.5
+NODATA_LIMIT = 0.2
 
 logger = logging.getLogger("clay")
 
@@ -113,8 +113,12 @@ def get_pixels(item, indexer, chipper, start=None, end=None):
         cloud_percentage, nodata_percentage = chipper.indexer.get_stats(x, y)
 
         if cloud_percentage > CLOUD_LIMIT:
+            print(f"Skipping chip {x}, {y} due to cloud percentage {cloud_percentage}")
             continue
         elif nodata_percentage > NODATA_LIMIT:
+            print(
+                f"Skipping chip {x}, {y} due to nodata percentage {nodata_percentage}"
+            )
             continue
 
         chip = chipper.chip(x, y)
