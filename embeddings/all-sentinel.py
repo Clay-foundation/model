@@ -25,7 +25,7 @@ logging.basicConfig()
 logger = logging.getLogger("clay")
 logger.setLevel(logging.DEBUG)
 
-SCENES_LIST = "data/element84-tiles-2023.gz"
+SCENES_LIST = "data/element84-tiles-2023-brazil.gz"
 EMBEDDINGS_BUCKET = "clay-embeddings-sentinel-2"
 GSD = 10
 S2_BUCKET = "sentinel-2-cogs"
@@ -112,7 +112,7 @@ def process_scene(clay, path, batchsize):
                 time_norm=time_norm,
                 latlon_norm=latlon_norm,
                 waves=waves,
-                gsd=gsd,
+                gsd=GSD,
                 batchsize=batchsize,
             )
             all_bboxs += bboxs
