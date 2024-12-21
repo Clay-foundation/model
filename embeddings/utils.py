@@ -89,8 +89,6 @@ def prepare_datacube(mean, std, datetimes, bboxs, pixels, gsd):
     lon_norm = [dat[1] for dat in latlons]
     latlon_norm = np.hstack((lat_norm, lon_norm))
 
-    gsd = [gsd]
-
     pixels_norm = transform(torch.tensor(pixels, dtype=torch.float32)).numpy()
 
     return time_norm, latlon_norm, gsd, pixels_norm
@@ -113,12 +111,12 @@ def get_pixels(item, indexer, chipper, start=None, end=None):
         cloud_percentage, nodata_percentage = chipper.indexer.get_stats(x, y)
 
         if cloud_percentage > CLOUD_LIMIT:
-            print(f"Skipping chip {x}, {y} due to cloud percentage {cloud_percentage}")
+            # print(f"Skipping chip {x}, {y} due cloud percentage {cloud_percentage}")
             continue
         elif nodata_percentage > NODATA_LIMIT:
-            print(
-                f"Skipping chip {x}, {y} due to nodata percentage {nodata_percentage}"
-            )
+            # print(
+            #    f"Skipping chip {x}, {y} due to nodata percentage {nodata_percentage}"
+            # )
             continue
 
         chip = chipper.chip(x, y)
@@ -189,7 +187,7 @@ def load_clay():
 
 def write_to_table(  # noqa: PLR0913
     embeddings, bboxs, datestr, gsd, destination_bucket, path, source_bucket
-):
+):  # noqa: PLR0913
     index = {"geometry": ga.as_geoarrow([dat.wkt for dat in bboxs])}
     if len(embeddings.shape) == EMBEDDING_SHAPE_CLASS:
         # Handle class embeddings
@@ -205,7 +203,7 @@ def write_to_table(  # noqa: PLR0913
         index,
         metadata={
             "date": datestr,
-            "gsd": str(gsd[0]),
+            "gsd": str(gsd),
             "uri": f"s3://{source_bucket}/{path}",
         },
     )

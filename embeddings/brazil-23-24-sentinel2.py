@@ -205,7 +205,7 @@ def process_scene(clay, path, batchsize):
         kwargs = dict(
             bboxs=all_bboxs,
             datestr=str(item.datetime.date()),
-            gsd=[GSD],
+            gsd=GSD,
             destination_bucket=EMBEDDINGS_BUCKET,
             path=path,
             source_bucket="sentinel-cogs",
@@ -241,7 +241,8 @@ def process():
     for i in range(index * items_per_job, (index + 1) * items_per_job):
         if check_exists(scenes[i]):
             logger.debug(f"Skipping scene because exists: {scenes[i]}")
-            continue
+            logger.debug("MANUAL OVERRIDE: NOT SKIPPING")
+            # continue
 
         process_scene(
             clay=clay,

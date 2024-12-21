@@ -44,10 +44,19 @@ docker run \
 ```
 Once this runs successfully, it should also run in AWS Batch.
 
+```bash
 docker tag clay-embeddings:latest 875815656045.dkr.ecr.us-east-2.amazonaws.com/clay-embeddings:latest
 aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 875815656045.dkr.ecr.us-east-2.amazonaws.com
 docker push 875815656045.dkr.ecr.us-east-2.amazonaws.com/clay-embeddings:latest
 ```
+Image is ~5GB, so it will take a while to upload. Docker layers the image, so when you change something, it might not need to re-upload the whole image.
+
+Ensure the image is pushed on AWS ECR.
+
+Then set up the AWS Batch job:
+1. Create a job definition with the image.
+2. Create a job queue with the image.
+3. Create a job with the job definition and queue, setting the array size.
 
 ### NAIP
 

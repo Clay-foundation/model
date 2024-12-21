@@ -39,5 +39,6 @@ RUN pip install \
 RUN git pull && git checkout ceecb6138705cb28a5f4d3f61f22b19a2f625edb
 
 COPY embeddings/brazil-23-24-sentinel2.py .
+COPY embeddings/utils.py embeddings/
 
 ENTRYPOINT ["python"]
