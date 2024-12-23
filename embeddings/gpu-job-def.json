@@ -1,0 +1,31 @@
+{
+  "jobDefinitionName": "clay-embeddings-gpu",
+  "type": "container",
+  "platformCapabilities": [
+    "EC2"
+  ],
+  "containerProperties": {
+    "image": "875815656045.dkr.ecr.us-west-2.amazonaws.com/clay-embeddings",
+    "command": [
+      "brazil-23-24-sentinel2.py"
+    ],
+    "jobRoleArn": "arn:aws:iam::875815656045:role/fetchAndRun",
+    "executionRoleArn": "arn:aws:iam::875815656045:role/ecsTaskExecutionRole",
+    "resourceRequirements": [
+      {
+        "type": "VCPU",
+        "value": "4"
+      },
+      {
+        "type": "MEMORY",
+        "value": "15000"
+      }
+    ],
+    "environment": [
+      {
+        "name": "EMBEDDINGS_BUCKET",
+        "value": "clay-embeddings-sentinel-2"
+      }
+    ]
+  }
+}

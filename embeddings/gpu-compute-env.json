@@ -1,0 +1,41 @@
+{
+    "computeEnvironmentName": "clay-gpu",
+    "type": "MANAGED",
+    "state": "ENABLED",
+    "computeResources": {
+      "type": "EC2",
+      "allocationStrategy": "BEST_FIT_PROGRESSIVE",
+      "minvCpus": 0,
+      "maxvCpus": 20000,
+      "desiredvCpus": 0,
+      "instanceTypes": [
+        "g5",
+        "g6",
+        "g4dn"
+      ],
+      "subnets": [
+        "subnet-0315b7e85163c3fa3",
+        "subnet-02b21ec14a3c4f3b8",
+        "subnet-07fea47e1b2e35314",
+        "subnet-0af19784769f6f155"
+      ],
+      "securityGroupIds": [
+        "sg-080b57efb44aaebd2"
+      ],
+      "instanceRole": "arn:aws:iam::875815656045:instance-profile/ecsInstanceRole",
+      "tags": {},
+      "launchTemplate": {
+        "launchTemplateName": "increase-container-volume-80GB",
+        "version": "$Default"
+      },
+      "ec2Configuration": [
+        {
+          "imageType": "ECS_AL2"
+        },
+        {
+          "imageType": "ECS_AL2_NVIDIA"
+        }
+      ]
+    },
+    "serviceRole": "arn:aws:iam::875815656045:role/aws-service-role/batch.amazonaws.com/AWSServiceRoleForBatch"
+  }

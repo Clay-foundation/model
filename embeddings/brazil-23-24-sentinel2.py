@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import gc
 import gzip
 import json
 import logging
@@ -38,6 +39,7 @@ GSD = 10
 S2_BUCKET = "sentinel-2-cogs"
 
 # Increase thresholds significantly to see if we can get any valid pixels
+# at the scene level.
 CLOUD_LIMIT = 0.9  # Allow up to 80% cloud coverage
 NODATA_LIMIT = 0.5  # Allow up to 30% nodata
 
@@ -115,112 +117,144 @@ def check_scene_quality(item, nodata_limit=0.3, cloud_limit=0.8):
         return True
 
 
-def process_scene(clay, path, batchsize):
+def process_scene(clay, path, batchsize):  # noqa: PLR0915
     """Process a single scene, checking quality before downloading all bands."""
-    scene_start_time = time.time()
-    logger.debug(f"Starting to process scene: {path}")
+    try:
+        scene_start_time = time.time()
+        logger.debug(f"Starting to process scene: {path}")
 
-    bands, waves, mean, std = load_metadata("sentinel-2-l2a")
-    logger.debug(f"Loaded metadata with bands: {bands}")
+        bands, waves, mean, std = load_metadata("sentinel-2-l2a")
+        logger.debug(f"Loaded metadata with bands: {bands}")
 
-    s3 = boto3.resource("s3")
-    stac_json = json.load(s3.Object("sentinel-cogs", str(path)).get()["Body"])
-    item = Item.from_dict(stac_json)
+        s3 = boto3.resource("s3")
+        stac_json = json.load(s3.Object("sentinel-cogs", str(path)).get()["Body"])
+        item = Item.from_dict(stac_json)
 
-    # Check scene quality before downloading other bands
-    if not check_scene_quality(item, NODATA_LIMIT, CLOUD_LIMIT):
-        return
-
-    # If scene passes quality check, proceed with full processing
-    bands, waves, mean, std = load_metadata("sentinel-2-l2a")
-    logger.debug(f"Scene passed quality check. Loading bands: {bands}")
-
-    with tempfile.TemporaryDirectory() as tmp:
-        download_start = time.time()
-        item = download_scenes_local(tmp, item, bands)
-        download_time = time.time() - download_start
-        logger.info(f"Download time: {timedelta(seconds=download_time)}")
-
-        indexer = Sentinel2Indexer(item, chip_max_nodata=NODATA_LIMIT)
-        chipper = Chipper(indexer, assets=bands)
-        logger.debug(f"Creating chips for {item.id}")
-        STEP = 50
-
-        all_bboxs = []
-        all_cls_embeddings = None
-        total_chips = 0
-
-        for index in range(0, len(chipper), STEP):
-            bboxs, datetimes, pixels = get_pixels(
-                item=item,
-                indexer=indexer,
-                chipper=chipper,
-                start=index,
-                end=index + STEP,
-            )
-
-            if len(pixels) == 0:
-                logger.warning(f"No valid chips in batch {index}-{index+STEP}")
-                continue
-
-            logger.info(f"Doing batch of {len(pixels)} chips")
-
-            time_norm, latlon_norm, gsd, pixels_norm = prepare_datacube(
-                mean=mean,
-                std=std,
-                datetimes=datetimes,
-                bboxs=bboxs,
-                pixels=pixels,
-                gsd=GSD,
-            )
-
-            cls_embeddings = get_embeddings(
-                clay=clay,
-                pixels_norm=pixels_norm,
-                time_norm=time_norm,
-                latlon_norm=latlon_norm,
-                waves=waves,
-                gsd=gsd,
-                batchsize=batchsize,
-            )
-            logger.info(f"Created embeddings with shape: {cls_embeddings.shape}")
-
-            all_bboxs += bboxs
-            if all_cls_embeddings is None:
-                all_cls_embeddings = cls_embeddings
-            else:
-                all_cls_embeddings = np.vstack((all_cls_embeddings, cls_embeddings))
-            total_chips += len(pixels)
-            logger.info(f"Total embeddings so far: {all_cls_embeddings.shape}")
-
-        if not all_bboxs or all_cls_embeddings is None:
-            logger.warning(f"No embeddings generated for scene {path}")
+        # Check scene quality before downloading other bands
+        if not check_scene_quality(item, NODATA_LIMIT, CLOUD_LIMIT):
             return
 
-        logger.info(
-            f"Writing {len(all_bboxs)} embeddings to "
-            + f'"{EMBEDDINGS_BUCKET}/{path.parent}/{path.stem}.parquet"'
-        )
+        # If scene passes quality check, proceed with full processing
+        bands, waves, mean, std = load_metadata("sentinel-2-l2a")
+        logger.debug(f"Scene passed quality check. Loading bands: {bands}")
 
-        kwargs = dict(
-            bboxs=all_bboxs,
-            datestr=str(item.datetime.date()),
-            gsd=GSD,
-            destination_bucket=EMBEDDINGS_BUCKET,
-            path=path,
-            source_bucket="sentinel-cogs",
-        )
+        with tempfile.TemporaryDirectory() as tmp:
+            download_start = time.time()
+            item = download_scenes_local(tmp, item, bands)
+            download_time = time.time() - download_start
+            logger.info(f"Download time: {timedelta(seconds=download_time)}")
 
-        write_to_table(embeddings=all_cls_embeddings, **kwargs)
-        logger.info(f"Successfully wrote embeddings for scene {path}")
+            indexer = Sentinel2Indexer(item, chip_max_nodata=NODATA_LIMIT)
+            chipper = Chipper(indexer, assets=bands)
+            logger.debug(f"Creating chips for {item.id}")
+            STEP = 50
 
-        total_time = time.time() - scene_start_time
-        logger.info(
-            f"Scene processing completed:"
-            f"\n  Total time: {timedelta(seconds=total_time)}"
-            f"\n  Total chips processed: {total_chips}"
-            f"\n  Final embeddings shape: {all_cls_embeddings.shape}"
-        )
+            all_bboxs = []
+            all_cls_embeddings = None
+            total_chips = 0
+
+            for index in range(0, len(chipper), STEP):
+                try:
+                    bboxs, datetimes, pixels = get_pixels(
+                        item=item,
+                        indexer=indexer,
+                        chipper=chipper,
+                        start=index,
+                        end=index + STEP,
+                    )
+
+                    if len(pixels) == 0:
+                        logger.warning(f"No valid chips in batch {index}-{index+STEP}")
+                        continue
+
+                    logger.info(f"Doing batch of {len(pixels)} chips")
+
+                    time_norm, latlon_norm, gsd, pixels_norm = prepare_datacube(
+                        mean=mean,
+                        std=std,
+                        datetimes=datetimes,
+                        bboxs=bboxs,
+                        pixels=pixels,
+                        gsd=GSD,
+                    )
+
+                    cls_embeddings = get_embeddings(
+                        clay=clay,
+                        pixels_norm=pixels_norm,
+                        time_norm=time_norm,
+                        latlon_norm=latlon_norm,
+                        waves=waves,
+                        gsd=gsd,
+                        batchsize=batchsize,
+                    )
+                    logger.info(
+                        f"Created embeddings with shape: {cls_embeddings.shape}"
+                    )
+
+                    all_bboxs += bboxs
+                    if all_cls_embeddings is None:
+                        all_cls_embeddings = cls_embeddings
+                    else:
+                        all_cls_embeddings = np.vstack(
+                            (all_cls_embeddings, cls_embeddings)
+                        )
+                    total_chips += len(pixels)
+                    logger.info(f"Total embeddings so far: {all_cls_embeddings.shape}")
+
+                    # Explicitly free memory after each batch
+                    del pixels, time_norm, latlon_norm, gsd, pixels_norm
+                    gc.collect()
+                    torch.cuda.empty_cache()  # Free GPU memory if using CUDA
+
+                except torch.cuda.OutOfMemoryError as e:
+                    logger.error(f"GPU OUT OF MEMORY during chip processing: {e}")
+                    # Try to free memory and continue with next batch
+                    torch.cuda.empty_cache()
+                    gc.collect()
+                    continue
+                except Exception as e:
+                    logger.error(f"Error processing batch {index}-{index+STEP}: {e}")
+                    continue
+
+            if not all_bboxs or all_cls_embeddings is None:
+                logger.warning(f"No embeddings generated for scene {path}")
+                return
+
+            logger.info(
+                f"Writing {len(all_bboxs)} embeddings to "
+                + f'"{EMBEDDINGS_BUCKET}/{path.parent}/{path.stem}.parquet"'
+            )
+
+            kwargs = dict(
+                bboxs=all_bboxs,
+                datestr=str(item.datetime.date()),
+                gsd=GSD,
+                destination_bucket=EMBEDDINGS_BUCKET,
+                path=path,
+                source_bucket="sentinel-cogs",
+            )
+
+            write_to_table(embeddings=all_cls_embeddings, **kwargs)
+            logger.info(f"Successfully wrote embeddings for scene {path}")
+
+            total_time = time.time() - scene_start_time
+            logger.info(
+                f"Scene processing completed:"
+                f"\n  Total time: {timedelta(seconds=total_time)}"
+                f"\n  Total chips processed: {total_chips}"
+                f"\n  Final embeddings shape: {all_cls_embeddings.shape}"
+            )
+
+        # Clean up at the end
+        del all_cls_embeddings
+        gc.collect()
+        torch.cuda.empty_cache()
+
+    except Exception as e:
+        logger.error(f"Failed to process scene {path}: {e}")
+        # Ensure memory is freed even if we hit an error
+        gc.collect()
+        torch.cuda.empty_cache()
 
 
 def process():
@@ -241,8 +275,7 @@ def process():
     for i in range(index * items_per_job, (index + 1) * items_per_job):
         if check_exists(scenes[i]):
             logger.debug(f"Skipping scene because exists: {scenes[i]}")
-            logger.debug("MANUAL OVERRIDE: NOT SKIPPING")
-            # continue
+            continue
 
         process_scene(
             clay=clay,

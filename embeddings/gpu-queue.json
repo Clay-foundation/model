@@ -1,0 +1,14 @@
+{
+  "jobQueueName": "clay-gpu",
+  "state": "ENABLED",
+  "priority": 1,
+  "computeEnvironmentOrder": [
+    {
+      "order": 1,
+      "computeEnvironment": "arn:aws:batch:us-west-2:875815656045:compute-environment/clay-gpu"
+    }
+  ],
+  "tags": {
+    "Environment": "Production"
+  }
+}

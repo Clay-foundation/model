@@ -26,8 +26,8 @@ use the Dockerfile in the embeddings directory. Then push the image to ECR or
 another docker repository of your choice.
 
 ```bash
-aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 763104351884.dkr.ecr.us-east-2.amazonaws.com
-docker pull 763104351884.dkr.ecr.us-east-2.amazonaws.com/pytorch-inference:2.3.0-gpu-py311-cu121-ubuntu20.04-ec2
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 763104351884.dkr.ecr.us-west-2.amazonaws.com
+docker pull 763104351884.dkr.ecr.us-west-2.amazonaws.com/pytorch-inference:2.3.0-gpu-py311-cu121-ubuntu20.04-ec2
 
 docker build -t clay-embeddings -f embeddings/Dockerfile  .
 ```
@@ -37,7 +37,7 @@ Before uploading to ECR, you can test the docker image locally with the followin
 ```bash
 docker run \
     -v ~/.aws:/root/.aws:ro -e AWS_PROFILE=your_profile_name \ #not needed when using AWS Batch
-    --cpus 2 --memory 15g \
+    --cpus 4 --memory 15g \
     -e EMBEDDINGS_BUCKET="clay-embeddings-sentinel-2" \
     -e AWS_BATCH_JOB_ARRAY_INDEX=0 \
     clay-embeddings brazil-23-24-sentinel2.py
@@ -45,18 +45,32 @@ docker run \
 Once this runs successfully, it should also run in AWS Batch.
 
 ```bash
-docker tag clay-embeddings:latest 875815656045.dkr.ecr.us-east-2.amazonaws.com/clay-embeddings:latest
-aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 875815656045.dkr.ecr.us-east-2.amazonaws.com
-docker push 875815656045.dkr.ecr.us-east-2.amazonaws.com/clay-embeddings:latest
+docker tag clay-embeddings:latest 875815656045.dkr.ecr.us-west-2.amazonaws.com/clay-embeddings:latest
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 875815656045.dkr.ecr.us-west-2.amazonaws.com
+docker push 875815656045.dkr.ecr.us-west-2.amazonaws.com/clay-embeddings:latest
 ```
 Image is ~5GB, so it will take a while to upload. Docker layers the image, so when you change something, it might not need to re-upload the whole image.
+
+
 
 Ensure the image is pushed on AWS ECR.
 
 Then set up the AWS Batch job:
-1. Create a job definition with the image.
-2. Create a job queue with the image.
-3. Create a job with the job definition and queue, setting the array size.
+1. Create a compute environment with the image:
+```bash
+aws batch create-compute-environment --cli-input-json file://gpu-compute-env.json --region us-west-2
+```
+2. Create a job definition with the image:
+```bash
+aws batch register-job-definition --cli-input-json file://gpu-job-def.json --region us-west-2
+```
+3. Create a job queue with the image:
+```bash
+aws batch create-job-queue --cli-input-json file://gpu-queue.json --region us-west-2
+```
+4. Create a job with the job definition and queue, setting the array size.
+
+
 
 ### NAIP
 
