@@ -70,6 +70,17 @@ To train the model:
 More options can be found using `python trainer.py fit --help`, or at the
 [LightningCLI docs](https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html).
 
+## Model Checkpoints
+
+To run the tutorials and examples, you'll need to download the model checkpoint:
+
+- Checkpoint filename: `mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt`
+- Location: Place it in the `checkpoints/` directory
+- Download command:
+  ```bash
+  aws s3 cp --no-sign-request s3://clay-model-ckpt/v1.5.0-no-mrl-dinov2/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt checkpoints/mae_v1.5.0_epoch-07_val-loss-0.1718.ckpt
+  ```
+
 ## Contributing
 
 ### Writing documentation
