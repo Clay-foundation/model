@@ -27,10 +27,10 @@ The Clay model can be used in three main ways:
 
 - Our **website** is [madewithclay.org](https://madewithclay.org).
 - The Clay model **code** lives on [Github](https://github.com/Clay-foundation/model).
-  License: [Apache-w.0](https://github.com/Clay-foundation/model/blob/main/LICENSE).
+  License: [Apache-2.0](https://github.com/Clay-foundation/model/blob/main/LICENSE).
   The latest release is [v1.0](https://github.com/Clay-foundation/model/releases/tag/v1.0)
 - The Clay model **weights**  on [Hugging Face](https://huggingface.co/made-with-clay/Clay/).
-  License: [OpenRAIL-M](https://github.com/Clay-foundation/model/blob/main/LICENSE-MODEL.md).
+  License: [Apache-2.0](https://github.com/Clay-foundation/model/blob/main/LICENSE).
 - The Clay **documentation** [lives on this site](https://clay-foundation.github.io/model/index.html).
   License: [CC-BY](http://creativecommons.org/licenses/by/4.0/).
 - We release the **embeddings** of the used training data on [Source Cooperative](https://beta.source.coop/repositories/clay/clay-model-v0-embeddings).
