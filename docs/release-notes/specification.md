@@ -57,9 +57,7 @@ https://github.com/Clay-foundation/model/blob/main/LICENSE
     - Teacher size: `304M`
     - Model size on disk (just the encoder): `1.25 GB`.
 - Model license:
-    - Source code: [Apache 2.0](https://github.com/Clay-foundation/model/blob/main/LICENSE)
-    - Model weights: [OpenRAIL-M](https://github.com/Clay-foundation/model/blob/main/LICENSE-MODEL.md)
-        - Prohibited uses: Refer to OpenRAIL-M license section 5.
+    - Source code and Model weights: [Apache-2.0](https://github.com/Clay-foundation/model/blob/main/LICENSE)
 - Feedback and redress mechanisms:
     - Please open an issue or discussion on the [GitHub repository](https://github.com/Clay-foundation/model) or send an email to `bruno@madewithclay.org`.
 
