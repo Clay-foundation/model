@@ -67,3 +67,6 @@ datadisk/
 
 # vscode
 .vscode
+
+# pip
+.venv
