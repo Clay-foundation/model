@@ -1,0 +1,24 @@
+[project]
+name = "claymodel"
+version = "1.5.0"
+description = "https://clay-foundation.github.io/model/"
+requires-python = ">=3.11"
+dependencies = [
+    "torch==2.4.0",
+    "torchvision==0.19.0",
+    "einops~=0.7.0",
+    "geopandas",
+    "jsonargparse[signatures]>=4.27.7",
+    "lightning",
+    "matplotlib",
+    "python-box",
+    "scikit-image",
+    "scikit-learn",
+    "timm",
+    "vit-pytorch",
+    "wandb"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
