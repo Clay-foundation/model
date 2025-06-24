@@ -74,7 +74,7 @@ class EuroSATDataModule(L.LightningDataModule):
         statistics.
     """
 
-    def __init__(self, batch_size, num_workers, metadata_path, data_dir: str="data"):
+    def __init__(self, batch_size, num_workers, metadata_path, data_dir: str = "data"):
         super().__init__()
         self.batch_size = batch_size
         self.num_workers = num_workers
