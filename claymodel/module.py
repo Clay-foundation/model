@@ -5,7 +5,7 @@ import torch
 import yaml
 from box import Box
 
-from src.model import clay_mae_base, clay_mae_large, clay_mae_small, clay_mae_tiny
+from claymodel.model import clay_mae_base, clay_mae_large, clay_mae_small, clay_mae_tiny
 
 
 class ClayMAEModule(L.LightningModule):

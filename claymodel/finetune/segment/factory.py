@@ -1,8 +1,10 @@
 """
-Clay Regressor for semantic regression tasks using PixelShuffle.
+Clay Segmentor for semantic segmentation tasks.
 
 Attribution:
-Decoder inspired by PixelShuffle-based upsampling.
+Decoder from Segformer: Simple and Efficient Design for Semantic Segmentation
+with Transformers
+Paper URL: https://arxiv.org/abs/2105.15203
 """
 
 import re
@@ -12,14 +14,17 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import nn
 
-from src.model import Encoder
+from claymodel.model import Encoder
 
 
-class RegressionEncoder(Encoder):
+class SegmentEncoder(Encoder):
     """
-    Encoder class for regression tasks.
+    Encoder class for segmentation tasks, incorporating a feature pyramid
+    network (FPN).
 
     Attributes:
+        feature_maps (list): Indices of layers to be used for generating
+        feature maps.
         ckpt_path (str): Path to the clay checkpoint file.
     """
 
@@ -45,6 +50,7 @@ class RegressionEncoder(Encoder):
             dim_head,
             mlp_ratio,
         )
+
         # Set device
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -89,14 +95,14 @@ class RegressionEncoder(Encoder):
 
     def forward(self, datacube):
         """
-        Forward pass of the RegressionEncoder.
+        Forward pass of the SegmentEncoder.
 
         Args:
             datacube (dict): A dictionary containing the input datacube and
                 meta information like time, latlon, gsd & wavelenths.
 
         Returns:
-            torch.Tensor: The embeddings from the final layer.
+            list: A list of feature maps extracted from the datacube.
         """
         cube, time, latlon, gsd, waves = (
             datacube["pixels"],  # [B C H W]
@@ -116,28 +122,27 @@ class RegressionEncoder(Encoder):
         cls_tokens = repeat(self.cls_token, "1 1 D -> B 1 D", B=B)  # [B 1 D]
         patches = torch.cat((cls_tokens, patches), dim=1)  # [B (1 + L) D]
 
-        # Transformer encoder
         patches = self.transformer(patches)
-
-        # Remove class token
-        patches = patches[:, 1:, :]  # [B, L, D]
+        patches = patches[:, 1:, :]  # [B L D]
 
         return patches
 
 
-class Regressor(nn.Module):
+class Segmentor(nn.Module):
     """
-    Clay Regressor class that combines the Encoder with PixelShuffle for regression.
+    Clay Segmentor class that combines the Encoder with FPN layers for semantic
+    segmentation.
 
     Attributes:
-        num_classes (int): Number of output classes for regression.
+        num_classes (int): Number of output classes for segmentation.
+        feature_maps (list): Indices of layers to be used for generating feature maps.
         ckpt_path (str): Path to the checkpoint file.
     """
 
     def __init__(self, num_classes, ckpt_path):
         super().__init__()
-        # Initialize the encoder
-        self.encoder = RegressionEncoder(
+        # Default values are for the clay mae base model.
+        self.encoder = SegmentEncoder(
             mask_ratio=0.0,
             patch_size=8,
             shuffle=False,
@@ -169,14 +174,14 @@ class Regressor(nn.Module):
 
     def forward(self, datacube):
         """
-        Forward pass of the Regressor.
+        Forward pass of the Segmentor.
 
         Args:
             datacube (dict): A dictionary containing the input datacube and
                 meta information like time, latlon, gsd & wavelenths.
 
         Returns:
-            torch.Tensor: The regression output.
+            torch.Tensor: The segmentation logits.
         """
         cube = datacube["pixels"]  # [B C H_in W_in]
         B, C, H_in, W_in = cube.shape

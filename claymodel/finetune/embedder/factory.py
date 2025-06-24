@@ -40,8 +40,8 @@ from einops import repeat
 from torch import nn
 from torch.export import Dim
 
-from src.model import Encoder
-from src.utils import posemb_sincos_2d_with_gsd
+from claymodel.model import Encoder
+from claymodel.utils import posemb_sincos_2d_with_gsd
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
