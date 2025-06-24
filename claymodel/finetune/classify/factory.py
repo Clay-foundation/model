@@ -3,7 +3,7 @@ import re
 import torch
 from torch import nn
 
-from src.model import Encoder
+from claymodel.model import Encoder
 
 
 class Classifier(nn.Module):

@@ -14,7 +14,7 @@ S2_BANDS = [
     "B06",
     "B07",
     "B08",
-    "B08A",
+    "B8A",
     "B11",
     "B12",
 ]
@@ -74,10 +74,11 @@ class EuroSATDataModule(L.LightningDataModule):
         statistics.
     """
 
-    def __init__(self, batch_size, num_workers, metadata_path):
+    def __init__(self, batch_size, num_workers, metadata_path, data_dir: str="data"):
         super().__init__()
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.data_dir = data_dir
 
         metadata = Box(yaml.safe_load(open(metadata_path)))["sentinel-2-l2a"]
         mean = list(metadata.bands.mean.values())
@@ -102,14 +103,14 @@ class EuroSATDataModule(L.LightningDataModule):
         """
         if stage in {"fit", None}:
             self.trn_ds = EuroSAT(
-                root="data",
+                root=self.data_dir,
                 split="train",
                 bands=S2_BANDS,
                 transforms=self.trn_tfm,
                 download=True,
             )
             self.val_ds = EuroSAT(
-                root="data",
+                root=self.data_dir,
                 split="val",
                 bands=S2_BANDS,
                 transforms=self.val_tfm,

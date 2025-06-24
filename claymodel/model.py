@@ -9,9 +9,9 @@ from einops import rearrange, reduce, repeat
 from torch import nn
 from torchvision.transforms import v2
 
-from src.backbone import Transformer
-from src.factory import DynamicEmbedding
-from src.utils import posemb_sincos_2d_with_gsd
+from claymodel.backbone import Transformer
+from claymodel.factory import DynamicEmbedding
+from claymodel.utils import posemb_sincos_2d_with_gsd
 
 torch.set_float32_matmul_precision("medium")
 os.environ["TORCH_CUDNN_V8_API_DISABLED"] = "1"
