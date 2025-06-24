@@ -1,9 +1,8 @@
 import lightning as L
 import torch
+from finetune.classify.factory import Classifier
 from torch import nn, optim
 from torchmetrics import Accuracy
-
-from finetune.classify.factory import Classifier
 
 
 class EuroSATClassifier(L.LightningModule):
