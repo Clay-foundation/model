@@ -7,7 +7,7 @@ import math
 import random
 from collections import defaultdict
 from pathlib import Path
-from typing import List, Literal
+from typing import Literal
 
 import lightning as L
 import numpy as np
@@ -27,7 +27,7 @@ class EODataset(Dataset):
     """Reads different Earth Observation data sources from a directory."""
 
     def __init__(
-        self, chips_path: List[Path], size: int, platforms: list, metadata: Box
+        self, chips_path: list[Path], size: int, platforms: list, metadata: Box
     ) -> None:
         super().__init__()
         self.chips_path = chips_path
@@ -322,3 +322,20 @@ class ClayDataModule(L.LightningDataModule):
             num_workers=self.num_workers,
             shuffle=False,
         )
+
+
+# Import additional DataModules for finetune tasks
+try:
+    from claymodel.finetune.classify.eurosat_datamodule import EuroSATDataModule
+    from claymodel.finetune.segment.chesapeake_datamodule import ChesapeakeDataModule
+    from claymodel.finetune.regression.biomasters_datamodule import BioMastersDataModule
+    
+    __all__ = [
+        "ClayDataModule", 
+        "EuroSATDataModule", 
+        "ChesapeakeDataModule", 
+        "BioMastersDataModule"
+    ]
+except ImportError:
+    # Some finetune modules may not be available
+    __all__ = ["ClayDataModule"]

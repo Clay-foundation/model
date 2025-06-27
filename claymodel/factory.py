@@ -131,7 +131,7 @@ class DynamicEmbedding(nn.Module):
     def initialize_weights(self):
         # Initialize weights using Xavier initialization
         for m in self.modules():
-            if isinstance(m, (nn.Linear, nn.Conv2d)):
+            if isinstance(m, nn.Linear | nn.Conv2d):
                 nn.init.xavier_uniform_(m.weight)
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)

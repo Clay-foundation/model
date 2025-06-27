@@ -1,7 +1,6 @@
 import random
 from multiprocessing import Pool
 from pathlib import Path
-from typing import List
 
 import click
 import numpy as np
@@ -24,7 +23,7 @@ MONTHS = [
 ]
 
 
-def list_uniqe_ids(src: Path) -> List[str]:
+def list_uniqe_ids(src: Path) -> list[str]:
     ids = list(set(dat.name.split("_")[0] for dat in src.glob("*.tif")))
     print(f"Found {len(ids)} unique tile ids")
     return ids
