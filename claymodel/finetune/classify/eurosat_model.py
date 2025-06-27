@@ -1,6 +1,6 @@
 import lightning as L
 import torch
-from finetune.classify.factory import Classifier
+from claymodel.finetune.classify.factory import Classifier
 from torch import nn, optim
 from torchmetrics import Accuracy
 

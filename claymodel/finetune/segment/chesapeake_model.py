@@ -7,7 +7,7 @@ import lightning as L
 import segmentation_models_pytorch as smp
 import torch
 import torch.nn.functional as F
-from finetune.segment.factory import Segmentor
+from claymodel.finetune.segment.factory import Segmentor
 from torch import optim
 from torchmetrics.classification import F1Score, MulticlassJaccardIndex
 
