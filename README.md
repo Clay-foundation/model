@@ -21,7 +21,22 @@ Launch into a [JupyterLab](https://jupyterlab.readthedocs.io) environment on
 
 ## Installation
 
-### Basic
+### Pip Installation (Recommended)
+
+The easiest way to install Clay Foundation Model is via pip:
+
+    pip install git+https://github.com/Clay-foundation/model.git
+
+This will install the `claymodel` package and all its dependencies. You can then import and use it in your Python code:
+
+```python
+from claymodel.datamodule import ClayDataModule
+from claymodel.module import ClayMAEModule
+```
+
+### Development Installation
+
+For development or advanced usage, you can set up the full development environment:
 
 To help out with development, start by cloning this [repo-url](/../../)
 
@@ -60,6 +75,10 @@ Finally, double-check that the libraries have been installed.
 
 The neural network model can be ran via
 [LightningCLI v2](https://pytorch-lightning.medium.com/introducing-lightningcli-v2supercharge-your-training-c070d43c7dd6).
+
+> [!NOTE]
+> If you installed via pip, you'll need to clone the repository to access the trainer script and config files.
+
 To check out the different options available, and look at the hyperparameter
 configurations, run:
 

@@ -10,7 +10,7 @@ Usage:
 ```
 import lightning as L
 
-from src.callbacks_wandb import LogMAEReconstruction
+from claymodel.callbacks_wandb import LogMAEReconstruction
 
 trainer = L.Trainer(
     ...,
