@@ -40,7 +40,7 @@ The Clay model can be used in three main ways:
 ## Where is what
 
 - Our **website** is [madewithclay.org](https://madewithclay.org).
-- The Clay model **code** lives on [Github](https://github.com/Clay-foundation/model).
+- The Clay model **code** lives on [GitHub](https://github.com/Clay-foundation/model).
   License: [Apache-2.0](https://github.com/Clay-foundation/model/blob/main/LICENSE).
   The latest release is [v1.5](https://github.com/Clay-foundation/model/releases/tag/v1.5)
 - The Clay model **weights**  on [Hugging Face](https://huggingface.co/made-with-clay/Clay/).
