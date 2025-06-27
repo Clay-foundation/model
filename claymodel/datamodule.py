@@ -327,13 +327,13 @@ class ClayDataModule(L.LightningDataModule):
 # Import additional DataModules for finetune tasks
 try:
     from claymodel.finetune.classify.eurosat_datamodule import EuroSATDataModule
-    from claymodel.finetune.segment.chesapeake_datamodule import ChesapeakeDataModule
     from claymodel.finetune.regression.biomasters_datamodule import BioMastersDataModule
-    
+    from claymodel.finetune.segment.chesapeake_datamodule import ChesapeakeDataModule
+
     __all__ = [
-        "ClayDataModule", 
-        "EuroSATDataModule", 
-        "ChesapeakeDataModule", 
+        "ClayDataModule",
+        "EuroSATDataModule",
+        "ChesapeakeDataModule",
         "BioMastersDataModule"
     ]
 except ImportError:
