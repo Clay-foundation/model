@@ -34,7 +34,7 @@ included in the training for Clay v1
 
 Once imagery sources are selected, the next step is to develop a sampling strategy. We are not able to process the entire archive, and so it is important to select the right subset of the archives for training.
 
-Our driving principle is that the model should learn natural features as well as human made features. Human made features are smaller and less evenly distributed in many cases. This has driven some of the decisions for the sampling, as described below.
+Our driving principle is that the model should learn natural features as well as human-made features. Human-made features are smaller and less evenly distributed in many cases. This has driven some of the decisions for the sampling, as described below.
 
 ### Global sampling
 
@@ -176,7 +176,7 @@ if __name__ == '__main__':
 
 ## Data preparation
 
-To be able to include multiple platforms in model training, we worked on a standardisation of the processing pipeline. The goal for this was to develop a framework that can be used to collect data from a large variety of formats and locations in a consistent way. For this we developed [stacchip](https://clay-foundation.github.io/stacchip/), a library to help preparing training data images. Please consult the documentation of the library to know more, but at a high level the goals of stacchip are
+To be able to include multiple platforms in model training, we worked on a standardisation of the processing pipeline. The goal for this was to develop a framework that can be used to collect data from a large variety of formats and locations in a consistent way. For this we developed [stacchip](https://clay-foundation.github.io/stacchip/), a library to help preparing training data images. Please consult the documentation of the library to know more, but at a high level the goals of stacchip are:
 
 - Keeping the data in original format for as long as possible
 - Scalable extendable indexing of chips
@@ -189,29 +189,19 @@ To be able to include multiple platforms in model training, we worked on a stand
 
 Using stacchip, we created a dataset with a size of 33.8 TB of imagery, with about 70 million chips created. The following table shows the distribution of imagery chips used for Clay v1 training.
 
-| Source | Number of chips |
-| ------ | --------------- |
-<<<<<<< HEAD
-| NAIP           | 20,984,171 |
-| LINZ            | 3,299,006 |
-| Sentinel-2-l2a | 18,683,945 |
-| Landsat-c2l1    | 5,827,333 |
-| Landsat-c2l2-sr | 5,790,651 |
-| Sentinel-1-rtc | 16,133,394 |
-| MODIS | 1350864|
-=======
-| NAIP           | 20984171 |
-| LINZ            | 3299006 |
-| Sentinel-2-l2a | 18683945 |
-| Landsat-c2l1    | 5827333 |
-| Landsat-c2l2-sr | 5790651 |
-| Sentinel-1-rtc | 16133394 |
-| MODIS          |  1350864 |
->>>>>>> main
+| Source          | Number of chips |
+|-----------------|-----------------|
+| NAIP            | 20,984,171      |
+| LINZ            | 3,299,006       |
+| Sentinel-2-l2a  | 18,683,945      |
+| Landsat-c2l1    | 5,827,333       |
+| Landsat-c2l2-sr | 5,790,651       |
+| Sentinel-1-rtc  | 16,133,394      |
+| MODIS           | 1,350,864       |
 
 # Older versions
 
-For older versions of the model we used the following sampling stragegies.
+For older versions of the model we used the following sampling strategies:
 
 ## For model version v0.1
 
@@ -234,6 +224,6 @@ Permanent water bodies | 100 | 1000
 
 This resulted in a sample of 1517 MGRS tiles total in our sample.
 
-The resulting sample file can be downloaded from the following link
+The resulting sample file can be downloaded from the following link:
 
 https://clay-mgrs-samples.s3.amazonaws.com/mgrs_sample.fgb

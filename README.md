@@ -5,6 +5,12 @@
 
 An open source AI model and interface for Earth.
 
+## License
+
+Clay Model is licensed under the [Apache](LICENSE). This applies to the source code as well as the trained model weights.
+
+The Documentation is licensed under the [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) license.
+
 ## Quickstart
 
 Launch into a [JupyterLab](https://jupyterlab.readthedocs.io) environment on
