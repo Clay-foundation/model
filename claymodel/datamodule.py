@@ -334,7 +334,7 @@ try:
         "ClayDataModule",
         "EuroSATDataModule",
         "ChesapeakeDataModule",
-        "BioMastersDataModule"
+        "BioMastersDataModule",
     ]
 except ImportError:
     # Some finetune modules may not be available
