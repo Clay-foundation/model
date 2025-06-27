@@ -23,12 +23,12 @@ dependencies = [
     "einops~=0.7.0",
     "geopandas",
     "jsonargparse[signatures]>=4.27.7",
-    "lightning",
+    "lightning>=2.0.0",
     "matplotlib",
     "python-box",
     "scikit-image",
     "scikit-learn",
-    "timm",
+    "timm>=0.6.0",
     "vit-pytorch",
     "wandb"
 ]
