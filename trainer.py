@@ -11,6 +11,7 @@ References:
 """
 
 from lightning.pytorch.cli import LightningCLI
+
 from claymodel.datamodule import ClayDataModule  # noqa: F401
 from claymodel.module import ClayMAEModule  # noqa: F401
 

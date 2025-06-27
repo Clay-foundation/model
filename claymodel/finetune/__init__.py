@@ -9,21 +9,21 @@ try:
     # Classification
     from .classify.eurosat_datamodule import EuroSATDataModule
     from .classify.eurosat_model import EuroSATClassifier
-    
-    # Segmentation  
-    from .segment.chesapeake_datamodule import ChesapeakeDataModule
-    from .segment.chesapeake_model import ChesapeakeSegmentor
-    
+
     # Regression
     from .regression.biomasters_datamodule import BioMastersDataModule
     from .regression.factory import Regressor
-    
+
+    # Segmentation
+    from .segment.chesapeake_datamodule import ChesapeakeDataModule
+    from .segment.chesapeake_model import ChesapeakeSegmentor
+
     __all__ = [
         "EuroSATDataModule",
-        "EuroSATClassifier", 
+        "EuroSATClassifier",
         "ChesapeakeDataModule",
         "ChesapeakeSegmentor",
-        "BioMastersDataModule", 
+        "BioMastersDataModule",
         "Regressor",
     ]
 except ImportError:

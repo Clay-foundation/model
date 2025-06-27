@@ -1,9 +1,10 @@
 import lightning as L
 import torch
 import torch.nn.functional as F
-from claymodel.finetune.regression.factory import Regressor
 from torch import nn, optim
 from torchmetrics import MeanSquaredError
+
+from claymodel.finetune.regression.factory import Regressor
 
 
 class NoNaNRMSE(nn.Module):

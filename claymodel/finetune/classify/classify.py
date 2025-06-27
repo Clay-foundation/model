@@ -10,9 +10,12 @@ References:
 - https://pytorch-lightning.medium.com/introducing-lightningcli-v2-supercharge-your-training-c070d43c7dd6
 """
 
-from claymodel.finetune.classify.eurosat_datamodule import EuroSATDataModule  # noqa: F401
-from claymodel.finetune.classify.eurosat_model import EuroSATClassifier  # noqa: F401
 from lightning.pytorch.cli import LightningCLI
+
+from claymodel.finetune.classify.eurosat_datamodule import (
+    EuroSATDataModule,  # noqa: F401
+)
+from claymodel.finetune.classify.eurosat_model import EuroSATClassifier  # noqa: F401
 
 
 # %%

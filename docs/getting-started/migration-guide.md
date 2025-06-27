@@ -106,7 +106,7 @@ from claymodel.module import ClayMAEModule
 All tutorial notebooks have been updated to use the new imports:
 
 - ✅ `docs/tutorials/embeddings.ipynb`
-- ✅ `docs/tutorials/reconstruction.ipynb` 
+- ✅ `docs/tutorials/reconstruction.ipynb`
 - ✅ `docs/tutorials/wall-to-wall.ipynb`
 - ✅ `docs/tutorials/inference.ipynb`
 
@@ -151,4 +151,4 @@ pip install -e .
 
 - 📖 **Documentation**: [clay-foundation.github.io/model](https://clay-foundation.github.io/model)
 - 🐛 **Issues**: [GitHub Issues](https://github.com/Clay-foundation/model/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/Clay-foundation/model/discussions) 
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/Clay-foundation/model/discussions)

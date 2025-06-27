@@ -10,9 +10,14 @@ References:
 - https://pytorch-lightning.medium.com/introducing-lightningcli-v2-supercharge-your-training-c070d43c7dd6
 """
 
-from claymodel.finetune.regression.biomasters_datamodule import BioMastersDataModule  # noqa: F401
-from claymodel.finetune.regression.biomasters_model import BioMastersClassifier  # noqa: F401
 from lightning.pytorch.cli import LightningCLI
+
+from claymodel.finetune.regression.biomasters_datamodule import (
+    BioMastersDataModule,  # noqa: F401
+)
+from claymodel.finetune.regression.biomasters_model import (
+    BioMastersClassifier,  # noqa: F401
+)
 
 
 # %%

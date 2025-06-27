@@ -10,9 +10,14 @@ References:
 - https://pytorch-lightning.medium.com/introducing-lightningcli-v2-supercharge-your-training-c070d43c7dd6
 """
 
-from claymodel.finetune.segment.chesapeake_datamodule import ChesapeakeDataModule  # noqa: F401
-from claymodel.finetune.segment.chesapeake_model import ChesapeakeSegmentor  # noqa: F401
 from lightning.pytorch.cli import LightningCLI
+
+from claymodel.finetune.segment.chesapeake_datamodule import (
+    ChesapeakeDataModule,  # noqa: F401
+)
+from claymodel.finetune.segment.chesapeake_model import (
+    ChesapeakeSegmentor,  # noqa: F401
+)
 
 
 # %%

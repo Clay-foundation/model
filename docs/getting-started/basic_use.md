@@ -29,7 +29,7 @@ for band in sensor_meta["band_order"]:
 wavelengths = torch.tensor([wavelengths], dtype=torch.float32)
 
 # Your Sentinel-2 data: (batch, bands, height, width) = (1, 10, 256, 256)
-chips = torch.randn(1, 10, 256, 256)  
+chips = torch.randn(1, 10, 256, 256)
 timestamps = torch.tensor([[0, 0, 0, 0]], dtype=torch.float32)  # [week, hour, lat, lon]
 
 # Generate 1024-dimensional embeddings
@@ -84,7 +84,7 @@ Clay can work with **any satellite instrument**! To add a new sensor, simply add
 your-new-sensor:
   band_order:                    # List bands in the order they appear in your data
     - blue
-    - green  
+    - green
     - red
     - nir
   rgb_indices: [2, 1, 0]        # Which bands to use for RGB visualization
@@ -118,7 +118,7 @@ import numpy as np
 def compute_normalization_stats(data_chips, band_names):
     """
     Compute mean and std for each band across all chips.
-    
+
     Args:
         data_chips: Tensor of shape [N, bands, height, width]
         band_names: List of band names
@@ -126,12 +126,12 @@ def compute_normalization_stats(data_chips, band_names):
     # Compute statistics across spatial and sample dimensions
     means = torch.mean(data_chips, dim=[0, 2, 3])  # Average over N, H, W
     stds = torch.std(data_chips, dim=[0, 2, 3])    # Std over N, H, W
-    
+
     print("Normalization statistics for your sensor:")
     print("mean:")
     for i, band in enumerate(band_names):
         print(f"  {band}: {means[i]:.1f}")
-    print("std:")  
+    print("std:")
     for i, band in enumerate(band_names):
         print(f"  {band}: {stds[i]:.1f}")
 
@@ -145,7 +145,7 @@ def compute_normalization_stats(data_chips, band_names):
 We welcome contributions of new sensor specifications! To contribute:
 
 1. **Fork the repository** on GitHub
-2. **Add your sensor** to `configs/metadata.yaml` 
+2. **Add your sensor** to `configs/metadata.yaml`
 3. **Test your sensor** with Clay to ensure it works
 4. **Submit a pull request** with:
    - Sensor metadata
@@ -206,7 +206,7 @@ def get_wavelengths(sensor_name):
 
 # Get wavelengths for different sensors
 s2_wavelengths = get_wavelengths("sentinel-2-l2a")      # 10 bands, 10m GSD
-landsat_wavelengths = get_wavelengths("landsat-c2l2-sr") # 6 bands, 30m GSD  
+landsat_wavelengths = get_wavelengths("landsat-c2l2-sr") # 6 bands, 30m GSD
 naip_wavelengths = get_wavelengths("naip")              # 4 bands, 1m GSD
 linz_wavelengths = get_wavelengths("linz")              # 3 bands, 0.5m GSD
 s1_wavelengths = get_wavelengths("sentinel-1-rtc")     # 2 bands, 10m GSD
@@ -232,16 +232,16 @@ with open("configs/metadata.yaml", "r") as f:
 def normalize_data(chips, sensor_name):
     """Normalize chips using sensor-specific statistics from metadata."""
     sensor_meta = metadata[sensor_name]["bands"]
-    
+
     # Get means and stds in band order
     means = torch.tensor([sensor_meta["mean"][band] for band in metadata[sensor_name]["band_order"]])
     stds = torch.tensor([sensor_meta["std"][band] for band in metadata[sensor_name]["band_order"]])
-    
+
     # Normalize: (x - mean) / std
     # Reshape for broadcasting: [1, bands, 1, 1]
     means = means.view(1, -1, 1, 1)
     stds = stds.view(1, -1, 1, 1)
-    
+
     normalized = (chips - means) / stds
     return normalized
 
@@ -308,25 +308,25 @@ with open("configs/metadata.yaml", "r") as f:
 def process_sensor_data(chips, sensor_name):
     """Process chips from any supported sensor."""
     sensor_meta = metadata[sensor_name]
-    
+
     # Get wavelengths
     wavelengths = []
     for band in sensor_meta["band_order"]:
         wavelengths.append(sensor_meta["bands"]["wavelength"][band] * 1000)
     wavelengths = torch.tensor([wavelengths], dtype=torch.float32)
-    
+
     # Normalize data
     means = torch.tensor([sensor_meta["bands"]["mean"][band] for band in sensor_meta["band_order"]])
     stds = torch.tensor([sensor_meta["bands"]["std"][band] for band in sensor_meta["band_order"]])
     means = means.view(1, -1, 1, 1)
     stds = stds.view(1, -1, 1, 1)
     normalized_chips = (chips - means) / stds
-    
+
     # Generate embeddings
     timestamps = torch.zeros(1, 4)  # Can be zeros if unknown
     with torch.no_grad():
         embeddings = model.encoder(normalized_chips, timestamps, wavelengths)
-    
+
     return embeddings
 
 # Example with different sensors
@@ -335,11 +335,11 @@ sensors_to_test = ["sentinel-2-l2a", "naip", "landsat-c2l2-sr"]
 for sensor in sensors_to_test:
     sensor_meta = metadata[sensor]
     num_bands = len(sensor_meta["band_order"])
-    
+
     # Simulate data for this sensor
     chips = torch.randn(1, num_bands, 256, 256)
     embeddings = process_sensor_data(chips, sensor)
-    
+
     print(f"{sensor}: {num_bands} bands → {embeddings.shape[1]}D embedding")
 ```
 

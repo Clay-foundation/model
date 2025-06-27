@@ -61,7 +61,7 @@ Clay v1.5 is **sensor-agnostic** and works with **any satellite instrument**! Cu
 | Sensor | Bands | Resolution | Description |
 |--------|-------|------------|-------------|
 | Sentinel-2 L2A | 10 | 10m | Optical multispectral |
-| Landsat C2 L1/L2 | 6 | 30m | Optical multispectral |  
+| Landsat C2 L1/L2 | 6 | 30m | Optical multispectral |
 | NAIP | 4 | 1m | Aerial RGB + NIR |
 | LINZ | 3 | 0.5m | Aerial RGB |
 | Sentinel-1 | 2 | 10m | SAR (VV, VH) |
@@ -70,7 +70,7 @@ Clay v1.5 is **sensor-agnostic** and works with **any satellite instrument**! Cu
 ```yaml
 your-satellite:
   band_order: [blue, green, red, nir]    # Your band names
-  gsd: 10.0                              # Resolution in meters  
+  gsd: 10.0                              # Resolution in meters
   bands:
     wavelength: {blue: 0.485, green: 0.560, red: 0.660, nir: 0.835}  # μm
     mean: {blue: 1200, green: 1400, red: 1600, nir: 2800}           # Normalization
@@ -81,4 +81,4 @@ your-satellite:
 
 - 📖 **Full Documentation**: [clay-foundation.github.io/model](https://clay-foundation.github.io/model)
 - 🐛 **Issues**: [GitHub Issues](https://github.com/Clay-foundation/model/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/Clay-foundation/model/discussions) 
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/Clay-foundation/model/discussions)
