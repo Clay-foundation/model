@@ -23,7 +23,7 @@ MONTHS = [
 ]
 
 
-def list_uniqe_ids(src: Path) -> list[str]:
+def list_unique_ids(src: Path) -> list[str]:
     ids = list(set(dat.name.split("_")[0] for dat in src.glob("*.tif")))
     print(f"Found {len(ids)} unique tile ids")
     return ids
@@ -110,7 +110,7 @@ def process(features, cubes, processes, sample, overwrite):
     The datacubes will contain the S1 vv/vh bands for asc and desc orbits,
     stacked with the first 10 S2 bands.
     """
-    ids = list_uniqe_ids(features)
+    ids = list_unique_ids(features)
 
     if sample < 1:
         sample_length = int(len(ids) * sample)
