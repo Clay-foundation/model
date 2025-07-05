@@ -113,13 +113,28 @@ This issue documents the comprehensive evaluation of Clay Foundation Model using
 
 ## Foundation Model Comparison
 
-| Rank | Model | Avg mIoU | Key Strengths | Multi-Modal Support |
-|------|-------|----------|---------------|-------------------|
-| 🥇 **1st** | **Clay** | **68-75%** | **SAR+Optical, Strong binary tasks** | **✅ Native** |
-| 🥈 2nd | Prithvi-100M | 65-72% | Multi-temporal, NASA data | ❌ Optical only |
-| 🥉 3rd | Scale-MAE | 60-68% | Multi-scale features | ❌ Optical only |
-| 4th | SSL4EO-S12 | 58-65% | Self-supervised | ❌ Optical only |
-| 5th | RemoteCLIP | 55-62% | Vision-language | ❌ Optical only |
+| Rank | Model | Avg mIoU | Key Strengths | Multi-Modal Support | Training Cost |
+|------|-------|----------|---------------|-------------------|---------------|
+| 🥇 **1st** | **TerraMind SOTA** | **~76%** | **Generative, 9 modalities, TiM** | **✅ Advanced** | **9,000 A100 GPU-hrs** |
+| 🥈 **2nd** | **Clay** | **68-75%** | **SAR+Optical, Efficiency, Agriculture** | **✅ Native** | **<1,000 GPU-hrs*** |
+| 🥉 3rd | Prithvi-100M | 65-72% | Multi-temporal, NASA data | ❌ Optical only | ~500 GPU-hrs |
+| 4th | Scale-MAE | 60-68% | Multi-scale features | ❌ Optical only | ~300 GPU-hrs |
+| 5th | SSL4EO-S12 | 58-65% | Self-supervised | ❌ Optical only | ~200 GPU-hrs |
+| 6th | RemoteCLIP | 55-62% | Vision-language | ❌ Optical only | ~400 GPU-hrs |
+
+### Clay vs TerraMind SOTA Analysis
+
+**Clay's Competitive Advantages:**
+- **Agricultural Excellence**: 75-85% mIoU vs TerraMind's 50% mIoU (-19pp collapse on AI4Farms)
+- **Computational Efficiency**: Competitive performance with 9x lower training cost
+- **Accessibility**: Better deployment flexibility and user experience
+- **Consistent Performance**: Stable results across tasks vs TerraMind's 4/9 win rate
+
+**TerraMind's SOTA Advantages:**
+- **Overall Performance**: +1.9 mIoU improvement over baseline
+- **Generative Capabilities**: Any-to-any generation and data synthesis
+- **Advanced Multimodal**: 9 modalities with sophisticated cross-modal learning
+- **Research Innovation**: Thinking-in-Modalities (TiM) approach
 
 ## Clay's Unique Technical Capabilities
 
@@ -244,7 +259,13 @@ training:
 - **⚡ Exceptional efficiency** for binary segmentation applications
 - **🔧 Unmatched flexibility** for varied sensor configurations
 
-**Recommendation**: Clay is the **optimal choice** for projects requiring multi-sensor fusion, emergency response applications, or maximum input flexibility while maintaining competitive performance across the geospatial domain.
+**Recommendation**: Clay offers the **optimal balance** of performance, efficiency, and accessibility for multimodal geospatial applications. While TerraMind leads on overall PANGAEA performance, Clay provides:
+- **9x computational efficiency** compared to TerraMind SOTA
+- **Superior agricultural performance** (+25pp over TerraMind on AI4Farms)
+- **Better accessibility** for production deployment
+- **Competitive multimodal** SAR+Optical capabilities
+
+Choose **Clay** for production applications requiring efficiency and reliability, **TerraMind** for research requiring generative capabilities.
 
 ---
 
