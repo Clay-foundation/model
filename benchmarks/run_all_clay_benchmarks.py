@@ -9,7 +9,6 @@ import time
 import json
 import os
 from datetime import datetime
-from pathlib import Path
 
 # Complete benchmark suite - all available PANGAEA datasets
 ALL_DATASETS = [
@@ -20,43 +19,43 @@ ALL_DATASETS = [
         "batch_size": 8,
         "description": "Wildfire burn scar detection - Clay's optimal 6-band config",
         "expected": "75-80% mIoU",
-        "priority": "critical"
+        "priority": "critical",
     },
     {
-        "name": "sen1floods11", 
+        "name": "sen1floods11",
         "task": "segmentation",
         "epochs": 6,
         "batch_size": 4,
         "description": "Flood mapping - Clay's unique SAR+Optical capability",
-        "expected": "80-85% mIoU", 
-        "priority": "critical"
+        "expected": "80-85% mIoU",
+        "priority": "critical",
     },
     {
         "name": "ai4smallfarms",
-        "task": "segmentation", 
+        "task": "segmentation",
         "epochs": 5,
         "batch_size": 8,
         "description": "Agricultural mapping - Clay's strong transfer domain",
         "expected": "80-85% mIoU",
-        "priority": "high"
+        "priority": "high",
     },
     {
         "name": "mados",
         "task": "segmentation",
-        "epochs": 6, 
+        "epochs": 6,
         "batch_size": 6,
         "description": "Marine pollution detection - 15-class challenge",
         "expected": "25-35% mIoU",
-        "priority": "high"
+        "priority": "high",
     },
     {
         "name": "biomassters",
         "task": "regression",
         "epochs": 6,
-        "batch_size": 6, 
+        "batch_size": 6,
         "description": "Forest biomass estimation - Multimodal regression",
         "expected": "MAE: 15-25",
-        "priority": "high"
+        "priority": "high",
     },
     {
         "name": "spacenet7",
@@ -65,17 +64,17 @@ ALL_DATASETS = [
         "batch_size": 8,
         "description": "Building detection - Urban mapping",
         "expected": "60-70% mIoU",
-        "priority": "medium"
+        "priority": "medium",
     },
     {
-        "name": "potsdam", 
+        "name": "potsdam",
         "task": "segmentation",
         "epochs": 4,
         "batch_size": 8,
         "description": "Urban land cover classification",
         "expected": "80-85% mIoU",
-        "priority": "medium"
-    }
+        "priority": "medium",
+    },
 ]
 
 
@@ -86,14 +85,16 @@ def run_single_benchmark(dataset_config):
     print(f"Priority: {dataset_config['priority'].upper()}")
     print(f"Description: {dataset_config['description']}")
     print(f"Expected Performance: {dataset_config['expected']}")
-    print(f"Configuration: {dataset_config['epochs']} epochs, batch_size={dataset_config['batch_size']}")
+    print(
+        f"Configuration: {dataset_config['epochs']} epochs, batch_size={dataset_config['batch_size']}"
+    )
     print(f"{'='*80}")
 
     # Build proper PANGAEA command
     cmd = [
         "torchrun",
         "--nnodes=1",
-        "--nproc_per_node=1", 
+        "--nproc_per_node=1",
         "pangaea/run.py",
         "--config-name=train",
         f'dataset={dataset_config["name"]}',
@@ -101,41 +102,43 @@ def run_single_benchmark(dataset_config):
         f'task={dataset_config["task"]}',
         f'task.trainer.n_epochs={dataset_config["epochs"]}',
         f'batch_size={dataset_config["batch_size"]}',
-        "use_wandb=false"
+        "use_wandb=false",
     ]
 
     # Add task-specific configurations
     if dataset_config["task"] == "segmentation":
-        cmd.extend([
-            "criterion=cross_entropy",
-            "decoder=seg_upernet", 
-            "preprocessing=seg_default"
-        ])
+        cmd.extend(
+            [
+                "criterion=cross_entropy",
+                "decoder=seg_upernet",
+                "preprocessing=seg_default",
+            ]
+        )
     elif dataset_config["task"] == "regression":
-        cmd.extend([
-            "criterion=mse",
-            "decoder=reg_upernet",
-            "preprocessing=reg_default"  
-        ])
+        cmd.extend(
+            ["criterion=mse", "decoder=reg_upernet", "preprocessing=reg_default"]
+        )
 
     start_time = time.time()
-    
+
     try:
-        print(f"📊 Starting {dataset_config['name']} training with {dataset_config['epochs']} epochs...")
+        print(
+            f"📊 Starting {dataset_config['name']} training with {dataset_config['epochs']} epochs..."
+        )
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             timeout=2400,  # 40 minutes timeout per dataset
-            cwd="/home/brunosan/code/model/benchmarks/pangaea/pangaea-bench"
+            cwd="/home/brunosan/code/model/benchmarks/pangaea/pangaea-bench",
         )
-        
+
         elapsed = time.time() - start_time
         success = result.returncode == 0
-        
+
         # Extract final performance metrics
         performance_data = extract_performance_metrics(result.stdout)
-        
+
         # Status report
         status = "✅ SUCCESS" if success else "❌ FAILED"
         perf_str = ""
@@ -144,9 +147,9 @@ def run_single_benchmark(dataset_config):
                 perf_str = f" (mIoU: {performance_data['final_miou']:.1f}%)"
             elif "final_mae" in performance_data:
                 perf_str = f" (MAE: {performance_data['final_mae']:.1f})"
-        
+
         print(f"🏁 {dataset_config['name']}: {status}{perf_str} ({elapsed/60:.1f}m)")
-        
+
         return {
             "dataset": dataset_config["name"],
             "success": success,
@@ -155,9 +158,9 @@ def run_single_benchmark(dataset_config):
             "performance": performance_data,
             "stdout_tail": result.stdout[-2000:] if result.stdout else "",
             "stderr_tail": result.stderr[-1000:] if result.stderr else "",
-            "command": " ".join(cmd)
+            "command": " ".join(cmd),
         }
-        
+
     except subprocess.TimeoutExpired:
         elapsed = time.time() - start_time
         print(f"⏰ {dataset_config['name']}: TIMEOUT after {elapsed/60:.1f}m")
@@ -167,7 +170,7 @@ def run_single_benchmark(dataset_config):
             "elapsed_time": elapsed,
             "config": dataset_config,
             "error": "Timeout after 40 minutes",
-            "performance": {}
+            "performance": {},
         }
     except Exception as e:
         elapsed = time.time() - start_time
@@ -175,64 +178,64 @@ def run_single_benchmark(dataset_config):
         return {
             "dataset": dataset_config["name"],
             "success": False,
-            "elapsed_time": elapsed, 
+            "elapsed_time": elapsed,
             "config": dataset_config,
             "error": str(e),
-            "performance": {}
+            "performance": {},
         }
 
 
 def extract_performance_metrics(stdout):
     """Extract performance metrics from training logs"""
     metrics = {}
-    
+
     if not stdout:
         return metrics
-        
-    lines = stdout.split('\n')
-    
+
+    lines = stdout.split("\n")
+
     # Look for final validation metrics (last occurrence)
     for line in reversed(lines):
         line = line.strip()
-        
+
         # Extract mIoU
-        if '[val] Mean' in line and 'IoU' in line:
+        if "[val] Mean" in line and "IoU" in line:
             try:
                 value = float(line.split()[-1])
-                metrics['final_miou'] = value
+                metrics["final_miou"] = value
                 break
             except:
                 pass
-                
+
         # Extract MAE for regression
-        elif 'MAE:' in line:
+        elif "MAE:" in line:
             try:
-                value = float(line.split('MAE:')[-1].strip())
-                metrics['final_mae'] = value 
+                value = float(line.split("MAE:")[-1].strip())
+                metrics["final_mae"] = value
                 break
             except:
                 pass
-    
+
     # Extract accuracy if available
     for line in reversed(lines):
-        if 'Mean Accuracy:' in line:
+        if "Mean Accuracy:" in line:
             try:
-                value = float(line.split('Mean Accuracy:')[-1].strip())
-                metrics['accuracy'] = value
+                value = float(line.split("Mean Accuracy:")[-1].strip())
+                metrics["accuracy"] = value
                 break
             except:
                 pass
-    
+
     return metrics
 
 
 def generate_final_report(all_results):
     """Generate comprehensive final report"""
     timestamp = datetime.now().isoformat()
-    
+
     successful = sum(1 for r in all_results if r["success"])
     total_time = sum(r["elapsed_time"] for r in all_results)
-    
+
     report = f"""
 # Clay Foundation Model - Complete PANGAEA Benchmark Results
 **Generated**: {timestamp}
@@ -249,21 +252,21 @@ This comprehensive evaluation tests Clay across ALL available PANGAEA datasets, 
 | Dataset | Status | Performance | Time (min) | Description | Priority |
 |---------|--------|-------------|------------|-------------|----------|
 """
-    
+
     for result in all_results:
         status = "✅ SUCCESS" if result["success"] else "❌ FAILED"
         time_min = result["elapsed_time"] / 60
-        
+
         performance = "N/A"
         if result["success"] and "performance" in result and result["performance"]:
             if "final_miou" in result["performance"]:
                 performance = f"{result['performance']['final_miou']:.1f}% mIoU"
             elif "final_mae" in result["performance"]:
                 performance = f"MAE: {result['performance']['final_mae']:.1f}"
-        
+
         config = result["config"]
         report += f"| {config['name']} | {status} | {performance} | {time_min:.1f} | {config['description']} | {config['priority']} |\n"
-    
+
     # Detailed analysis for successful runs
     report += f"""
 
@@ -271,7 +274,7 @@ This comprehensive evaluation tests Clay across ALL available PANGAEA datasets, 
 
 ### ✅ Successful Benchmarks ({successful}/{len(all_results)})
 """
-    
+
     for result in all_results:
         if result["success"]:
             config = result["config"]
@@ -302,7 +305,7 @@ This comprehensive evaluation tests Clay across ALL available PANGAEA datasets, 
 - **Time**: {result['elapsed_time']/60:.1f} minutes
 """
 
-    report += f"""
+    report += """
 
 ## Clay Foundation Model Performance Summary
 
@@ -341,63 +344,67 @@ Based on this comprehensive evaluation, Clay establishes itself as:
 *Clay Foundation Model v1.5.0 | Complete PANGAEA Benchmark Suite*
 *Showcasing multimodal geospatial AI capabilities*
 """
-    
+
     return report
 
 
 def main():
     """Run complete Clay benchmark suite on all PANGAEA datasets"""
     print("🚀 Clay Foundation Model - COMPLETE PANGAEA Benchmark Suite")
-    print("="*80)
+    print("=" * 80)
     print(f"🕐 Started: {datetime.now().isoformat()}")
     print(f"📊 Total Datasets: {len(ALL_DATASETS)}")
-    print(f"⚡ Enhanced Clay configuration with multimodal processing")
-    print(f"🎯 Testing ALL available PANGAEA datasets")
-    print("="*80)
+    print("⚡ Enhanced Clay configuration with multimodal processing")
+    print("🎯 Testing ALL available PANGAEA datasets")
+    print("=" * 80)
 
     # Ensure we're in the right directory
     os.chdir("/home/brunosan/code/model/benchmarks/pangaea/pangaea-bench")
-    
+
     all_results = []
-    
+
     # Sort by priority (critical -> high -> medium)
     priority_order = {"critical": 0, "high": 1, "medium": 2}
     sorted_datasets = sorted(ALL_DATASETS, key=lambda x: priority_order[x["priority"]])
-    
+
     for i, dataset_config in enumerate(sorted_datasets, 1):
-        print(f"\n🎯 [{i}/{len(ALL_DATASETS)}] Starting {dataset_config['name']} ({dataset_config['priority']} priority)...")
-        
+        print(
+            f"\n🎯 [{i}/{len(ALL_DATASETS)}] Starting {dataset_config['name']} ({dataset_config['priority']} priority)..."
+        )
+
         result = run_single_benchmark(dataset_config)
         all_results.append(result)
-        
+
         # Save intermediate results after each dataset
         with open("clay_complete_benchmark_results.json", "w") as f:
             json.dump(all_results, f, indent=2)
-    
+
     # Generate final comprehensive report
     final_report = generate_final_report(all_results)
-    
+
     with open("CLAY_COMPLETE_PANGAEA_BENCHMARK_REPORT.md", "w") as f:
         f.write(final_report)
-    
+
     # Final summary
     successful = sum(1 for r in all_results if r["success"])
     total_time = sum(r["elapsed_time"] for r in all_results)
     avg_time = total_time / len(all_results)
-    
-    print("\n" + "="*80)
+
+    print("\n" + "=" * 80)
     print("🏁 COMPLETE CLAY BENCHMARK SUITE FINISHED")
-    print("="*80)
-    print(f"✅ Success Rate: {successful}/{len(all_results)} ({successful/len(all_results)*100:.1f}%)")
+    print("=" * 80)
+    print(
+        f"✅ Success Rate: {successful}/{len(all_results)} ({successful/len(all_results)*100:.1f}%)"
+    )
     print(f"⏱️  Total Time: {total_time/3600:.1f} hours")
     print(f"📊 Average per Dataset: {avg_time/60:.1f} minutes")
-    print(f"📈 Complete Report: CLAY_COMPLETE_PANGAEA_BENCHMARK_REPORT.md")
-    print(f"💾 Raw Results: clay_complete_benchmark_results.json")
-    print("="*80)
-    
+    print("📈 Complete Report: CLAY_COMPLETE_PANGAEA_BENCHMARK_REPORT.md")
+    print("💾 Raw Results: clay_complete_benchmark_results.json")
+    print("=" * 80)
+
     # Performance summary
     if successful > 0:
-        print(f"\n🏆 CLAY PERFORMANCE HIGHLIGHTS:")
+        print("\n🏆 CLAY PERFORMANCE HIGHLIGHTS:")
         for result in all_results:
             if result["success"] and result.get("performance"):
                 config = result["config"]
@@ -406,7 +413,7 @@ def main():
                     print(f"  📊 {config['name']}: {perf['final_miou']:.1f}% mIoU")
                 elif "final_mae" in perf:
                     print(f"  📊 {config['name']}: MAE {perf['final_mae']:.1f}")
-    
+
     return all_results
 
 

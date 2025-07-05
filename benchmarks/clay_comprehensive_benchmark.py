@@ -9,20 +9,19 @@ import time
 import json
 import os
 from datetime import datetime
-from pathlib import Path
 
 # Enhanced configuration leveraging Clay's strengths
 ENHANCED_DATASETS = [
     {
         "name": "hlsburnscars",
-        "task": "segmentation", 
+        "task": "segmentation",
         "epochs": 5,  # Increased for better convergence
         "batch_size": 8,
         "learning_rate": 1e-4,
         "description": "Wildfire burn scar detection - Clay's optimal 6-band config",
         "expected_miou": "75-80%",
         "clay_advantage": "Perfect band match, binary task excellence",
-        "priority": "high"
+        "priority": "high",
     },
     {
         "name": "sen1floods11",
@@ -30,10 +29,10 @@ ENHANCED_DATASETS = [
         "epochs": 6,  # More epochs for multimodal learning
         "batch_size": 4,  # Reduced for larger multimodal inputs
         "learning_rate": 8e-5,
-        "description": "Flood mapping - Clay's unique SAR+Optical capability", 
+        "description": "Flood mapping - Clay's unique SAR+Optical capability",
         "expected_miou": "80-85%",
         "clay_advantage": "UNIQUE: Only foundation model with native SAR+Optical",
-        "priority": "critical"
+        "priority": "critical",
     },
     {
         "name": "ai4smallfarms",
@@ -42,9 +41,9 @@ ENHANCED_DATASETS = [
         "batch_size": 8,
         "learning_rate": 1e-4,
         "description": "Agricultural mapping - Clay's strong transfer domain",
-        "expected_miou": "80-85%", 
+        "expected_miou": "80-85%",
         "clay_advantage": "Strong agricultural domain transfer, 4-band adaptation",
-        "priority": "high"
+        "priority": "high",
     },
     {
         "name": "biomassters",
@@ -55,10 +54,10 @@ ENHANCED_DATASETS = [
         "description": "Forest biomass - Multimodal regression capabilities",
         "expected_miou": "MAE: 15-25",
         "clay_advantage": "SAR structure + Optical phenology fusion",
-        "priority": "high"
+        "priority": "high",
     },
     {
-        "name": "mados", 
+        "name": "mados",
         "task": "segmentation",
         "epochs": 8,  # More epochs for challenging 15-class task
         "batch_size": 6,
@@ -66,7 +65,7 @@ ENHANCED_DATASETS = [
         "description": "Marine pollution - Multi-class challenge",
         "expected_miou": "25-35%",
         "clay_advantage": "11-band spectral processing, class balancing",
-        "priority": "medium"
+        "priority": "medium",
     },
 ]
 
@@ -96,7 +95,7 @@ def run_enhanced_benchmark(dataset_config):
     # Base command with enhanced parameters
     cmd = [
         "torchrun",
-        "--nnodes=1", 
+        "--nnodes=1",
         "--nproc_per_node=1",
         "pangaea/run.py",
         "--config-name=train",
@@ -114,51 +113,59 @@ def run_enhanced_benchmark(dataset_config):
 
     # Task-specific optimizations
     if dataset_config["task"] == "segmentation":
-        cmd.extend([
-            "decoder=seg_upernet",
-            "preprocessing=seg_default", 
-            "criterion=cross_entropy",
-            "class_weights=auto",  # Handle class imbalance
-            "augmentation=advanced",  # Enhanced augmentation
-        ])
+        cmd.extend(
+            [
+                "decoder=seg_upernet",
+                "preprocessing=seg_default",
+                "criterion=cross_entropy",
+                "class_weights=auto",  # Handle class imbalance
+                "augmentation=advanced",  # Enhanced augmentation
+            ]
+        )
     elif dataset_config["task"] == "regression":
-        cmd.extend([
-            "decoder=reg_upernet",
-            "preprocessing=reg_default",
-            "criterion=mse",
-            "normalization=robust",  # Better for regression
-        ])
+        cmd.extend(
+            [
+                "decoder=reg_upernet",
+                "preprocessing=reg_default",
+                "criterion=mse",
+                "normalization=robust",  # Better for regression
+            ]
+        )
 
     # Dataset-specific optimizations
     if dataset_config["name"] == "sen1floods11":
-        cmd.extend([
-            "multimodal=true",  # Enable SAR+Optical processing
-            "sar_optical_fusion=early",  # Optimal fusion strategy
-        ])
+        cmd.extend(
+            [
+                "multimodal=true",  # Enable SAR+Optical processing
+                "sar_optical_fusion=early",  # Optimal fusion strategy
+            ]
+        )
     elif dataset_config["name"] == "mados":
-        cmd.extend([
-            "focal_loss=true",  # Better for class imbalance
-            "class_balancing=true",
-        ])
+        cmd.extend(
+            [
+                "focal_loss=true",  # Better for class imbalance
+                "class_balancing=true",
+            ]
+        )
 
     start_time = time.time()
-    
+
     try:
         print(f"📊 Starting training with {dataset_config['epochs']} epochs...")
         result = subprocess.run(
-            cmd, 
-            capture_output=True, 
-            text=True, 
+            cmd,
+            capture_output=True,
+            text=True,
             timeout=3600,  # 1 hour timeout for longer training
-            cwd="/home/brunosan/code/model/benchmarks/pangaea/pangaea-bench"
+            cwd="/home/brunosan/code/model/benchmarks/pangaea/pangaea-bench",
         )
-        
+
         elapsed = time.time() - start_time
         success = result.returncode == 0
-        
+
         # Extract performance metrics from output
         performance_data = extract_performance_metrics(result.stdout)
-        
+
         return {
             "dataset": dataset_config["name"],
             "success": success,
@@ -169,7 +176,7 @@ def run_enhanced_benchmark(dataset_config):
             "stderr": result.stderr[-1500:] if result.stderr else "",
             "command": " ".join(cmd),
         }
-        
+
     except subprocess.TimeoutExpired:
         return {
             "dataset": dataset_config["name"],
@@ -191,48 +198,48 @@ def run_enhanced_benchmark(dataset_config):
 def extract_performance_metrics(stdout):
     """Extract performance metrics from training output"""
     metrics = {}
-    
+
     # Look for common performance indicators
-    lines = stdout.split('\n')
+    lines = stdout.split("\n")
     for line in lines:
-        if 'mIoU' in line or 'miou' in line:
+        if "mIoU" in line or "miou" in line:
             # Extract mIoU values
             try:
-                if ':' in line:
-                    value = line.split(':')[-1].strip()
-                    if '%' in value:
-                        metrics['final_miou'] = float(value.replace('%', ''))
+                if ":" in line:
+                    value = line.split(":")[-1].strip()
+                    if "%" in value:
+                        metrics["final_miou"] = float(value.replace("%", ""))
                     else:
-                        metrics['final_miou'] = float(value) * 100
+                        metrics["final_miou"] = float(value) * 100
             except:
                 pass
-                
-        elif 'MAE' in line:
+
+        elif "MAE" in line:
             # Extract MAE for regression tasks
             try:
-                if ':' in line:
-                    value = line.split(':')[-1].strip()
-                    metrics['final_mae'] = float(value)
+                if ":" in line:
+                    value = line.split(":")[-1].strip()
+                    metrics["final_mae"] = float(value)
             except:
                 pass
-                
-        elif 'Accuracy' in line:
+
+        elif "Accuracy" in line:
             # Extract accuracy
             try:
-                if ':' in line:
-                    value = line.split(':')[-1].strip()
-                    if '%' in value:
-                        metrics['accuracy'] = float(value.replace('%', ''))
+                if ":" in line:
+                    value = line.split(":")[-1].strip()
+                    if "%" in value:
+                        metrics["accuracy"] = float(value.replace("%", ""))
             except:
                 pass
-    
+
     return metrics
 
 
 def generate_comprehensive_report(results):
     """Generate comprehensive benchmark report"""
     timestamp = datetime.now().isoformat()
-    
+
     report = f"""
 # Clay Foundation Model - Enhanced Comprehensive Benchmark Report
 Generated: {timestamp}
@@ -246,30 +253,30 @@ This enhanced benchmark thoroughly evaluates Clay's unique capabilities across {
 | Dataset | Status | mIoU/MAE | Time (min) | Clay Advantage | Priority |
 |---------|--------|----------|------------|----------------|----------|
 """
-    
+
     successful_runs = 0
     total_time = 0
-    
+
     for result in results:
         status = "✅ SUCCESS" if result["success"] else "❌ FAILED"
         time_min = result["elapsed_time"] / 60
         total_time += result["elapsed_time"]
-        
+
         if result["success"]:
             successful_runs += 1
-            
+
         performance = "N/A"
         if "performance" in result and result["performance"]:
             if "final_miou" in result["performance"]:
                 performance = f"{result['performance']['final_miou']:.1f}%"
             elif "final_mae" in result["performance"]:
                 performance = f"MAE: {result['performance']['final_mae']:.1f}"
-        
+
         config = result["config"]
         report += f"| {config['name']} | {status} | {performance} | {time_min:.1f} | {config['clay_advantage'][:50]}... | {config['priority']} |\n"
-    
+
     success_rate = (successful_runs / len(results)) * 100
-    
+
     report += f"""
 
 ## Performance Analysis
@@ -282,7 +289,7 @@ This enhanced benchmark thoroughly evaluates Clay's unique capabilities across {
 
 ### Clay's Unique Capabilities Demonstrated:
 """
-    
+
     # Add detailed findings for each successful run
     for result in results:
         if result["success"]:
@@ -295,7 +302,7 @@ This enhanced benchmark thoroughly evaluates Clay's unique capabilities across {
 - **Configuration**: {config['epochs']} epochs, LR={config['learning_rate']}
 """
 
-    report += f"""
+    report += """
 
 ## Technical Enhancements Applied
 
@@ -323,72 +330,80 @@ Based on this comprehensive evaluation:
 ---
 *Enhanced Clay Benchmark Suite - Designed to showcase multimodal geospatial foundation model capabilities*
 """
-    
+
     return report
 
 
 def main():
     """Run comprehensive enhanced benchmark suite"""
     print("🚀 Clay Foundation Model - Enhanced Comprehensive Benchmark Suite")
-    print("="*80)
+    print("=" * 80)
     print(f"🕐 Started: {datetime.now().isoformat()}")
     print(f"📊 Datasets: {len(ENHANCED_DATASETS)}")
-    print(f"⚡ Enhanced configurations with extended epochs and optimizations")
-    print("="*80)
+    print("⚡ Enhanced configurations with extended epochs and optimizations")
+    print("=" * 80)
 
     # Ensure we're in the right directory
     os.chdir("/home/brunosan/code/model/benchmarks/pangaea/pangaea-bench")
-    
+
     results = []
-    
+
     # Sort by priority (critical -> high -> medium)
     priority_order = {"critical": 0, "high": 1, "medium": 2}
-    sorted_datasets = sorted(ENHANCED_DATASETS, key=lambda x: priority_order[x["priority"]])
-    
+    sorted_datasets = sorted(
+        ENHANCED_DATASETS, key=lambda x: priority_order[x["priority"]]
+    )
+
     for i, dataset_config in enumerate(sorted_datasets, 1):
-        print(f"\n🎯 [{i}/{len(ENHANCED_DATASETS)}] Starting {dataset_config['name']} ({dataset_config['priority']} priority)...")
-        
+        print(
+            f"\n🎯 [{i}/{len(ENHANCED_DATASETS)}] Starting {dataset_config['name']} ({dataset_config['priority']} priority)..."
+        )
+
         result = run_enhanced_benchmark(dataset_config)
         results.append(result)
-        
+
         # Status update
-        status = "✅ SUCCESS" if result["success"] else "❌ FAILED" 
+        status = "✅ SUCCESS" if result["success"] else "❌ FAILED"
         elapsed_min = result["elapsed_time"] / 60
         performance = ""
-        
+
         if result["success"] and "performance" in result:
             perf_data = result["performance"]
             if "final_miou" in perf_data:
                 performance = f" (mIoU: {perf_data['final_miou']:.1f}%)"
             elif "final_mae" in perf_data:
                 performance = f" (MAE: {perf_data['final_mae']:.1f})"
-        
-        print(f"🏁 [{i}/{len(ENHANCED_DATASETS)}] {dataset_config['name']}: {status}{performance} ({elapsed_min:.1f}m)")
-        
+
+        print(
+            f"🏁 [{i}/{len(ENHANCED_DATASETS)}] {dataset_config['name']}: {status}{performance} ({elapsed_min:.1f}m)"
+        )
+
         # Save intermediate results
         with open("clay_enhanced_benchmark_results.json", "w") as f:
             json.dump(results, f, indent=2)
-    
+
     # Generate comprehensive report
     report = generate_comprehensive_report(results)
-    
+
     with open("CLAY_ENHANCED_BENCHMARK_REPORT.md", "w") as f:
         f.write(report)
-    
+
     # Final summary
     successful = sum(1 for r in results if r["success"])
     total_time = sum(r["elapsed_time"] for r in results)
-    
-    print("\n" + "="*80)
+
+    print("\n" + "=" * 80)
     print("🏁 ENHANCED BENCHMARK SUITE COMPLETE")
-    print("="*80)
-    print(f"✅ Success Rate: {successful}/{len(results)} ({successful/len(results)*100:.1f}%)")
+    print("=" * 80)
+    print(
+        f"✅ Success Rate: {successful}/{len(results)} ({successful/len(results)*100:.1f}%)"
+    )
     print(f"⏱️  Total Time: {total_time/3600:.1f} hours")
     print(f"📊 Average per Dataset: {(total_time/len(results))/60:.1f} minutes")
-    print(f"📈 Report Generated: CLAY_ENHANCED_BENCHMARK_REPORT.md")
-    print(f"💾 Results Saved: clay_enhanced_benchmark_results.json")
-    print("="*80)
-    
+    print("📈 Report Generated: CLAY_ENHANCED_BENCHMARK_REPORT.md")
+    print("💾 Results Saved: clay_enhanced_benchmark_results.json")
+    print("=" * 80)
+
     return results
 
 
