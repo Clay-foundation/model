@@ -8,7 +8,7 @@ This issue documents the comprehensive evaluation of Clay Foundation Model using
 
 🏆 **Clay establishes itself as the leading multimodal geospatial foundation model** with:
 
-- **🥇 First foundation model** with native SAR+Optical processing 
+- **🥇 First foundation model** with native SAR+Optical processing
 - **75-85% mIoU** on binary segmentation tasks (wildfire, flood detection)
 - **10-15% performance boost** from multimodal fusion capabilities
 - **Handles 4-15+ bands** with automatic adaptation across sensor types
@@ -36,7 +36,7 @@ This issue documents the comprehensive evaluation of Clay Foundation Model using
 ```
 🏆 Final mIoU: 75.2%
 ├── Not Burned: 82.4% IoU
-├── Burn Scar: 68.0% IoU  
+├── Burn Scar: 68.0% IoU
 ├── Overall Accuracy: 87.3%
 └── Training Time: <20 minutes
 ```
@@ -64,7 +64,7 @@ This issue documents the comprehensive evaluation of Clay Foundation Model using
 ### 3. AI4SmallFarms - Agricultural Mapping 🌾
 
 **Configuration:**
-- **Task**: Binary crop field detection  
+- **Task**: Binary crop field detection
 - **Data**: 4 optical bands (B2, B3, B4, B8)
 - **Domain**: Small-scale agriculture in Cambodia/Vietnam
 
@@ -142,7 +142,7 @@ This issue documents the comprehensive evaluation of Clay Foundation Model using
 - Fast convergence for **emergency response** applications
 
 ### 4. **Technical Robustness** ⚙️
-- **Band flexibility**: Handles 4-15 input bands seamlessly  
+- **Band flexibility**: Handles 4-15 input bands seamlessly
 - **Resolution adaptivity**: Works across multiple spatial scales
 - **Memory efficiency**: Competitive GPU usage vs other foundation models
 - **Framework integration**: Drop-in replacement for other encoders
@@ -203,7 +203,7 @@ training:
 
 ### ⚠️ **CHALLENGING for Clay:**
 - **Highly multi-class tasks** (>10 classes with severe imbalance)
-- **Temporal modeling** (single timestamp limitation)  
+- **Temporal modeling** (single timestamp limitation)
 - **Domain-specific applications** (may need specialized models)
 
 ## Files & Artifacts
@@ -225,7 +225,7 @@ training:
 
 ### Near-term Enhancements
 1. **Multi-temporal extension** - Handle time series natively
-2. **Enhanced band mapping** - Smarter spectral band selection  
+2. **Enhanced band mapping** - Smarter spectral band selection
 3. **Class balancing** - Better handling of imbalanced datasets
 4. **Temporal fusion** - Aggregate features across time steps
 
@@ -240,7 +240,7 @@ training:
 **Clay Foundation Model establishes itself as the premier multimodal geospatial foundation model**, delivering:
 
 - **🥇 Best-in-class multimodal** SAR+Optical processing
-- **🥈 Top-tier foundation model** performance across diverse tasks  
+- **🥈 Top-tier foundation model** performance across diverse tasks
 - **⚡ Exceptional efficiency** for binary segmentation applications
 - **🔧 Unmatched flexibility** for varied sensor configurations
 
@@ -248,7 +248,7 @@ training:
 
 ---
 
-*Benchmark conducted: July 5, 2025*  
+*Benchmark conducted: July 5, 2025*
 *Clay Foundation Model v1.5.0 | PANGAEA framework v1.0 | RTX 4090 GPU*
 
 ## Related

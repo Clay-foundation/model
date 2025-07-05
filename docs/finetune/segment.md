@@ -13,7 +13,7 @@ Clay has been comprehensively benchmarked using the [PANGAEA framework](https://
 
 **Key Results:**
 - **Multimodal Excellence**: 78-85% mIoU on SAR+Optical flood detection (Sen1Floods11)
-- **Binary Segmentation**: 75% mIoU on wildfire detection (HLS Burn Scars) 
+- **Binary Segmentation**: 75% mIoU on wildfire detection (HLS Burn Scars)
 - **Input Flexibility**: Handles 4-15 bands across diverse sensor configurations
 
 For a comprehensive benchmarking tutorial, see [Clay-PANGAEA Benchmark Tutorial](../tutorials/clay-pangaea-benchmark.ipynb).
