@@ -9,7 +9,7 @@
 Clay Foundation Model establishes itself as a **highly competitive geospatial foundation model** with unique multimodal SAR+Optical processing capabilities. Through rigorous PANGAEA framework evaluation, Clay demonstrates:
 
 - **🥇 1st place** in wildfire detection (84.8% mIoU)
-- **🥉 3rd place** in flood detection (89.6% mIoU) 
+- **🥉 3rd place** in flood detection (89.6% mIoU)
 - **🌊⚡ Unique capability**: Only foundation model with native SAR+Optical support
 - **⚡ Exceptional efficiency**: <1 minute per epoch training
 
@@ -61,7 +61,7 @@ Based on validated performance across available datasets:
 ### Multimodal Flood Mapping 🌊
 
 **Dataset**: Sen1Floods11 (13 optical + 2 SAR bands)
-- **Clay Performance**: 89.6% mIoU, 95.3% Accuracy  
+- **Clay Performance**: 89.6% mIoU, 95.3% Accuracy
 - **SOTA Comparison**: 3rd place, within 1.2% of TerraMind SOTA (90.78%)
 - **Unique Capability**: Only foundation model supporting native SAR+Optical fusion
 - **Competitive Edge**: Multimodal processing without architectural modifications
@@ -75,7 +75,7 @@ Based on validated performance across available datasets:
 - **Seamless fusion** of heterogeneous sensor data
 - **No architectural changes** needed for multimodal tasks
 
-### ⚡ Exceptional Training Efficiency  
+### ⚡ Exceptional Training Efficiency
 - **<1 minute per epoch** on RTX 4090 GPU
 - **Fast convergence** with competitive accuracy
 - **Production-ready** deployment efficiency
@@ -96,7 +96,7 @@ Based on validated performance across available datasets:
 
 ### Benchmark Configuration
 - **Framework**: PANGAEA v1.0 benchmark suite
-- **Hardware**: NVIDIA RTX 4090 GPU  
+- **Hardware**: NVIDIA RTX 4090 GPU
 - **Training**: 5-6 epochs with early stopping
 - **Model**: Clay v1.5.0 enhanced multimodal encoder
 
@@ -123,7 +123,7 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
   batch_size=8 task.trainer.n_epochs=5 \
   optimizer.weight_decay=0.05 use_wandb=false
 
-# Flood Detection (Expected: 89.6% mIoU)  
+# Flood Detection (Expected: 89.6% mIoU)
 torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
   --config-name=train dataset=sen1floods11 encoder=clay \
   task=segmentation criterion=cross_entropy decoder=seg_upernet \
@@ -138,7 +138,7 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
 
 ### ✅ **Optimal for Clay**
 - **Emergency Response**: Fire/flood detection with fast deployment
-- **Multimodal Projects**: SAR+Optical fusion requirements  
+- **Multimodal Projects**: SAR+Optical fusion requirements
 - **Binary Segmentation**: Change detection, anomaly identification
 - **Resource-Constrained**: Efficient training with competitive results
 
@@ -147,7 +147,7 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
 - **Agricultural Monitoring**: Competitive performance profile
 - **Research Applications**: Balance of flexibility and performance
 
-### ⚠️ **Consider Alternatives** 
+### ⚠️ **Consider Alternatives**
 - **Complex Multi-class**: >10 classes with severe imbalance
 - **Generative Tasks**: TerraMind excels in synthesis applications
 - **Large-Scale Inference**: Consider computational requirements
