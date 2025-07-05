@@ -28,6 +28,10 @@ parts:
       file: tutorials/reconstruction
     - title: PANGAEA Benchmark Evaluation
       file: tutorials/clay-pangaea-benchmark
+- caption: Benchmarks
+  chapters:
+    - title: Performance Results & Comparisons
+      file: benchmarks
 - caption: Finetune examples
   chapters:
     - title: Segmentation using Chesapeake
