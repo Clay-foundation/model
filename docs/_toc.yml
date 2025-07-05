@@ -26,6 +26,8 @@ parts:
       file: tutorials/embeddings
     - title: Clay MAE reconstruction
       file: tutorials/reconstruction
+    - title: PANGAEA Benchmark Evaluation
+      file: tutorials/clay-pangaea-benchmark
 - caption: Finetune examples
   chapters:
     - title: Segmentation using Chesapeake

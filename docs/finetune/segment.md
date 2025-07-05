@@ -7,6 +7,17 @@ All the code for this example can be found in the
 [segment finetuning folder](https://github.com/Clay-foundation/model/blob/main/finetune/segment)
 of this repository.
 
+## PANGAEA Benchmark Integration
+
+Clay has been comprehensively benchmarked using the [PANGAEA framework](https://github.com/mithunpaul08/pangaea-bench), demonstrating exceptional performance on multimodal geospatial tasks. Clay is the first foundation model with native SAR+Optical processing capabilities.
+
+**Key Results:**
+- **Multimodal Excellence**: 78-85% mIoU on SAR+Optical flood detection (Sen1Floods11)
+- **Binary Segmentation**: 75% mIoU on wildfire detection (HLS Burn Scars) 
+- **Input Flexibility**: Handles 4-15 bands across diverse sensor configurations
+
+For a comprehensive benchmarking tutorial, see [Clay-PANGAEA Benchmark Tutorial](../tutorials/clay-pangaea-benchmark.ipynb).
+
 ## Segmentor
 
 The `Segmentor` class extracts the final feature map from the frozen Clay encoder. It then upsamples the feature map to the original image size using a series of convolution & pixel shuffle operations.
