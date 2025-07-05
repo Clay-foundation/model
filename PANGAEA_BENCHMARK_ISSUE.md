@@ -136,7 +136,7 @@ This issue documents the comprehensive evaluation of Clay Foundation Model using
 
 **Legend:**
 - ✓ Clay validated from training logs
-- *** Clay projected based on capabilities  
+- *** Clay projected based on capabilities
 - **Bold numbers**: Exact scores from published papers
 - N/A: Model not evaluated on dataset
 
@@ -307,7 +307,7 @@ Choose **Clay** for production applications requiring efficiency and reliability
 
 ### Foundation Model References (Exact Scores)
 1. **Jakubik, J.** et al. "TerraMind: Large-Scale Generative Multimodality for Earth Observation." *arXiv:2504.11171* (2025) - **TerraMind-L avg: 59.57 mIoU**
-2. **NASA/IBM**: Prithvi-100M PANGAEA benchmark results - **Prithvi avg: 45.89 mIoU**  
+2. **NASA/IBM**: Prithvi-100M PANGAEA benchmark results - **Prithvi avg: 45.89 mIoU**
 3. **Reed, C.** et al. "Scale-MAE: A Scale-Aware Masked Autoencoder for Multiscale Geospatial Representation Learning." *ICCV 2023, arXiv:2212.14532*
 4. **Wang, Y.** et al. "SSL4EO-S12: A Large-Scale Multi-Modal, Multi-Temporal Dataset for Self-Supervised Learning in Earth Observation." *arXiv:2211.07044* (2022)
 5. **Chen, J.** et al. "RemoteCLIP: A Vision Language Foundation Model for Remote Sensing." *IEEE TGRS, arXiv:2306.11029* (2023)
