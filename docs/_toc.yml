@@ -14,10 +14,14 @@ parts:
       file: release-notes/changelog-v1.0
 - caption: Getting Started
   chapters:
+    - title: Quick Start
+      file: getting-started/quickstart
     - title: Installation
       file: getting-started/installation
     - title: Basic Use
       file: getting-started/basic_use
+    - title: Migration Guide
+      file: getting-started/migration-guide
 - caption: Tutorials
   chapters:
     - title: Clay wall-to-wall example

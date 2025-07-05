@@ -1,0 +1,22 @@
+# Ruff configuration for Clay Foundation Model
+target-version = "py39"
+
+[lint]
+# Allow fixes for auto-fixable rules
+fixable = ["ALL"]
+
+# Ignore specific rules for notebooks since they contain tutorial code
+[lint.per-file-ignores]
+# Ignore notebook-specific issues
+"*.ipynb" = [
+    "PLR0913",  # Too many arguments (acceptable in tutorial functions)
+    "PLR2004",  # Magic value comparison (acceptable in demos)
+    "E501",     # Line too long (acceptable for URLs and strings)
+]
+
+[lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends"]
+
+[format]
+# Use single quotes for strings
+quote-style = "double"
