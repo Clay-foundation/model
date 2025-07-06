@@ -1,6 +1,54 @@
-# Clay Foundation Model Integration with PANGAEA Benchmark
+# Clay PANGAEA Benchmark Integration
 
-This directory contains the integration of the Clay Foundation Model with the PANGAEA benchmark for evaluating geospatial foundation models.
+This directory contains the integration of Clay Foundation Model with the PANGAEA benchmark suite for comprehensive evaluation on geospatial tasks.
+
+## Overview
+
+Clay Foundation Model is evaluated on the PANGAEA (PANGAEA: A Global Multi-Domain Geospatial Foundation Model Benchmark) datasets to assess its performance across diverse Earth observation tasks.
+
+## Files
+
+- `run_clay_benchmark.py` - Main benchmarking script for Clay model evaluation
+- `analyze_clay_results.py` - Results analysis and visualization tools
+- `results/` - Directory containing sample benchmark results
+- `pangaea-bench/` - PANGAEA framework submodule
+
+## Usage
+
+### Running Benchmarks
+
+```bash
+# Run benchmark on all datasets
+python run_clay_benchmark.py
+
+# Run on specific datasets
+python run_clay_benchmark.py --datasets hlsburnscars sen1floods11 mados pastis mbigearthnet
+
+# Customize number of configurations per dataset
+python run_clay_benchmark.py --max-configs 8
+```
+
+### Analyzing Results
+
+```bash
+# Analyze results and generate report
+python analyze_clay_results.py results/clay_pangaea_results_*.json
+
+# Specify output directory
+python analyze_clay_results.py results/clay_pangaea_results_*.json --output analysis_output
+```
+
+## Datasets
+
+The benchmark evaluates Clay on these PANGAEA datasets:
+
+| Dataset | Task | Bands | Description |
+|---------|------|-------|-------------|
+| HLS Burn Scars | Segmentation | 6 | Wildfire burn scar detection |
+| Sen1Floods11 | Segmentation | 15 | Flood detection (SAR+optical) |
+| MADOS | Segmentation | 11 | Marine debris detection |
+| PASTIS | Segmentation | 10 | Agricultural crop segmentation |
+| M-BigEarthNet | Classification | 12 | Land cover classification |
 
 ## Setup
 
@@ -14,9 +62,7 @@ This directory contains the integration of the Clay Foundation Model with the PA
 2. **Clay model checkpoint:**
    The Clay checkpoint is automatically copied to `pangaea-bench/pretrained_models/clay_v1.5.0_epoch-07_val-loss-0.1718.ckpt`
 
-## Running Benchmarks with Clay
-
-### Example Commands
+## Manual Commands
 
 #### Semantic Segmentation with MADOS dataset:
 ```bash
@@ -29,23 +75,7 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    preprocessing=seg_default \
    criterion=cross_entropy \
    task=segmentation \
-   use_wandb=False \
-   trainer.fast_dev_run=True
-```
-
-#### Semantic Segmentation with HLS Burn Scars:
-```bash
-cd pangaea-bench
-torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
-   --config-name=train \
-   dataset=hlsburnscars \
-   encoder=clay \
-   decoder=seg_upernet \
-   preprocessing=seg_default \
-   criterion=cross_entropy \
-   task=segmentation \
-   use_wandb=False \
-   trainer.fast_dev_run=True
+   use_wandb=False
 ```
 
 ## Clay Encoder Configuration
@@ -53,25 +83,24 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
 The Clay encoder configuration is located at `pangaea-bench/configs/encoder/clay.yaml` and includes:
 
 - **Model**: Clay Foundation Model v1.5.0
-- **Input bands**: B2, B3, B4, B8A, B11, B12 (6 optical bands)
-- **Patch size**: 8x8
-- **Embed dimension**: 768
-- **Architecture**: Vision Transformer with 12 layers, 12 heads
+- **Architecture**: Vision Transformer with DOFA (Do One For All) design
+- **Embed dimension**: 1024 (large model)
+- **Layers**: 24 depth, 16 attention heads
+- **Patch size**: 8x8 pixels
 
-## Implementation Details
+## Key Features
 
-- **Band handling**: The Clay encoder automatically handles datasets with different numbers of bands by selecting the first 6 bands or padding with zeros if fewer than 6 bands are available.
-- **Metadata**: Uses dummy metadata (time, lat/lon, GSD) for benchmarking purposes.
-- **Wavelengths**: Uses representative wavelength values for the 6 optical bands.
+- **Automated hyperparameter optimization** - Smart search across optimal configurations
+- **Multi-modal support** - Handles both optical and SAR data
+- **Comprehensive analysis** - Performance comparison with published baselines
+- **Visualization tools** - Automated generation of figures and reports
 
-## Files Added
+## Results
 
-1. `pangaea-bench/configs/encoder/clay.yaml` - Clay encoder configuration
-2. `pangaea-bench/pangaea/encoders/clay_encoder.py` - Clay encoder implementation
-3. `pangaea-bench/pangaea/encoders/__init__.py` - Updated to include Clay encoder
+The analysis generates:
+- Performance comparison charts vs PANGAEA baselines
+- Hyperparameter sensitivity analysis
+- Comprehensive markdown reports
+- CSV summaries for further analysis
 
-## Notes
-
-- The Clay encoder integration is designed for benchmarking purposes with minimal modifications to the original Clay model.
-- For production use, proper band mapping and metadata handling should be implemented based on specific dataset requirements.
-- The current implementation supports single-temporal data. Multi-temporal support would require additional modifications.
+For detailed results and methodology, see `docs/benchmarks.md`.

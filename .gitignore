@@ -67,3 +67,7 @@ datadisk/
 
 # vscode
 .vscode
+
+# Clay benchmark results
+clay_*.json
+clay_*.py
