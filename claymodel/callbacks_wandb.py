@@ -265,7 +265,7 @@ class LogIntermediatePredictions(L.Callback):
                         batch["pixels"][j + n_cols][0],
                         cmap="viridis",
                     )
-                    axs[2, j].set_title(f"Actual {j+n_cols}")
+                    axs[2, j].set_title(f"Actual {j + n_cols}")
                     axs[2, j].axis("off")
 
                     # Plot predicted images in rows 1 and 3
@@ -274,7 +274,7 @@ class LogIntermediatePredictions(L.Callback):
                     axs[1, j].axis("off")
 
                     axs[3, j].imshow(pixels[j + n_cols][0], cmap="viridis")
-                    axs[3, j].set_title(f"Pred {j+n_cols}")
+                    axs[3, j].set_title(f"Pred {j + n_cols}")
                     axs[3, j].axis("off")
 
                 self.logger.experiment.log({f"{platform}": wandb.Image(fig)})
