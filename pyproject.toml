@@ -30,7 +30,13 @@ dependencies = [
     "scikit-learn",
     "timm>=0.6.0",
     "vit-pytorch",
-    "wandb"
+    "wandb",
+    "pystac_client",
+    "stackstac",
+    "proj>=0.2.0",
+    "jupyter>=1.1.1",
+    "xarray-sentinel",
+    "xarray",
 ]
 
 [build-system]
