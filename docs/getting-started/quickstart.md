@@ -77,6 +77,31 @@ your-satellite:
     std: {blue: 400, green: 450, red: 500, nir: 650}                # Statistics
 ```
 
+## 4. Handle Missing Data
+
+Clay automatically handles nodata pixels (clouds, shadows, projection gaps):
+
+```python
+from claymodel.utils import create_datacube_with_mask
+
+# Automatic nodata detection
+datacube = create_datacube_with_mask(
+    pixels=chips,              # Your data with nodata values  
+    time=timestamps,
+    latlon=torch.zeros(1, 4),
+    platform="sentinel-2-l2a"
+)
+
+# Or provide custom masks
+cloud_mask = load_your_cloud_mask()  # [B, 1, H, W] 
+datacube["mask"] = cloud_mask
+
+# Generate embeddings with nodata handling
+embeddings = model.embed(datacube)
+```
+
+Common nodata values are detected automatically: `NaN`, `-9999`, `0`, `-32768`. See [docs/nodata_handling.md](../nodata_handling.md) for details.
+
 ## Need Help?
 
 - 📖 **Full Documentation**: [clay-foundation.github.io/model](https://clay-foundation.github.io/model)
