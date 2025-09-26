@@ -67,3 +67,7 @@ datadisk/
 
 # vscode
 .vscode
+
+# pip
+.venv
+*.ckpt

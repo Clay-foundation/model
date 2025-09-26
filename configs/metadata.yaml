@@ -266,3 +266,30 @@ modis:
       sur_refl_b05: 1.240
       sur_refl_b06: 1.640
       sur_refl_b07: 2.130
+satellogic-MSI-L1D:
+  band_order:
+    - red
+    - green
+    - blue
+    - nir
+  rgb_indices:
+    - 0
+    - 1
+    - 2
+  gsd: 1.0
+  bands:
+    mean:
+      red: 1451.54
+      green: 1456.54
+      blue: 1543.22
+      nir: 2132.68
+    std:
+      red: 995.48
+      green: 771.29
+      blue: 708.86
+      nir: 1236.71
+    wavelength:
+      red: 0.640
+      green: 0.545
+      blue: 0.480
+      nir: 0.825

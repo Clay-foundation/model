@@ -41,7 +41,7 @@ You can access the model weights on HuggingFace [here](https://huggingface.co/ma
 
 Clay v1.5's architecture includes a dynamic embedding block for generating patches from multi-band inputs, position encoding to integrate spatial and temporal data, a Vision Transformer-based masked autoencoder (MAE) for reconstructing sensor data, and a DINOv2 teacher model to enhance representation learning. This architecture allows the model to process inputs from various satellite sensors of any size and number of bands, capturing complex geospatial information effectively.
 
-For more details, you can view the source code [here](https://github.com/Clay-foundation/model/blob/main/src/model.py).
+For more details, you can view the source code [here](https://github.com/Clay-foundation/model/blob/main/claymodel/model.py).
 
 https://github.com/Clay-foundation/model/blob/main/LICENSE
 
@@ -57,15 +57,13 @@ https://github.com/Clay-foundation/model/blob/main/LICENSE
     - Teacher size: `304M`
     - Model size on disk (just the encoder): `1.25 GB`.
 - Model license:
-    - Source code: [Apache 2.0](https://github.com/Clay-foundation/model/blob/main/LICENSE)
-    - Model weights: [OpenRAIL-M](https://github.com/Clay-foundation/model/blob/main/LICENSE-MODEL.md)
-        - Prohibited uses: Refer to OpenRAIL-M license section 5.
+    - Source code and Model weights: [Apache-2.0](https://github.com/Clay-foundation/model/blob/main/LICENSE)
 - Feedback and redress mechanisms:
     - Please open an issue or discussion on the [GitHub repository](https://github.com/Clay-foundation/model) or send an email to `bruno@madewithclay.org`.
 
 ## Model Card
 
-For Clay v1.5, we utilized the [`clay_mae_large`](https://github.com/Clay-foundation/model/blob/80012459793cf71f4482b6d0de5254da83f642c6/src/model.py#L608-L624) and the model weights can be found on Huggingface [here](https://huggingface.co/made-with-clay/Clay/resolve/main/v1.5/clay-v1.5.ckpt).
+For Clay v1.5, we utilized the [`clay_mae_large`](https://github.com/Clay-foundation/model/blob/80012459793cf71f4482b6d0de5254da83f642c6/claymodel/model.py#L608-L624) and the model weights can be found on Huggingface [here](https://huggingface.co/made-with-clay/Clay/resolve/main/v1.5/clay-v1.5.ckpt).
 
 ```
 MASKED PATCHES = 75%

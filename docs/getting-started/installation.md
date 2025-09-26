@@ -1,14 +1,45 @@
 # Installation
 
+## Pip Installation (Recommended)
+
+The easiest way to install Clay Foundation Model is via pip:
+
+```bash
+pip install git+https://github.com/Clay-foundation/model.git
+```
+
+This will install the `claymodel` package and all its dependencies. You can then import and use it in your Python code:
+
+```python
+from claymodel.datamodule import ClayDataModule
+from claymodel.module import ClayMAEModule
+
+# Load pretrained model
+model = ClayMAEModule.load_from_checkpoint("path/to/clay-v1.5.ckpt")
+
+# Generate embeddings
+embeddings = model.encoder(chips)
+```
+
+### Using Pretrained Weights
+
+Download the Clay v1.5 weights from [Hugging Face](https://huggingface.co/made-with-clay/Clay/resolve/main/v1.5/clay-v1.5.ckpt):
+
+```bash
+wget https://huggingface.co/made-with-clay/Clay/resolve/main/v1.5/clay-v1.5.ckpt
+```
+
 ## Cloud Environments
 
 Launch into a [JupyterLab](https://jupyterlab.readthedocs.io) environment on
 
 | [Binder](https://mybinder.readthedocs.io/en/latest) | [SageMaker Studio Lab](https://studiolab.sagemaker.aws) |
 |:--:|:--:|
-| [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Clay-foundation/model/main) | [![Open in SageMaker Studio Lab](https://studiolab.sagemaker.aws/studiolab.svg)](https://studiolab.sagemaker.aws/import/github/Clay-foundation/model/blob/main/docs/tutorials/clay-v1-wall-to-wall.ipynb) |
+| [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Clay-foundation/model/main) | [![Open in SageMaker Studio Lab](https://studiolab.sagemaker.aws/studiolab.svg)](https://studiolab.sagemaker.aws/import/github/Clay-foundation/model/blob/main/docs/tutorials/wall-to-wall.ipynb) |
 
-## Local Environments
+## Development Installation
+
+For development, training, or advanced usage, you can set up the full development environment:
 
 Start by cloning this [repo-url](https://github.com/Clay-foundation/model)
 

@@ -56,7 +56,7 @@ jobs:
 
       # Upload the built HTML to GitHub Artifacts
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@a753861a5debcf57bf8b404356158c8e1e33150c # v2.0.0
+        uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/html
 
@@ -78,4 +78,4 @@ jobs:
       # Push the book's HTML to github-pages
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@13b55b33dd8996121833dbc1db458c793a334630 # v3.0.1
+        uses: actions/deploy-pages@v4
