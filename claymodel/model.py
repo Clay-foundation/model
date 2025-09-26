@@ -86,15 +86,55 @@ class Encoder(nn.Module):
 
         patches = patches + pos_metadata_encoding  # [B L D] + [B L D] -> [B L D]
         return patches  # [B L D]
+    
+    def compute_patch_mask(self, mask):
+        """
+        Convert pixel-level mask to patch-level mask.
+        A patch is considered masked (nodata) if more than 50% of its pixels are masked.
+        
+        Parameters
+        ----------
+        mask : torch.Tensor
+            Pixel-level mask of shape [B, C, H, W] or [B, 1, H, W]
+            where 1 indicates nodata pixels.
+        
+        Returns
+        -------
+        patch_mask : torch.Tensor
+            Patch-level mask of shape [B, L] where 1 indicates nodata patches.
+        """
+        if mask is None:
+            return None
+            
+        B, C, H, W = mask.shape
+        if C > 1:
+            # If multi-channel mask, take the maximum across channels
+            mask = mask.max(dim=1, keepdim=True)[0]  # [B, 1, H, W]
+        
+        # Convert to patches
+        patch_mask = rearrange(
+            mask,
+            "B C (h p1) (w p2) -> B (h w) (C p1 p2)",
+            p1=self.patch_size,
+            p2=self.patch_size,
+        )  # [B L (C P P)]
+        
+        # A patch is nodata if more than 50% of its pixels are nodata
+        patch_mask = patch_mask.mean(dim=-1) > 0.5  # [B L]
+        
+        return patch_mask.float()  # [B L]
 
-    def mask_out(self, patches):
+    def mask_out(self, patches, nodata_mask=None):
         """
         Mask out patches randomly by shuffling the patches & masking out the
-        first N patches
+        first N patches. Also considers nodata patches which are always masked.
 
         Parameters
         ----------
         patches : torch.Tensor A tensor of shape (B, L, D)
+        nodata_mask : torch.Tensor, optional
+            A tensor of shape (B, L) where 1 indicates nodata patches that
+            should always be masked.
 
         Returns
         -------
@@ -123,12 +163,28 @@ class Encoder(nn.Module):
                 torch.arange(B * L, device=patches.device), "(B L) -> B L", B=B, L=L
             )
 
+        # If we have nodata patches, ensure they get low priority (high noise values)
+        # so they are more likely to be selected as masked patches
+        if nodata_mask is not None:
+            # Add large positive values to noise for nodata patches to ensure they're masked
+            noise = noise + nodata_mask * 1000.0
+
         random_indices = torch.argsort(noise, dim=-1)  # [B L]
         reverse_indices = torch.argsort(random_indices, dim=-1)  # [B L]
 
         num_masked_patches = int(
             self.mask_ratio * self.num_patches
         )  # Number of patches to be masked out
+        
+        # Ensure we have enough patches to mask
+        if nodata_mask is not None:
+            nodata_count = nodata_mask.sum(dim=-1)  # [B]
+            max_nodata = nodata_count.max().item()
+            if max_nodata > num_masked_patches:
+                # If we have more nodata patches than we want to mask,
+                # we need to adjust to ensure we don't exceed our desired mask ratio
+                num_masked_patches = max(num_masked_patches, int(max_nodata))
+        
         masked_indices, unmasked_indices = (
             random_indices[:, :num_masked_patches],  # [B mask_ratio * L]
             random_indices[:, num_masked_patches:],  # [B (1 - mask_ratio) * L]
@@ -166,6 +222,9 @@ class Encoder(nn.Module):
             datacube["gsd"],  # 1
             datacube["waves"],  # [N]
         )  # [B C H W]
+        
+        # Extract mask information if available
+        mask = datacube.get("mask", None)  # [B C H W] or None
 
         B, C, H, W = cube.shape
 
@@ -180,14 +239,19 @@ class Encoder(nn.Module):
             gsd,
         )  # [B L D] - add position encoding to the embeddings
 
-        # mask out patches
+        # Compute patch-level mask from pixel-level mask
+        patch_mask = None
+        if mask is not None:
+            patch_mask = self.compute_patch_mask(mask)  # [B L]
+
+        # mask out patches (considering nodata patches)
         (
             unmasked_patches,
             unmasked_indices,
             masked_indices,
             masked_matrix,
         ) = self.mask_out(
-            patches
+            patches, patch_mask
         )  # [B L:(1 - mask_ratio) D], [(1-mask_ratio)], [mask_ratio], [B L]
 
         # Add class tokens
@@ -497,6 +561,7 @@ class ClayMAE(nn.Module):
                 "latlon": datacube["latlon"],
                 "gsd": gsd,
                 "waves": waves,
+                "mask": datacube.get("mask", None),
             }
         )
 

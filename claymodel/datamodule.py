@@ -57,9 +57,15 @@ class EODataset(Dataset):
         chip_path = self.chips_path[idx]
         with np.load(chip_path, allow_pickle=False) as chip:
             platform = chip_path.parent.name
+            
+            # Initialize mask to track nodata pixels
+            mask = None
+            
             if platform == "sentinel-1-rtc":
                 pixels = chip["pixels"].astype(np.float32)
-                pixels[pixels <= 0] = (
+                # Create mask for nodata pixels (<=0 for Sentinel-1)
+                mask = pixels <= 0
+                pixels[mask] = (
                     1e-10  # replace corrupted pixels in sentinel-1-rtc with small value
                 )
                 pixels = 10 * np.log10(
@@ -67,9 +73,31 @@ class EODataset(Dataset):
                 )  # convert to dB scale, more interpretable pixels
             else:
                 pixels = chip["pixels"].astype(np.float32)
+                # Create mask for common nodata values
+                mask = np.logical_or(
+                    np.logical_or(np.isnan(pixels), pixels == -9999),
+                    pixels == 0
+                )
+                # Replace nodata values with small positive value to avoid issues
+                pixels[mask] = 1e-10
+
+            # Check if chip contains a pre-computed mask
+            if "mask" in chip:
+                existing_mask = chip["mask"].astype(bool)
+                if mask is not None:
+                    mask = np.logical_or(mask, existing_mask)
+                else:
+                    mask = existing_mask
 
             pixels = torch.from_numpy(pixels)
             pixels = self.transforms[platform](pixels)
+            
+            # Convert mask to tensor if it exists
+            if mask is not None:
+                mask = torch.from_numpy(mask.astype(np.float32))
+            else:
+                # Create empty mask (all valid pixels)
+                mask = torch.zeros_like(pixels[:1])  # Shape [1, H, W]
 
             time_tensor = torch.tensor(
                 np.hstack((chip["week_norm"], chip["hour_norm"]), dtype=np.float32)
@@ -88,6 +116,7 @@ class EODataset(Dataset):
                 "platform": platform,
                 "time": time_tensor,
                 "latlon": latlon_tensor,
+                "mask": mask,
             }
 
         return {"pixels": pixels, **additional_info}
