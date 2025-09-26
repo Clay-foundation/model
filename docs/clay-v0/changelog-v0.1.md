@@ -7,12 +7,12 @@ Released on 2024/01/12.
 > For release notes for the trained model, see [](model_release)
 
 
-### 💫 Highlights
+## 💫 Highlights
 
 * 🎉 **First release of Clay Foundation Model** 🎉
 * Implement MAE with support for position, time, latlon & channel embeddings ([#47](https://github.com/Clay-foundation/model/pull/47))
 
-### 🚀 Model
+## 🚀 Model
 
 * Generate embeddings from CLAYModule trained with latlon/time encodings ([#96](https://github.com/Clay-foundation/model/pull/96))
 * Add multigpu support & UI to test embeddings ([#109](https://github.com/Clay-foundation/model/pull/109))
@@ -24,7 +24,7 @@ Released on 2024/01/12.
 * Generate embeddings via prediction loop ([#56](https://github.com/Clay-foundation/model/pull/56))
 * Initial Vision Transformer architecture with MAE decoder ([#37](https://github.com/Clay-foundation/model/pull/37))
 
-### 🗃️ Data Pipeline
+## 🗃️ Data Pipeline
 
 * Adapted sampling strategy ([#81](https://github.com/Clay-foundation/model/pull/81))
 * Allow ClayDataModule to load GeoTIFF files directly from s3 ([#92](https://github.com/Clay-foundation/model/pull/92))
@@ -39,7 +39,7 @@ Released on 2024/01/12.
 * Landcover based sampling strategy ([#29](https://github.com/Clay-foundation/model/pull/29))
 * Datacube ([#27](https://github.com/Clay-foundation/model/pull/27))
 
-### 📖 Documentation
+## 📖 Documentation
 
 * Document how the benchmark dataset labels were prepared ([#100](https://github.com/Clay-foundation/model/pull/100))
 * Document how to finetune pretrained model on downstream task ([#99](https://github.com/Clay-foundation/model/pull/99))
@@ -49,7 +49,7 @@ Released on 2024/01/12.
 * Setting the model license to OpenRail-M ([#63](https://github.com/Clay-foundation/model/pull/63))
 * Create CODE_OF_CONDUCT.md ([#53](https://github.com/Clay-foundation/model/pull/53))
 
-### 🧰 Maintenance
+## 🧰 Maintenance
 
 * Bump pytorch from 2.0.0 to 2.1.0, CUDA from 11.8 to 12.0 ([#51](https://github.com/Clay-foundation/model/pull/51))
 * Add pre-commit hooks with ruff formatter/linter rules ([#26](https://github.com/Clay-foundation/model/pull/26))
@@ -57,7 +57,7 @@ Released on 2024/01/12.
 * Setup LightningCLI trainer script ([#24](https://github.com/Clay-foundation/model/pull/24))
 * Initial conda environment and binder links ([#15](https://github.com/Clay-foundation/model/pull/15))
 
-### 🧑‍🤝‍🧑 Contributors
+## 🧑‍🤝‍🧑 Contributors
 
 * [@brunosan](https://github.com/brunosan)
 * [@lillythomas](https://github.com/lillythomas)

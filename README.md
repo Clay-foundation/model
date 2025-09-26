@@ -73,7 +73,7 @@ Finally, double-check that the libraries have been installed.
 
 ### Running the model
 
-The neural network model can be ran via
+The neural network model can be run via
 [LightningCLI v2](https://pytorch-lightning.medium.com/introducing-lightningcli-v2supercharge-your-training-c070d43c7dd6).
 
 > [!NOTE]
@@ -116,4 +116,4 @@ You can preview the site locally with:
 python -m http.server --directory _build/html
 ```
 
-There is a GitHub Action on `./github/workflows/deploy-docs.yml` that builds the site and pushes it to GitHub Pages.
+There is a GitHub Action on `.github/workflows/deploy-docs.yml` that builds the site and pushes it to GitHub Pages.
