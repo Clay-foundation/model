@@ -4,7 +4,7 @@ This changelog is a summary of the changes to the pretrained model weights for t
 
 Model weights released on 2024/11/19.
 
-> For release notes for the source code, see [](software_release_v1.5)
+> For release notes for the source code, see [](software_release_v1)
 
 ## Summary
 

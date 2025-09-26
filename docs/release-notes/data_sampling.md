@@ -15,9 +15,9 @@ that contains data from multiple platforms, and is as varied as possible in term
 - temporal distribution
 - ground sampling distance
 
-To achieve this we have first complied a [list of possible input platforms](https://github.com/Clay-foundation/model/issues/128). The list of candidate systems is rather long, and will be growing in the future. To reduce complexity, we have converged to a shorter list of platforms for the first round of model training.
+To achieve this we have first compiled a [list of possible input platforms](https://github.com/Clay-foundation/model/issues/128). The list of candidate systems is rather long, and will be growing in the future. To reduce complexity, we have converged to a shorter list of platforms for the first round of model training.
 
-Criteria was availability in the cloud, existence of STAC catalogs, and cloud optimized formats. This resulted in the following list of systems that we have
+Criteria were availability in the cloud, existence of STAC catalogs, and cloud optimized formats. This resulted in the following list of systems that we have
 included in the training for Clay v1
 
 
@@ -27,7 +27,7 @@ included in the training for Clay v1
 | Sentinel 2 L2A | Global | 10 optical bands | 10 |
 | Sentinel 1 RTC | Global | 2 radar bands | 10 |
 | NAIP | USA | 4 optical bands | < 1 |
-| LINZ | New Zealand | 3 optical bands | < 0.5
+| LINZ | New Zealand | 3 optical bands | < 0.5 |
 | MODIS | Global | 7 bands | 500 |
 
 ## Sampling strategy
