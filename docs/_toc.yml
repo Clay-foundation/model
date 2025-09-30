@@ -66,6 +66,5 @@ parts:
         file: clay-v0/data_datacube
       - title: Benchmark dataset labels
         file: clay-v0/data_labels
-      - file: clay-v0-interpolation
       - title: Software release notes v0.1
-        file: clay-v0/changelog-v1.0
+        file: clay-v0/changelog-v0.1

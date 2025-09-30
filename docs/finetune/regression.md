@@ -15,7 +15,7 @@ huggingface repository. Grab a coffee, this is about 250GB in size.
 
 The next step is to unzip training data. The data comes in a multi-file
 zip archive. So it needs to be unzipped using a library that can handle
-the format. 7z works quite well in this case. Grabb another coffee, this
+the format. 7z works quite well in this case. Grab another coffee, this
 will take a while.
 
 ```bash
