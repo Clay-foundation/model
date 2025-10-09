@@ -47,7 +47,7 @@ The Clay model can be used in three main ways:
   License: [Apache-2.0](https://github.com/Clay-foundation/model/blob/main/LICENSE).
 - The Clay **documentation** [lives on this site](https://clay-foundation.github.io/model/index.html).
   License: [CC-BY](http://creativecommons.org/licenses/by/4.0/).
-- We release the **embeddings** of the used training data on [Source Cooperative](https://beta.source.coop/repositories/clay/clay-model-v0-embeddings).
+- We release the **embeddings** of the used training data on [Source Cooperative](https://source.coop/clay/clay-model-v0-embeddings).
   License: [ODC-BY](https://opendatacommons.org/licenses/by/).
 
 CLAY is a fiscal sponsored project of the 501c3 non-profit
