@@ -125,7 +125,7 @@ The normalization and wavelength parameters can be found in the following
 * Training Time:
     * `100` epochs, each taking ~`8h` to train.
 * Carbon Emissions:
-    * According to the "Customer Carbon Emission Tool", there were no Scope 1 or Scope 2 carbon emissions. Following the [documentation](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/ccft-estimation.html), we believe this is due to the usage of renewable energy sources. We are aware that Scope 3 emissions might be significant for data centers and that these are not included in the estimate.
+    * [Update Oct '25]. The AWS emissions reporting tool has been updated with ["Location based method"](https://docs.aws.amazon.com/ccft/latest/releasenotes/what-is-ccftrn.html) for their Scope 1 and 3. We only see monthly, and we know that that month we did tests before the training run, and we also ran inference for Sentinel-2 and the entire NAIP archive (we guestimate this could have been 10%-40% of to the training run). Overall, our AWS account for the month of October '24 was 0.22 MT CO2e "market-based" (accounting AWS offsets), and 15.1 MT CO2e "location-based" with the average carbon footprint of the location we trained (Ohio Data Center).
 * Training stages:
     * While developing the model we run small tests locally and on the cloud. We estimate that all testing and development compute is less than the compute used for 1 epoch of training.
     * QA of the model is also done locally and on the cloud, and we estimate that it is less than the compute used for 1 epoch of training.
