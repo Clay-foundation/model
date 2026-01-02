@@ -4,7 +4,7 @@ We have built an example for training a classification head on top of
 the class token embeddings from the frozen Clay encoder.
 
 All the code for this example can be found in the
-[classify finetuning folder](https://github.com/Clay-foundation/model/blob/main/finetune/classify)
+[classify finetuning folder](https://github.com/Clay-foundation/model/blob/main/claymodel/finetune/classify)
 of this repository.
 
 ## Classifier
