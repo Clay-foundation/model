@@ -24,6 +24,8 @@ jobs:
   # This job installs dependencies, builds the book, and pushes it to `gh-pages`
   build-book:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
     defaults:
       run:
         shell: bash -l {0}
