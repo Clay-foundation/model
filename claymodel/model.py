@@ -161,8 +161,8 @@ class Encoder(nn.Module):
     def forward(self, datacube):
         cube, time, latlon, gsd, waves = (
             datacube["pixels"],  # [B C H W]
-            datacube["time"],  # [B 2]
-            datacube["latlon"],  # [B 2]
+            datacube["time"],  # [B 4]  # week_sin, week_cos, hour_sin, hour_cos
+            datacube["latlon"],  # [B 4]  # lat_sin, lat_cos, lon_sin, lon_cos
             datacube["gsd"],  # 1
             datacube["waves"],  # [N]
         )  # [B C H W]
