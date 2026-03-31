@@ -40,8 +40,9 @@ For development or advanced usage, you can set up the full development environme
 
 To help out with development, start by cloning this [repo-url](/../../)
 
-    git clone <repo-url>
+    git clone https://github.com/Clay-foundation/model.git
     cd model
+
 
 Then we recommend [using mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html)
 to install the dependencies. A virtual environment will also be created with Python and
