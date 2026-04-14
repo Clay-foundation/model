@@ -35,9 +35,9 @@ def posemb_sincos_2d_with_gsd(
 
 
 def posemb_sincos_1d(waves, dim, temperature: int = 10000, dtype=torch.float32):
-    assert (
-        dim % 2 == 0
-    ), "Feature dimension must be a multiple of 2 for sincos embedding"
+    assert dim % 2 == 0, (
+        "Feature dimension must be a multiple of 2 for sincos embedding"
+    )
     waves = torch.arange(waves) if isinstance(waves, int) else waves
 
     omega = torch.arange(dim // 2, device=waves.device) / (dim // 2 - 1)
