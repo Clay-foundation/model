@@ -50,8 +50,8 @@ The Clay model can be used in three main ways:
 - We release the **embeddings** of the used training data on [Source Cooperative](https://source.coop/clay/clay-model-v0-embeddings).
   License: [ODC-BY](https://opendatacommons.org/licenses/by/).
 
-CLAY is a fiscal sponsored project of the 501c3 non-profit
-[Radiant Earth](https://www.radiant.earth).
+CLAY model v0 to v1.5 was a fiscal sponsored project of the 501c3 non-profit [Radiant Earth](https://www.radiant.earth).
+Clay is now a program of [Renaissance Philanthropy](https://www.renaissancephilanthropy.org/) , a 501(c)(3) organization "
 
 ---
 ### Table of Contents
