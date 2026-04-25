@@ -17,33 +17,36 @@ wget https://huggingface.co/made-with-clay/Clay/resolve/main/v1.5/clay-v1.5.ckpt
 ## 3. Generate Embeddings
 
 ```python
-import yaml
 import torch
-from claymodel.module import ClayMAEModule
+from claymodel import load_metadata, normalize
+from claymodel.api import load_model
 
-# Load model
-model = ClayMAEModule.load_from_checkpoint("clay-v1.5.ckpt")
-model.eval()
+# Load model (uses bundled metadata, sets mask_ratio=0 for inference)
+model = load_model(ckpt_path="clay-v1.5.ckpt")
 
 # Load sensor metadata
-with open("configs/metadata.yaml", "r") as f:
-    metadata = yaml.safe_load(f)
+metadata = load_metadata()
 
 # Prepare Sentinel-2 data
 sensor = "sentinel-2-l2a"
-chips = torch.randn(1, 10, 256, 256)  # [batch, bands, height, width]
+pixels = torch.randn(1, 10, 256, 256)  # [batch, bands, height, width]
 
-# Get wavelengths from metadata (convert μm to nm)
-wavelengths = []
-for band in metadata[sensor]["band_order"]:
-    wavelengths.append(metadata[sensor]["bands"]["wavelength"][band] * 1000)
-wavelengths = torch.tensor([wavelengths], dtype=torch.float32)
+# Normalize using sensor statistics (per-band z-score)
+pixels = normalize(pixels, sensor, metadata=metadata)
 
-timestamps = torch.zeros(1, 4)  # [week, hour, lat, lon] - can be zeros
+# Build datacube with required keys
+datacube = {
+    "pixels": pixels,
+    "time": torch.zeros(1, 4),     # (week_sin, week_cos, hour_sin, hour_cos)
+    "latlon": torch.zeros(1, 4),   # (lat_sin, lat_cos, lon_sin, lon_cos)
+    "gsd": torch.tensor(float(metadata[sensor].gsd)),
+    "waves": torch.tensor(list(metadata[sensor].bands.wavelength.values())),
+}
 
 # Generate embeddings
 with torch.no_grad():
-    embeddings = model.encoder(chips, timestamps, wavelengths)
+    encoded, *_ = model.encoder(datacube)
+    embeddings = encoded[:, 0, :]  # CLS token
 
 print(f"Embeddings shape: {embeddings.shape}")  # [1, 1024]
 ```

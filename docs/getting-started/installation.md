@@ -11,14 +11,28 @@ pip install git+https://github.com/Clay-foundation/model.git
 This will install the `claymodel` package and all its dependencies. You can then import and use it in your Python code:
 
 ```python
-from claymodel.datamodule import ClayDataModule
-from claymodel.module import ClayMAEModule
+from claymodel import load_metadata, normalize
+from claymodel.api import load_model
+import torch
 
-# Load pretrained model
-model = ClayMAEModule.load_from_checkpoint("path/to/clay-v1.5.ckpt")
+# Load pretrained model (uses bundled metadata, inference-ready)
+model = load_model(ckpt_path="path/to/clay-v1.5.ckpt")
 
-# Generate embeddings
-embeddings = model.encoder(chips)
+# Prepare a datacube and generate embeddings
+metadata = load_metadata()
+sensor = "sentinel-2-l2a"
+pixels = normalize(torch.randn(1, 10, 256, 256), sensor)
+datacube = {
+    "pixels": pixels,
+    "time": torch.zeros(1, 4),
+    "latlon": torch.zeros(1, 4),
+    "gsd": torch.tensor(float(metadata[sensor].gsd)),
+    "waves": torch.tensor(list(metadata[sensor].bands.wavelength.values())),
+}
+
+with torch.no_grad():
+    encoded, *_ = model.encoder(datacube)
+    embeddings = encoded[:, 0, :]  # [1, 1024]
 ```
 
 ### Using Pretrained Weights

@@ -80,7 +80,8 @@ class EuroSATDataModule(L.LightningDataModule):
         self.num_workers = num_workers
         self.data_dir = data_dir
 
-        metadata = Box(yaml.safe_load(open(metadata_path)))["sentinel-2-l2a"]
+        with open(metadata_path) as f:
+            metadata = Box(yaml.safe_load(f))["sentinel-2-l2a"]
         mean = list(metadata.bands.mean.values())
         std = list(metadata.bands.std.values())
 

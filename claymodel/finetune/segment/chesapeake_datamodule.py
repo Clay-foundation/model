@@ -131,7 +131,8 @@ class ChesapeakeDataModule(L.LightningDataModule):
         self.train_label_dir = train_label_dir
         self.val_chip_dir = val_chip_dir
         self.val_label_dir = val_label_dir
-        self.metadata = Box(yaml.safe_load(open(metadata_path)))
+        with open(metadata_path) as f:
+            self.metadata = Box(yaml.safe_load(f))
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.platform = platform

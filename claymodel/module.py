@@ -17,18 +17,19 @@ class ClayMAEModule(L.LightningModule):
         patch_size=8,
         shuffle=False,
         metadata_path="configs/metadata.yaml",
-        teacher="samvit_base_patch16.sa1b",
+        teacher="vit_large_patch14_reg4_dinov2.lvd142m",
         dolls=[16, 32, 64, 128, 256, 768],
         doll_weights=[1, 1, 1, 1, 1, 1],
         lr=1e-5,
         wd=0.05,
         b1=0.9,
         b2=0.95,
-        embeddings_level: Literal["mean", "patch", "group"] = "mean",
+        embeddings_level: Literal["mean", "patch", "group"] = "mean",  # noqa: E501 unused, kept for ckpt compat
     ):
         super().__init__()
         self.save_hyperparameters(logger=True)
-        self.metadata = Box(yaml.safe_load(open(metadata_path)))
+        with open(metadata_path) as f:
+            self.metadata = Box(yaml.safe_load(f))
         model_map = {
             "tiny": clay_mae_tiny,
             "small": clay_mae_small,
@@ -47,28 +48,10 @@ class ClayMAEModule(L.LightningModule):
                 "doll_weights": doll_weights,
             }
             self.model = model_map[model_size](**model_args)
-            # checkpoint_path = 'mae_v1.5.0_epoch-76_val-loss-0.1612.ckpt'
-            # checkpoint = torch.load(checkpoint_path, map_location="cpu")
-            # # Extract the state dictionary
-            # state_dict = checkpoint['state_dict']
-
-            # # Modify the state dictionary
-            # new_state_dict = OrderedDict()
-            # for k, v in state_dict.items():
-            #     # Remove 'model.' prefix if it exists
-            #     if k.startswith('model.'):
-            #         k = k[len('model.'):]
-            #     # Exclude keys related to the 'teacher'
-            #     if not (k.startswith('teacher') or k.startswith('mrl')):
-            #         new_state_dict[k] = v
-            # with torch.no_grad():
-            #     # Load the modified state dictionary into your model
-            #     missing_keys, unexpected_keys = (
-            #         self.model.load_state_dict(new_state_dict, strict=False)
-            #     )
-            #     # Optionally, print missing and unexpected keys
-            #     print(f"Missing keys: {missing_keys}")
-            #     print(f"Unexpected keys: {unexpected_keys}")
+            # NOTE: Weight loading from checkpoint is handled by Lightning's
+            # load_from_checkpoint(). The checkpoint strips 'model.' prefix and
+            # excludes teacher/MRL keys. See claymodel/utils.py for the shared
+            # weight-loading utility used by finetune factories.
         else:
             raise ValueError(
                 f"Invalid model size {model_size}. Expected one of {model_map.keys()}"
@@ -76,6 +59,11 @@ class ClayMAEModule(L.LightningModule):
 
     def on_train_epoch_start(self):
         self.model.teacher.eval()
+
+    @property
+    def encoder(self):
+        """Access the encoder directly. Shortcut for self.model.encoder."""
+        return self.model.encoder
 
     def forward(self, datacube: dict[str, torch.Tensor]):
         return self.model(datacube)

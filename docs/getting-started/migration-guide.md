@@ -17,15 +17,16 @@ Clay Foundation Model is now available as a proper Python package called `claymo
 # Old development imports
 from src.datamodule import ClayDataModule
 from src.module import ClayMAEModule
-from src.model import ClayMAEEncoder
+from src.model import Encoder
 ```
 
 ### After (New)
 ```python
-# New package imports
-from claymodel.datamodule import ClayDataModule
+# New package imports — top-level or submodule imports both work
+from claymodel import ClayMAEModule, ClayDataModule, load_metadata
+# Or the explicit submodule path:
 from claymodel.module import ClayMAEModule
-from claymodel.model import ClayMAEEncoder
+from claymodel.model import Encoder
 ```
 
 ## Installation Methods
@@ -82,9 +83,16 @@ from src.module import ClayMAEModule
 # After
 from claymodel.module import ClayMAEModule
 
-# Usage is the same
+# Usage — the encoder now takes a datacube dict
 model = ClayMAEModule.load_from_checkpoint("clay-v1.5.ckpt")
-embeddings = model.encoder(chips, timestamps, wavelengths)
+model.eval()
+model.model.encoder.mask_ratio = 0.0
+
+# Build a datacube dict (see quickstart.md for full example)
+datacube = {"pixels": chips, "time": time, "latlon": latlon, "gsd": gsd, "waves": waves}
+with torch.no_grad():
+    encoded, *_ = model.encoder(datacube)
+    embeddings = encoded[:, 0, :]  # CLS token [B, 1024]
 ```
 
 ### Training Workflows
@@ -103,12 +111,14 @@ from claymodel.module import ClayMAEModule
 
 ## Jupyter Notebooks
 
-All tutorial notebooks have been updated to use the new imports:
+Tutorial notebooks are being updated to use the new package imports. Status:
 
-- ✅ `docs/tutorials/embeddings.ipynb`
-- ✅ `docs/tutorials/reconstruction.ipynb`
-- ✅ `docs/tutorials/wall-to-wall.ipynb`
-- ✅ `docs/tutorials/inference.ipynb`
+- ✅ `docs/tutorials/wall-to-wall.ipynb` — updated, uses public STAC data
+- ⚠️ `docs/tutorials/embeddings.ipynb` — imports fixed, requires local training data
+- ⚠️ `docs/tutorials/reconstruction.ipynb` — imports fixed, requires local training data
+- ⚠️ `docs/tutorials/inference.ipynb` — import fixed, uses Clay v1 (update to v1.5 planned)
+
+For the simplest embedding workflow, use the new API: `from claymodel import embed`
 
 ## Troubleshooting
 

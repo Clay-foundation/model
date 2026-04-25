@@ -4,14 +4,6 @@
 format: jb-book
 root: index
 parts:
-- caption: Release notes
-  chapters:
-    - title: Model release notes
-      file: release-notes/specification
-    - title: Data sampling strategy
-      file: release-notes/data_sampling
-    - title: Software release notes v1.0
-      file: release-notes/changelog-v1.0
 - caption: Getting Started
   chapters:
     - title: Quick Start
@@ -22,6 +14,10 @@ parts:
       file: getting-started/basic_use
     - title: Migration Guide
       file: getting-started/migration-guide
+- caption: Concepts
+  chapters:
+    - title: How Clay Works
+      file: concepts/how-clay-works
 - caption: Tutorials
   chapters:
     - title: Clay wall-to-wall example
@@ -30,6 +26,8 @@ parts:
       file: tutorials/embeddings
     - title: Clay MAE reconstruction
       file: tutorials/reconstruction
+    - title: NAIP inference and similarity search
+      file: tutorials/inference
 - caption: Finetune examples
   chapters:
     - title: Segmentation using Chesapeake
@@ -40,6 +38,14 @@ parts:
       file: finetune/regression
     - title: Finetuning on an embeddings database
       file: finetune/finetune-on-embeddings
+- caption: Release Notes
+  chapters:
+    - title: Model release notes
+      file: release-notes/specification
+    - title: Data sampling strategy
+      file: release-notes/data_sampling
+    - title: Software release notes v1.0
+      file: release-notes/changelog-v1.0
 - caption: About Clay
   chapters:
     - title: GitHub

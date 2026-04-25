@@ -25,14 +25,14 @@ Clay v1.5 is based on the foundational work of several pioneering models and res
 
 1. **Dynamic Embedding Block**: This component generates patches for the chips from the number of bands and their wavelengths, which are then fed into the masked autoencoder (MAE).
 2. **Position Encoding**: This component encodes spatial and temporal information by adding positional encoding to the model. This encoding is scaled according to the Ground Sampling Distance (GSD) and is combined with location information (latitude/longitude) and time step (week/hour).
-3. **Masked Autoencoder (MAE)**: A VIT-based MAE is used to reconstruct the sensor data for all input bands. This contributes to 95% of the total loss, known as the reconstruction loss.
-4. **Teacher**: DINOv2 is used as a teacher to compute the representation loss, which accounts for the remaining 5% of the total loss.
+3. **Masked Autoencoder (MAE)**: A VIT-based MAE is used to reconstruct the sensor data for all input bands. This contributes to 90% of the total loss, known as the reconstruction loss.
+4. **Teacher**: DINOv2 is used as a teacher to compute the representation loss, which accounts for the remaining 10% of the total loss.
 
 ### **Pre-training and Usage:**
 
 The pre-trained model can process stacks of geospatial data from different sensors with various resolutions and bands, and output vector embeddings. During pre-training, the model processes stacks of chips from different sensors along with metadata such as wavelengths, GSD, latitude/longitude, and time step. The task involves capturing spatial, temporal, and spectral information about Earth and representing these relationships in high-dimensional space. Each resulting embedding represents a specific area of Earth at a particular time.
 
-Clay v1.5 was trained on 70 million globally distributed chips of size 156x256, collected according to the land use/land cover (LULC) statistics of the globe. The training was conducted on AWS using 20 g6.48xlarge instances for ~100 epochs in Sep 2024.
+Clay v1.5 was trained on 70 million globally distributed chips of size 256x256, collected according to the land use/land cover (LULC) statistics of the globe. The training was conducted on AWS using 20 g6.48xlarge instances for ~100 epochs in Sep 2024.
 
 You can access the model weights on HuggingFace [here](https://huggingface.co/made-with-clay/Clay/tree/main/v1.5).
 

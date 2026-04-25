@@ -7,14 +7,13 @@ with Transformers
 Paper URL: https://arxiv.org/abs/2105.15203
 """
 
-import re
-
 import torch
 import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import nn
 
 from claymodel.model import Encoder
+from claymodel.utils import load_encoder_weights
 
 
 class SegmentEncoder(Encoder):
@@ -56,42 +55,8 @@ class SegmentEncoder(Encoder):
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
         # Load model from checkpoint if provided
-        self.load_from_ckpt(ckpt_path)
-
-    def load_from_ckpt(self, ckpt_path):
-        """
-        Load the model's state from a checkpoint file.
-
-        Args:
-            ckpt_path (str): The path to the checkpoint file.
-        """
         if ckpt_path:
-            # Load checkpoint
-            ckpt = torch.load(ckpt_path, map_location=self.device)
-            state_dict = ckpt.get("state_dict")
-
-            # Prepare new state dict with the desired subset and naming
-            new_state_dict = {
-                re.sub(r"^model\.encoder\.", "", name): param
-                for name, param in state_dict.items()
-                if name.startswith("model.encoder")
-            }
-
-            # Load the modified state dict into the model
-            model_state_dict = self.state_dict()
-            for name, param in new_state_dict.items():
-                if (
-                    name in model_state_dict
-                    and param.size() == model_state_dict[name].size()
-                ):
-                    model_state_dict[name].copy_(param)
-                else:
-                    print(f"No matching parameter for {name} with size {param.size()}")
-
-            # Freeze the loaded parameters
-            for name, param in self.named_parameters():
-                if name in new_state_dict:
-                    param.requires_grad = False
+            load_encoder_weights(self, ckpt_path, device=self.device)
 
     def forward(self, datacube):
         """

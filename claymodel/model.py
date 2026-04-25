@@ -13,8 +13,16 @@ from claymodel.backbone import Transformer
 from claymodel.factory import DynamicEmbedding
 from claymodel.utils import posemb_sincos_2d_with_gsd
 
-torch.set_float32_matmul_precision("medium")
-os.environ["TORCH_CUDNN_V8_API_DISABLED"] = "1"
+
+def configure_training_defaults():
+    """Set global defaults for training performance.
+
+    Called by the training entrypoint (trainer.py / LightningCLI).
+    Not called during inference — inference users should not have their
+    global torch settings modified by importing claymodel.
+    """
+    torch.set_float32_matmul_precision("medium")
+    os.environ["TORCH_CUDNN_V8_API_DISABLED"] = "1"
 
 
 class Encoder(nn.Module):
@@ -172,7 +180,6 @@ class Encoder(nn.Module):
         patches, waves_encoded = self.to_patch_embed(
             cube, waves
         )  # [B L D] - patchify & create embeddings per patch
-        # TODO: Add time & latlon as encoding to patches
         patches = self.add_encodings(
             patches,
             time,
@@ -390,8 +397,9 @@ class ClayMAE(nn.Module):
         self.teacher_resize = v2.Resize(
             size=(self.teacher_chip_size, self.teacher_chip_size)
         )
-        # self.mrl = MRL(features=self.teacher.num_features, dolls=dolls)
-        # self.mrl_loss = MRLLoss(weights=doll_weights)
+        # MRL (Matryoshka Representation Learning) was used for ~90% of v1.5
+        # training before being replaced by a direct linear projection at ~epoch 70.
+        # See mrl.py for the original implementation.
         self.proj = nn.Linear(dim, self.teacher.num_features)
 
         self.encoder = Encoder(
@@ -521,10 +529,7 @@ class ClayMAE(nn.Module):
         if platform == "modis":
             reconstruction_loss /= 10
 
-        # # MRL
-        # representations = self.mrl(encoded_unmasked_patches[:, 0, :])  # [(B D') ...]
-
-        # PROJ
+        # PROJ (replaced MRL projection at ~epoch 70 of training)
         representations = self.proj(encoded_unmasked_patches[:, 0, :])  # [B D']
 
         with torch.no_grad():
@@ -539,9 +544,7 @@ class ClayMAE(nn.Module):
                 rgb = datacube["pixels"][:, indices, :, :]
             rgb = self.teacher_resize(rgb)
             target = self.teacher(rgb)
-            # target = self.teacher(rgb)
 
-        # representation_loss = self.mrl_loss(representations, target)
         representation_loss = 1.0 - F.cosine_similarity(representations, target).mean()
 
         loss = 0.9 * reconstruction_loss + 0.1 * representation_loss

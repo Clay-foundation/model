@@ -1,32 +1,9 @@
 """
 Fine-tuning modules for Clay Foundation Model.
 
-This subpackage contains modules for fine-tuning the Clay model on various
-downstream tasks including classification, segmentation, regression, and
-embedding extraction.
+Subpackage for fine-tuning Clay on downstream tasks. Import directly
+from submodules:
+    from claymodel.finetune.classify.factory import Classifier
+    from claymodel.finetune.segment.factory import Segmentor
+    from claymodel.finetune.regression.factory import Regressor
 """
-
-try:
-    # Classification
-    from .classify.eurosat_datamodule import EuroSATDataModule
-    from .classify.eurosat_model import EuroSATClassifier
-
-    # Regression
-    from .regression.biomasters_datamodule import BioMastersDataModule
-    from .regression.factory import Regressor
-
-    # Segmentation
-    from .segment.chesapeake_datamodule import ChesapeakeDataModule
-    from .segment.chesapeake_model import ChesapeakeSegmentor
-
-    __all__ = [
-        "EuroSATDataModule",
-        "EuroSATClassifier",
-        "ChesapeakeDataModule",
-        "ChesapeakeSegmentor",
-        "BioMastersDataModule",
-        "Regressor",
-    ]
-except ImportError:
-    # Allow subpackage to be imported even if specific components fail
-    __all__ = []

@@ -50,9 +50,6 @@ trainer:
     - class_path: lightning.pytorch.callbacks.LearningRateMonitor
       init_args:
         logging_interval: step
-    # - class_path: src.callbacks.LayerwiseFinetuning
-    #   init_args:
-    #     phase: 10
     #     train_bn: True
   plugins:
     - class_path: lightning.pytorch.plugins.io.AsyncCheckpointIO

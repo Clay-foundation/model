@@ -21,17 +21,41 @@ dependencies = [
     "torch>=2.4.0",
     "torchvision>=0.19.0",
     "einops~=0.7.0",
-    "geopandas",
-    "jsonargparse[signatures]>=4.27.7",
     "lightning>=2.0.0",
-    "matplotlib",
     "python-box",
-    "scikit-image",
-    "scikit-learn",
+    "pyyaml",
     "timm>=0.6.0",
     "vit-pytorch",
-    "wandb"
 ]
+
+[project.optional-dependencies]
+train = [
+    "wandb",
+    "jsonargparse[signatures]>=4.27.7",
+    "matplotlib",
+    "scikit-image",
+    "scikit-learn",
+]
+cli = [
+    "click",
+    "rasterio",
+]
+pipeline = [
+    "geopandas",
+    "pystac-client",
+]
+all = [
+    "claymodel[train,cli,pipeline]",
+]
+dev = [
+    "claymodel[all]",
+    "pytest>=7.0",
+    "pytest-cov",
+    "ruff",
+]
+
+[project.scripts]
+clay = "claymodel.cli:cli"
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -39,3 +63,13 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["claymodel*"]
+
+[tool.setuptools.package-data]
+claymodel = ["configs/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]

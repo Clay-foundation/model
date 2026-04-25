@@ -93,40 +93,6 @@ class EODataset(Dataset):
         return {"pixels": pixels, **additional_info}
 
 
-class ClaySampler(Sampler):
-    def __init__(self, dataset, platforms, batch_size):
-        self.dataset = dataset
-        self.platforms = platforms
-        self.batch_size = batch_size
-
-        self.cubes_per_platform = {platform: [] for platform in platforms}
-        for idx, chip_path in enumerate(self.dataset.chips_path):
-            platform = chip_path.parent.name
-            self.cubes_per_platform[platform].append(idx)
-
-    def __iter__(self):
-        cubes_per_platform_per_epoch = {}
-        rng = np.random.default_rng()
-        # Shuffle and adjust sizes
-        max_len = max(len(indices) for indices in self.cubes_per_platform.values())
-        for platform in self.platforms:
-            indices = self.cubes_per_platform[platform]
-            rng.shuffle(indices)
-            repeated_indices = np.tile(indices, (max_len // len(indices) + 1))[:max_len]
-            cubes_per_platform_per_epoch[platform] = repeated_indices
-
-        # Create batches such that we return one platform per batch in cycle
-        # Ignore the last batch if it is incomplete
-        for i in range(0, max_len, self.batch_size):
-            for platform in self.platforms:
-                batch = cubes_per_platform_per_epoch[platform][i : i + self.batch_size]
-                if len(batch) == self.batch_size:
-                    yield batch
-
-    def __len__(self):
-        return len(self.dataset.chips_path) // self.batch_size
-
-
 class ClayDistributedSampler(Sampler):
     def __init__(  # noqa: PLR0913
         self,
@@ -240,7 +206,8 @@ class ClayDataModule(L.LightningDataModule):
         self.data_dir = data_dir
         self.size = size
         self.platforms = platforms
-        self.metadata = Box(yaml.safe_load(open(metadata_path)))
+        with open(metadata_path) as f:
+            self.metadata = Box(yaml.safe_load(f))
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.prefetch_factor = prefetch_factor
