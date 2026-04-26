@@ -2,7 +2,6 @@
 
 import claymodel
 from claymodel import (
-    ClayDataModule,
     ClayMAEModule,
     __version__,
     clay_mae_base,
@@ -12,6 +11,7 @@ from claymodel import (
     load_metadata,
 )
 from claymodel.inference import DeterministicInference, ELLEProbe, PatchAnalyzer
+from training.datamodule import ClayDataModule
 
 
 def test_version_is_string():

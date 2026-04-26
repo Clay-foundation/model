@@ -12,9 +12,9 @@ References:
 
 from lightning.pytorch.cli import LightningCLI
 
-from claymodel.datamodule import ClayDataModule  # noqa: F401
 from claymodel.model import configure_training_defaults
 from claymodel.module import ClayMAEModule  # noqa: F401
+from training.datamodule import ClayDataModule  # noqa: F401
 
 configure_training_defaults()
 

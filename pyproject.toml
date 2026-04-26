@@ -25,16 +25,21 @@ dependencies = [
     "python-box",
     "pyyaml",
     "timm>=0.6.0",
-    "vit-pytorch",
 ]
 
 [project.optional-dependencies]
 train = [
-    "wandb",
     "jsonargparse[signatures]>=4.27.7",
     "matplotlib",
-    "scikit-image",
     "scikit-learn",
+    "wandb",
+]
+finetune = [
+    "torchgeo",
+    "torchmetrics",
+    "segmentation_models_pytorch",
+    "tifffile",
+    "rasterio",
 ]
 cli = [
     "click",
@@ -45,7 +50,7 @@ pipeline = [
     "pystac-client",
 ]
 all = [
-    "claymodel[train,cli,pipeline]",
+    "claymodel[train,finetune,cli,pipeline]",
 ]
 dev = [
     "claymodel[all]",
