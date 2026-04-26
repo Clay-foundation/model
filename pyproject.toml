@@ -47,6 +47,7 @@ cli = [
 ]
 pipeline = [
     "geopandas",
+    "pyarrow",
     "pystac-client",
 ]
 all = [
