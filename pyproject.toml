@@ -98,6 +98,9 @@ disable_error_code = ["arg-type", "union-attr", "index", "call-overload", "assig
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "slow: tests that use the real teacher model (~100MB download, cached). Run with --slow",
+]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::UserWarning",
