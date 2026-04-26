@@ -11,6 +11,7 @@ from torchvision.transforms import v2
 
 from claymodel.backbone import Transformer
 from claymodel.factory import DynamicEmbedding
+from claymodel.mrl import MRL, MRLLoss
 from claymodel.utils import posemb_sincos_2d_with_gsd
 
 
@@ -384,6 +385,7 @@ class ClayMAE(nn.Module):
         decoder_heads,
         decoder_dim_head,
         decoder_mlp_ratio,
+        matryoshka=False,
         **kwargs,
     ):
         super().__init__()
@@ -397,10 +399,12 @@ class ClayMAE(nn.Module):
         self.teacher_resize = v2.Resize(
             size=(self.teacher_chip_size, self.teacher_chip_size)
         )
-        # MRL (Matryoshka Representation Learning) was used for ~90% of v1.5
-        # training before being replaced by a direct linear projection at ~epoch 70.
-        # See mrl.py for the original implementation.
-        self.proj = nn.Linear(dim, self.teacher.num_features)
+        self.matryoshka = matryoshka
+        if matryoshka:
+            self.mrl = MRL(features=self.teacher.num_features, dolls=dolls)
+            self.mrl_loss = MRLLoss(weights=doll_weights)
+        else:
+            self.proj = nn.Linear(dim, self.teacher.num_features)
 
         self.encoder = Encoder(
             mask_ratio=mask_ratio,
@@ -529,9 +533,7 @@ class ClayMAE(nn.Module):
         if platform == "modis":
             reconstruction_loss /= 10
 
-        # PROJ (replaced MRL projection at ~epoch 70 of training)
-        representations = self.proj(encoded_unmasked_patches[:, 0, :])  # [B D']
-
+        # Teacher target (shared by both projection paths)
         with torch.no_grad():
             if platform == "sentinel-1-rtc":
                 r = datacube["pixels"][:, 0, :, :]
@@ -539,13 +541,20 @@ class ClayMAE(nn.Module):
                 b = (r + g) / 2
                 rgb = torch.stack((r, g, b), dim=1)
             else:
-                # Read RGB bands from the sensor to feed the teacher model
                 indices = self.metadata[platform].rgb_indices
                 rgb = datacube["pixels"][:, indices, :, :]
             rgb = self.teacher_resize(rgb)
             target = self.teacher(rgb)
 
-        representation_loss = 1.0 - F.cosine_similarity(representations, target).mean()
+        cls_token = encoded_unmasked_patches[:, 0, :]
+        if self.matryoshka:
+            representations = self.mrl(cls_token)
+            representation_loss = self.mrl_loss(representations, target)
+        else:
+            representations = self.proj(cls_token)
+            representation_loss = (
+                1.0 - F.cosine_similarity(representations, target).mean()
+            )
 
         loss = 0.9 * reconstruction_loss + 0.1 * representation_loss
         return (loss, reconstruction_loss, representation_loss)

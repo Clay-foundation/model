@@ -20,6 +20,7 @@ class ClayMAEModule(L.LightningModule):
         teacher="vit_large_patch14_reg4_dinov2.lvd142m",
         dolls=[16, 32, 64, 128, 256, 768],
         doll_weights=[1, 1, 1, 1, 1, 1],
+        matryoshka=False,
         lr=1e-5,
         wd=0.05,
         b1=0.9,
@@ -46,6 +47,7 @@ class ClayMAEModule(L.LightningModule):
                 "teacher": teacher,
                 "dolls": dolls,
                 "doll_weights": doll_weights,
+                "matryoshka": matryoshka,
             }
             self.model = model_map[model_size](**model_args)
             # NOTE: Weight loading from checkpoint is handled by Lightning's

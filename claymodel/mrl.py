@@ -1,16 +1,12 @@
 """
 Matryoshka Representation Learning (MRL).
 
-MRL was used for approximately 90% of the Clay v1.5 training run (~epochs 1-70)
-before being replaced with a direct linear projection (nn.Linear) for the
-remaining training. This module is retained because:
+MRL projects the CLS token into multiple nested subspaces (dolls) and computes
+a weighted cosine similarity loss against the teacher target at each scale.
+See: https://arxiv.org/abs/2205.13147
 
-1. The trained checkpoint may contain MRL-related weight keys that need to be
-   handled (ignored) during loading.
-2. It documents the training history of v1.5.
-
-The active model (ClayMAE in model.py) uses self.proj instead of self.mrl.
-See model.py:393 for the comment explaining the transition.
+Enable via `matryoshka=True` on ClayMAE / ClayMAEModule. When disabled (default),
+a direct nn.Linear projection is used instead.
 """
 
 from torch import nn
