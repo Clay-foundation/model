@@ -34,12 +34,19 @@ def cli() -> None:
     "--output", "-o", default=None, help="Output path (.parquet or .geoparquet)"
 )
 @click.option("--device", default="cpu", help="Device (cpu, cuda, etc.)")
+@click.option(
+    "--metadata",
+    default=None,
+    type=click.Path(exists=True),
+    help="Path to custom metadata YAML (default: bundled sensors)",
+)
 def embed(
     input_path: str,
     sensor: str,
     ckpt: str,
     output: str | None,
     device: str,
+    metadata: str | None,
 ) -> None:
     """Generate embeddings from a GeoTIFF file.
 
@@ -48,11 +55,16 @@ def embed(
 
     Example:
         clay embed image.tif --sensor sentinel-2-l2a --ckpt clay-v1.5.ckpt
+        clay embed image.tif --sensor my-sensor --ckpt model.ckpt \\
+            --metadata my_sensors.yaml
     """
     click.echo(f"Embedding {input_path} (sensor={sensor}, device={device})")
 
+    meta = load_metadata(metadata) if metadata else None
     start = time_mod.perf_counter()
-    result = embed_fn(input_path, sensor=sensor, ckpt_path=ckpt, device=device)
+    result = embed_fn(
+        input_path, sensor=sensor, ckpt_path=ckpt, device=device, metadata=meta
+    )
     elapsed = time_mod.perf_counter() - start
 
     click.echo(f"Embeddings shape: {result.shape} ({elapsed:.2f}s)")

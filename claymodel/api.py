@@ -23,22 +23,28 @@ from claymodel.inference.elle import ELLEProbe
 from claymodel.module import ClayMAEModule
 
 
-def load_metadata() -> Box:
-    """Load the bundled sensor metadata.
+def load_metadata(path: str | Path | None = None) -> Box:
+    """Load sensor metadata from a YAML file.
+
+    Args:
+        path: Path to a metadata YAML file. If None, loads the bundled
+            metadata with common public sensors (Sentinel-2, Sentinel-1,
+            NAIP, Landsat, MODIS, etc.).
 
     Returns a Box object with sensor metadata including band info,
     wavelengths, normalization stats, and GSD for each supported platform.
 
     Example:
         >>> from claymodel import load_metadata
-        >>> metadata = load_metadata()
+        >>> metadata = load_metadata()  # bundled defaults
+        >>> metadata = load_metadata("my_sensors.yaml")  # custom sensors
         >>> metadata["sentinel-2-l2a"].gsd
         10
-        >>> list(metadata["sentinel-2-l2a"].bands.wavelength.values())
-        [0.493, 0.56, 0.665, ...]
     """
-    metadata_file = files("claymodel").joinpath("configs/metadata.yaml")
-    return Box(yaml.safe_load(metadata_file.read_text()))
+    if path is None:
+        metadata_file = files("claymodel").joinpath("configs/metadata.yaml")
+        return Box(yaml.safe_load(metadata_file.read_text()))
+    return Box(yaml.safe_load(Path(path).read_text()))
 
 
 def _bundled_metadata_path() -> str:
@@ -97,12 +103,13 @@ def load_model(
     size: str = "large",
     ckpt_path: str | None = None,
     device: str = "cpu",
+    metadata_path: str | Path | None = None,
 ) -> ClayMAEModule:
     """Load a Clay MAE model ready for inference.
 
-    Creates a ClayMAEModule with the bundled metadata and optionally
-    loads weights from a checkpoint. The model is returned in eval mode
-    with mask_ratio=0 and shuffle=False for deterministic inference.
+    Creates a ClayMAEModule and optionally loads weights from a checkpoint.
+    The model is returned in eval mode with mask_ratio=0 and shuffle=False
+    for deterministic inference.
 
     Note: The model includes a DINOv2 teacher (~300MB) that is downloaded
     on first use. The teacher is frozen and not needed for embedding
@@ -113,26 +120,22 @@ def load_model(
         ckpt_path: Path to checkpoint file. If None, creates model with
             random weights (useful for testing).
         device: Device to load model onto ("cpu", "cuda", etc.).
+        metadata_path: Path to a custom metadata YAML file. If None,
+            uses the bundled metadata with common public sensors.
 
     Returns:
         ClayMAEModule instance in eval mode.
 
     Example:
         >>> model = load_model("large", ckpt_path="clay-v1.5.ckpt")
-        >>> datacube = {...}  # see normalize() and embed() for helpers
-        >>> with torch.no_grad():
-        ...     encoded, *_ = model.encoder(datacube)
-        ...     embeddings = encoded[:, 0, :]  # CLS token
+        >>> model = load_model("large", metadata_path="my_sensors.yaml")
     """
-    metadata_path = _bundled_metadata_path()
+    resolved_path = str(metadata_path) if metadata_path else _bundled_metadata_path()
 
     if ckpt_path is not None:
-        # Load from checkpoint — Lightning restores hparams automatically.
-        # We override metadata_path to use the bundled version so it works
-        # without the original training repo layout.
         model = ClayMAEModule.load_from_checkpoint(
             ckpt_path,
-            metadata_path=metadata_path,
+            metadata_path=resolved_path,
             map_location=device,
         )
     else:
@@ -140,7 +143,7 @@ def load_model(
             model_size=size,
             mask_ratio=0.0,
             shuffle=False,
-            metadata_path=metadata_path,
+            metadata_path=resolved_path,
         )
 
     # Ensure inference-ready settings
@@ -219,6 +222,7 @@ def embed(  # noqa: PLR0913
     time: torch.Tensor | None = None,
     latlon: torch.Tensor | None = None,
     quality: bool = False,
+    metadata: Box | None = None,
 ) -> EmbeddingResult:
     """One-line embedding API for Clay Foundation Model.
 
@@ -227,19 +231,12 @@ def embed(  # noqa: PLR0913
     and returns embeddings. For Sentinel-1 SAR, pass raw linear power
     values — the function converts to dB internally before normalization.
 
-    The output is numerically identical to the manual datacube path:
-        datacube = {"pixels": normalized, "time": ..., "latlon": ..., ...}
-        encoded, *_ = model.encoder(datacube)
-        embeddings = encoded[:, 0, :]  # CLS token
-
     Args:
         input_data: One of:
             - torch.Tensor of shape [B, C, H, W] (raw pixel values)
             - numpy.ndarray of shape [B, C, H, W] or [C, H, W]
             - str/Path to a GeoTIFF file (requires rasterio from [cli] extras)
-        sensor: Sensor name matching metadata.yaml (e.g., "sentinel-2-l2a").
-            Required for tensor/array input. For GeoTIFF, used as override
-            if auto-detection fails.
+        sensor: Sensor name matching metadata (e.g., "sentinel-2-l2a").
         model: Pre-loaded ClayMAEModule. If None, loads from ckpt_path.
         ckpt_path: Path to checkpoint (used if model is None).
         device: Device for computation.
@@ -248,20 +245,21 @@ def embed(  # noqa: PLR0913
         latlon: Optional [B, 4] tensor of (lat_sin, lat_cos, lon_sin, lon_cos).
             Defaults to zeros (unknown location).
         quality: If True, compute ELLE quality score (requires trained probe).
+        metadata: Pre-loaded metadata Box. If None, loads bundled defaults.
+            Use load_metadata("my_sensors.yaml") to load custom sensors.
 
     Returns:
         EmbeddingResult with .embeddings tensor of shape [N, D] and
         .to_geoparquet() method. D=1024 for the large model.
 
     Example:
-        >>> import torch
-        >>> from claymodel import embed
-        >>> pixels = torch.randn(1, 10, 256, 256)
-        >>> result = embed(pixels, sensor="sentinel-2-l2a", ckpt_path="clay-v1.5.ckpt")
-        >>> result.embeddings.shape
-        torch.Size([1, 1024])
+        >>> from claymodel import embed, load_metadata
+        >>> result = embed(pixels, sensor="sentinel-2-l2a", ckpt_path="v1.5.ckpt")
+        >>> metadata = load_metadata("my_sensors.yaml")
+        >>> result = embed(pixels, sensor="my-sensor", model=model, metadata=metadata)
     """
-    metadata = load_metadata()
+    if metadata is None:
+        metadata = load_metadata()
 
     # Handle GeoTIFF input
     if isinstance(input_data, (str, Path)):
