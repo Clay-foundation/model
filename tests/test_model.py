@@ -1,11 +1,22 @@
 """Test model forward passes and output shapes."""
 
+import os
+import random
+
 import pytest
 import torch
 from einops import rearrange
 from torch import nn
 
-from claymodel.model import ClayMAE, Decoder, clay_mae_tiny
+from claymodel.model import (
+    ClayMAE,
+    Decoder,
+    clay_mae_base,
+    clay_mae_large,
+    clay_mae_small,
+    clay_mae_tiny,
+    configure_training_defaults,
+)
 from claymodel.module import ClayMAEModule
 from tests.conftest import make_datacube, make_metadata, make_tiny_encoder
 
@@ -240,3 +251,185 @@ def test_module_encoder_property():
         teacher="samvit_base_patch16.sa1b",
     )
     assert module.encoder is module.model.encoder
+
+
+def test_configure_training_defaults():
+    old_precision = torch.get_float32_matmul_precision()
+    old_env = os.environ.get("TORCH_CUDNN_V8_API_DISABLED")
+    try:
+        configure_training_defaults()
+        assert torch.get_float32_matmul_precision() == "medium"
+        assert os.environ["TORCH_CUDNN_V8_API_DISABLED"] == "1"
+    finally:
+        torch.set_float32_matmul_precision(old_precision)
+        if old_env is None:
+            os.environ.pop("TORCH_CUDNN_V8_API_DISABLED", None)
+        else:
+            os.environ["TORCH_CUDNN_V8_API_DISABLED"] = old_env
+
+
+def _make_tiny_mae(matryoshka=False, **overrides):
+    """Create a tiny ClayMAE with a mock teacher for fast testing."""
+    metadata = make_metadata()
+    defaults = {
+        "mask_ratio": 0.75,
+        "patch_size": 8,
+        "norm_pix_loss": False,
+        "shuffle": True,
+        "metadata": metadata,
+        "teacher": "samvit_base_patch16.sa1b",
+        "dolls": [16, 32],
+        "doll_weights": [1, 1],
+        "matryoshka": matryoshka,
+    }
+    defaults.update(overrides)
+    model = clay_mae_tiny(**defaults)
+    teacher_dim = model.teacher.num_features
+
+    class MockTeacher(nn.Module):
+        def forward(self, x):
+            return torch.randn(x.shape[0], teacher_dim)
+
+    model.teacher = MockTeacher()
+    model.teacher_resize = nn.Identity()
+    return model
+
+
+def test_matryoshka_flag_creates_mrl():
+    model = _make_tiny_mae(matryoshka=True)
+    assert hasattr(model, "mrl")
+    assert hasattr(model, "mrl_loss")
+    assert not hasattr(model, "proj")
+
+
+def test_matryoshka_false_creates_proj():
+    model = _make_tiny_mae(matryoshka=False)
+    assert hasattr(model, "proj")
+    assert not hasattr(model, "mrl")
+
+
+def test_matryoshka_forward_path():
+    model = _make_tiny_mae(matryoshka=True)
+    model.eval()
+
+    datacube = {
+        "pixels": torch.randn(2, 10, 64, 64),
+        "time": torch.zeros(2, 4),
+        "latlon": torch.zeros(2, 4),
+        "platform": ["sentinel-2-l2a", "sentinel-2-l2a"],
+    }
+    with torch.no_grad():
+        loss, rec_loss, rep_loss = model(datacube)
+
+    assert torch.isfinite(loss)
+    assert torch.isfinite(rec_loss)
+    assert torch.isfinite(rep_loss)
+
+
+def test_norm_pix_loss():
+    model = _make_tiny_mae(norm_pix_loss=True)
+    model.eval()
+
+    datacube = {
+        "pixels": torch.randn(2, 10, 64, 64),
+        "time": torch.zeros(2, 4),
+        "latlon": torch.zeros(2, 4),
+        "platform": ["sentinel-2-l2a", "sentinel-2-l2a"],
+    }
+    with torch.no_grad():
+        loss, rec_loss, rep_loss = model(datacube)
+
+    assert torch.isfinite(loss)
+
+
+def test_channel_dropout_with_nonzero_latlon():
+    """Channel dropout should trigger when latlon is nonzero."""
+    model = _make_tiny_mae()
+    model.train()
+
+    datacube = {
+        "pixels": torch.randn(2, 10, 64, 64),
+        "time": torch.zeros(2, 4),
+        "latlon": torch.ones(2, 4),  # nonzero to enable dropout
+        "platform": ["sentinel-2-l2a", "sentinel-2-l2a"],
+    }
+
+    # Seed random to hit the drop-all branch (prob < 0.10)
+    random.seed(0)
+    # Find a seed that triggers dropout
+    for seed in range(100):
+        random.seed(seed)
+        if random.random() < 0.10:
+            random.seed(seed)  # reset to same seed
+            break
+
+    loss, rec_loss, rep_loss = model(datacube)
+    assert torch.isfinite(loss)
+
+
+def test_modis_platform_scaling():
+    """MODIS platform should scale reconstruction loss by /10."""
+    metadata = make_metadata()
+    if "modis" not in metadata:
+        pytest.skip("MODIS not in metadata")
+
+    n_bands = len(metadata["modis"].bands.wavelength)
+    model = _make_tiny_mae()
+    model.eval()
+
+    datacube = {
+        "pixels": torch.randn(2, n_bands, 64, 64),
+        "time": torch.zeros(2, 4),
+        "latlon": torch.zeros(2, 4),
+        "platform": ["modis", "modis"],
+    }
+    with torch.no_grad():
+        loss, rec_loss, rep_loss = model(datacube)
+
+    assert torch.isfinite(loss)
+
+
+def test_sentinel1_rgb_construction():
+    """Sentinel-1 should construct synthetic RGB for teacher."""
+    metadata = make_metadata()
+    n_bands = len(metadata["sentinel-1-rtc"].bands.wavelength)
+    model = _make_tiny_mae()
+    model.eval()
+
+    datacube = {
+        "pixels": torch.randn(2, n_bands, 64, 64),
+        "time": torch.zeros(2, 4),
+        "latlon": torch.zeros(2, 4),
+        "platform": ["sentinel-1-rtc", "sentinel-1-rtc"],
+    }
+    with torch.no_grad():
+        loss, rec_loss, rep_loss = model(datacube)
+
+    assert torch.isfinite(loss)
+
+
+def test_factory_dimensions():
+    """Verify factory functions set correct encoder/decoder dims."""
+    metadata = make_metadata()
+    common = {
+        "mask_ratio": 0.0,
+        "patch_size": 8,
+        "norm_pix_loss": False,
+        "shuffle": False,
+        "metadata": metadata,
+        "teacher": "samvit_base_patch16.sa1b",
+        "dolls": [16],
+        "doll_weights": [1],
+    }
+
+    small = clay_mae_small(**common)
+    assert small.encoder.dim == 384
+    assert small.decoder.dim == 192
+
+    base = clay_mae_base(**common)
+    assert base.encoder.dim == 768
+    assert base.decoder.dim == 512
+
+    large = clay_mae_large(**common)
+    assert large.encoder.dim == 1024
+    assert large.decoder.dim == 512

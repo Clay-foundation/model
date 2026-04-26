@@ -2,12 +2,13 @@
 
 import warnings
 from importlib.resources import files
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 import torch
 
-from claymodel.api import EmbeddingResult, embed, load_metadata, normalize
+from claymodel.api import EmbeddingResult, embed, load_metadata, load_model, normalize
 from claymodel.module import ClayMAEModule
 
 
@@ -199,3 +200,82 @@ def test_normalize_output_device_matches_input():
     pixels = torch.randn(1, 10, 64, 64)
     result = normalize(pixels, "sentinel-2-l2a")
     assert result.device == pixels.device
+
+
+def test_load_model_no_checkpoint():
+    """load_model without checkpoint returns a working model with random weights."""
+    model = load_model(size="tiny")
+    assert isinstance(model, ClayMAEModule)
+    assert not model.training  # eval mode
+    assert model.model.encoder.mask_ratio == 0.0
+    assert model.model.encoder.shuffle is False
+
+
+def test_load_model_with_checkpoint(tmp_path):
+    """Save and reload a tiny model checkpoint."""
+    import lightning as L
+
+    original = _make_tiny_module()
+    ckpt_path = tmp_path / "tiny.ckpt"
+
+    # Use Lightning's Trainer to save a proper checkpoint
+    trainer = L.Trainer(max_steps=0, enable_checkpointing=False)
+    trainer.strategy.connect(original)
+    trainer.save_checkpoint(str(ckpt_path))
+
+    # Reload
+    loaded = load_model(size="tiny", ckpt_path=str(ckpt_path))
+    assert isinstance(loaded, ClayMAEModule)
+    assert not loaded.training
+
+    # Weights should match
+    for key in original.state_dict():
+        if "teacher" not in key:
+            assert torch.allclose(
+                original.state_dict()[key],
+                loaded.state_dict()[key],
+            ), f"Mismatch in {key}"
+
+
+def test_to_geoparquet_with_geometry(tmp_path):
+    """to_geoparquet should produce a valid file with point geometry."""
+    pytest.importorskip("geopandas")
+
+    latlon = torch.tensor([[37.0, -122.0], [38.0, -121.0], [39.0, -120.0]])
+    emb = EmbeddingResult(
+        embeddings=torch.randn(3, 64),
+        sensor="sentinel-2-l2a",
+        gsd=10.0,
+        metadata={"latlon": latlon},
+    )
+    path = tmp_path / "test.parquet"
+    gdf = emb.to_geoparquet(str(path))
+
+    assert path.exists()
+    assert len(gdf) == 3
+    assert gdf.geometry.iloc[0] is not None
+
+
+def test_to_geoparquet_without_geometry(tmp_path):
+    """to_geoparquet should work with no latlon metadata."""
+    pytest.importorskip("geopandas")
+
+    emb = EmbeddingResult(
+        embeddings=torch.randn(2, 64),
+        sensor="naip",
+        gsd=1.0,
+    )
+    path = tmp_path / "test_no_geo.parquet"
+    gdf = emb.to_geoparquet(str(path))
+
+    assert path.exists()
+    assert len(gdf) == 2
+
+
+def test_to_geoparquet_import_error():
+    """Raise ImportError with helpful message if geopandas missing."""
+    emb = EmbeddingResult(embeddings=torch.randn(1, 64))
+
+    with patch.dict("sys.modules", {"geopandas": None}):
+        with pytest.raises(ImportError, match="geopandas"):
+            emb.to_geoparquet("out.parquet")
