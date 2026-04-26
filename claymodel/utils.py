@@ -15,9 +15,16 @@ __all__ = [
 import re
 
 import torch
+from torch import nn
 
 
-def posemb_sincos_2d(h, w, dim, temperature: int = 10000, dtype=torch.float32):
+def posemb_sincos_2d(
+    h: int,
+    w: int,
+    dim: int,
+    temperature: int = 10000,
+    dtype: torch.dtype = torch.float32,
+) -> torch.Tensor:
     y, x = torch.meshgrid(torch.arange(h), torch.arange(w), indexing="ij")
     assert (dim % 4) == 0, "feature dimension must be multiple of 4 for sincos emb"
     omega = torch.arange(dim // 4) / (dim // 4 - 1)
@@ -30,8 +37,13 @@ def posemb_sincos_2d(h, w, dim, temperature: int = 10000, dtype=torch.float32):
 
 
 def posemb_sincos_2d_with_gsd(
-    h, w, dim, gsd=1.0, temperature: int = 10000, dtype=torch.float32
-):
+    h: int,
+    w: int,
+    dim: int,
+    gsd: torch.Tensor | float = 1.0,
+    temperature: int = 10000,
+    dtype: torch.dtype = torch.float32,
+) -> torch.Tensor:
     y, x = torch.meshgrid(torch.arange(h), torch.arange(w), indexing="ij")
     assert (dim % 4) == 0, "feature dimension must be multiple of 4 for sincos emb"
 
@@ -45,7 +57,12 @@ def posemb_sincos_2d_with_gsd(
     return pe.type(dtype)
 
 
-def load_encoder_weights(encoder, ckpt_path, device="cpu", freeze=True):
+def load_encoder_weights(
+    encoder: nn.Module,
+    ckpt_path: str,
+    device: str = "cpu",
+    freeze: bool = True,
+) -> tuple[list[str], list[str]]:
     """Load Clay encoder weights from a full MAE checkpoint.
 
     Extracts encoder weights from the full MAE checkpoint (which includes
@@ -96,7 +113,12 @@ def load_encoder_weights(encoder, ckpt_path, device="cpu", freeze=True):
     return loaded_keys, skipped_keys
 
 
-def posemb_sincos_1d(waves, dim, temperature: int = 10000, dtype=torch.float32):
+def posemb_sincos_1d(
+    waves: torch.Tensor | int,
+    dim: int,
+    temperature: int = 10000,
+    dtype: torch.dtype = torch.float32,
+) -> torch.Tensor:
     assert dim % 2 == 0, (
         "Feature dimension must be a multiple of 2 for sincos embedding"
     )

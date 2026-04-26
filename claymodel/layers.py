@@ -11,7 +11,7 @@ from torch import nn
 
 
 class FeedForward(nn.Module):
-    def __init__(self, dim, hidden_dim):
+    def __init__(self, dim: int, hidden_dim: int) -> None:
         super().__init__()
         self.net = nn.Sequential(
             nn.LayerNorm(dim),
@@ -20,12 +20,18 @@ class FeedForward(nn.Module):
             nn.Linear(hidden_dim, dim),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x)
 
 
 class Attention(nn.Module):
-    def __init__(self, dim, heads=8, dim_head=64, fused_attn=True):
+    heads: int
+    scale: float
+    fused_attn: bool
+
+    def __init__(
+        self, dim: int, heads: int = 8, dim_head: int = 64, fused_attn: bool = True
+    ) -> None:
         super().__init__()
         inner_dim = dim_head * heads
         self.heads = heads
@@ -36,7 +42,7 @@ class Attention(nn.Module):
         self.to_qkv = nn.Linear(dim, inner_dim * 3, bias=False)
         self.to_out = nn.Linear(inner_dim, dim, bias=False)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.norm(x)
 
         qkv = self.to_qkv(x).chunk(3, dim=-1)
@@ -56,13 +62,13 @@ class Attention(nn.Module):
 class Transformer(nn.Module):
     def __init__(  # noqa: PLR0913
         self,
-        dim,
-        depth,
-        heads,
-        dim_head,
-        mlp_dim,
-        fused_attn,
-    ):
+        dim: int,
+        depth: int,
+        heads: int,
+        dim_head: int,
+        mlp_dim: int,
+        fused_attn: bool,
+    ) -> None:
         super().__init__()
         self.norm = nn.LayerNorm(dim)
         self.layers = nn.ModuleList([])
@@ -78,7 +84,7 @@ class Transformer(nn.Module):
                 )
             )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         for attn, ff in self.layers:
             x = attn(x) + x
             x = ff(x) + x

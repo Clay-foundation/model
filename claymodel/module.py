@@ -7,28 +7,38 @@ import torch
 import yaml
 from box import Box
 
-from claymodel.model import clay_mae_base, clay_mae_large, clay_mae_small, clay_mae_tiny
+from claymodel.model import (
+    ClayMAE,
+    Encoder,
+    clay_mae_base,
+    clay_mae_large,
+    clay_mae_small,
+    clay_mae_tiny,
+)
 
 
 class ClayMAEModule(L.LightningModule):
+    model: ClayMAE
+    metadata: Box
+
     def __init__(  # noqa: PLR0913
         self,
-        model_size="base",
-        mask_ratio=0.75,
-        norm_pix_loss=False,
-        patch_size=8,
-        shuffle=False,
-        metadata_path="configs/metadata.yaml",
-        teacher="vit_large_patch14_reg4_dinov2.lvd142m",
-        dolls=[16, 32, 64, 128, 256, 768],
-        doll_weights=[1, 1, 1, 1, 1, 1],
-        matryoshka=False,
-        lr=1e-5,
-        wd=0.05,
-        b1=0.9,
-        b2=0.95,
+        model_size: str = "base",
+        mask_ratio: float = 0.75,
+        norm_pix_loss: bool = False,
+        patch_size: int = 8,
+        shuffle: bool = False,
+        metadata_path: str = "configs/metadata.yaml",
+        teacher: str = "vit_large_patch14_reg4_dinov2.lvd142m",
+        dolls: list[int] = [16, 32, 64, 128, 256, 768],
+        doll_weights: list[float] = [1, 1, 1, 1, 1, 1],
+        matryoshka: bool = False,
+        lr: float = 1e-5,
+        wd: float = 0.05,
+        b1: float = 0.9,
+        b2: float = 0.95,
         embeddings_level: Literal["mean", "patch", "group"] = "mean",  # noqa: E501 unused, kept for ckpt compat
-    ):
+    ) -> None:
         super().__init__()
         self.save_hyperparameters(logger=True)
         with open(metadata_path) as f:
@@ -61,18 +71,20 @@ class ClayMAEModule(L.LightningModule):
                 f"Invalid model size {model_size}. Expected one of {model_map.keys()}"
             )
 
-    def on_train_epoch_start(self):
+    def on_train_epoch_start(self) -> None:
         self.model.teacher.eval()
 
     @property
-    def encoder(self):
+    def encoder(self) -> Encoder:
         """Access the encoder directly. Shortcut for self.model.encoder."""
         return self.model.encoder
 
-    def forward(self, datacube: dict[str, torch.Tensor]):
+    def forward(
+        self, datacube: dict[str, torch.Tensor]
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         return self.model(datacube)
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> dict[str, object]:
         optimizer = torch.optim.AdamW(
             self.parameters(),
             lr=self.hparams.lr,
@@ -92,11 +104,13 @@ class ClayMAEModule(L.LightningModule):
             },
         }
 
-    def shared_step(self, batch: dict[str, torch.Tensor], batch_idx: int, phase: str):
+    def shared_step(
+        self, batch: dict[str, torch.Tensor], batch_idx: int, phase: str
+    ) -> torch.Tensor:
         platform = batch["platform"][0]
         loss, reconstruction_loss, representation_loss = self(batch)
 
-        losses = {
+        losses: dict[str, torch.Tensor] = {
             "loss": loss,
             "rec_loss": reconstruction_loss,
             "rep_loss": representation_loss,
@@ -124,8 +138,12 @@ class ClayMAEModule(L.LightningModule):
 
         return loss
 
-    def training_step(self, batch: dict[str, torch.Tensor], batch_idx: int):
+    def training_step(
+        self, batch: dict[str, torch.Tensor], batch_idx: int
+    ) -> torch.Tensor:
         return self.shared_step(batch, batch_idx, phase="train")
 
-    def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int):
+    def validation_step(
+        self, batch: dict[str, torch.Tensor], batch_idx: int
+    ) -> torch.Tensor:
         return self.shared_step(batch, batch_idx, phase="val")

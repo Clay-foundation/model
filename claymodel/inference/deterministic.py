@@ -3,12 +3,13 @@
 import contextlib
 import os
 import random
+from collections.abc import Generator
 
 import torch
 
 
 @contextlib.contextmanager
-def DeterministicInference(seed=42):
+def DeterministicInference(seed: int = 42) -> Generator[None, None, None]:
     """Context manager for reproducible Clay model inference.
 
     Sets all random seeds and enables deterministic CUDA operations.

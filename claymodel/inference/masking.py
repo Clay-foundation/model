@@ -20,11 +20,14 @@ class PatchAnalyzer:
             or "nan" to detect NaN values. Default is 0.
     """
 
-    def __init__(self, patch_size=8, nodata=0):
+    patch_size: int
+    nodata: float | str
+
+    def __init__(self, patch_size: int = 8, nodata: float | str = 0) -> None:
         self.patch_size = patch_size
         self.nodata = nodata
 
-    def valid_fraction(self, pixels):
+    def valid_fraction(self, pixels: torch.Tensor) -> torch.Tensor:
         """Fraction of valid (non-nodata) pixels per patch.
 
         Should be called on RAW (pre-normalization) pixel values, since
@@ -49,7 +52,7 @@ class PatchAnalyzer:
         )
         return patches.mean(dim=-1)  # [B, num_patches]
 
-    def cloud_fraction(self, scl_band):
+    def cloud_fraction(self, scl_band: torch.Tensor) -> torch.Tensor:
         """Fraction of cloudy pixels per patch using Sentinel-2 SCL band.
 
         Uses the Scene Classification Layer (SCL) from Sentinel-2 L2A data.
@@ -74,7 +77,13 @@ class PatchAnalyzer:
         )
         return patches.mean(dim=-1)  # [B, num_patches]
 
-    def filter_chips(self, pixels, min_valid=0.5, scl_band=None, max_cloud=1.0):
+    def filter_chips(
+        self,
+        pixels: torch.Tensor,
+        min_valid: float = 0.5,
+        scl_band: torch.Tensor | None = None,
+        max_cloud: float = 1.0,
+    ) -> torch.Tensor:
         """Filter chips by valid fraction and optionally cloud fraction.
 
         Args:

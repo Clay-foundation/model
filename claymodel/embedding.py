@@ -15,28 +15,31 @@ from claymodel.utils import posemb_sincos_1d
 
 
 class FCBlock(nn.Module):
-    def __init__(self, size):
+    def __init__(self, size: int) -> None:
         super().__init__()
         self.l1 = nn.Linear(size, size)
         self.l2 = nn.Linear(size, size)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         y = F.gelu(self.l1(x))
         y = F.gelu(self.l2(y))
         return x + y
 
 
 class WavesTransformer(nn.Module):
+    num_latent_tokens: int
+    is_decoder: bool
+
     def __init__(  # noqa: PLR0913
         self,
-        wave_dim,
-        output_dim,
-        num_latent_tokens,
-        embed_dim,
-        is_decoder,
-        num_heads=4,
-        num_layers=1,
-    ):
+        wave_dim: int,
+        output_dim: int,
+        num_latent_tokens: int,
+        embed_dim: int,
+        is_decoder: bool,
+        num_heads: int = 4,
+        num_layers: int = 1,
+    ) -> None:
         super().__init__()
         self.num_latent_tokens = num_latent_tokens
         self.is_decoder = is_decoder
@@ -58,7 +61,7 @@ class WavesTransformer(nn.Module):
         )
         self.bias_token = nn.Parameter(torch.randn(1, wave_dim) * 0.02)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor | None]:
         x = torch.cat([self.weight_tokens, x, self.bias_token], dim=0)
         out = self.encoder(x)
         weights = self.fc_weight(
@@ -69,14 +72,21 @@ class WavesTransformer(nn.Module):
 
 
 class DynamicEmbedding(nn.Module):
+    wave_dim: int
+    num_latent_tokens: int
+    patch_size: int
+    embed_dim: int
+    is_decoder: bool
+    output_dim: int
+
     def __init__(
         self,
-        wave_dim,
-        num_latent_tokens,
-        patch_size,
-        embed_dim,
-        is_decoder=False,
-    ):
+        wave_dim: int,
+        num_latent_tokens: int,
+        patch_size: int,
+        embed_dim: int,
+        is_decoder: bool = False,
+    ) -> None:
         super().__init__()
         self.wave_dim = wave_dim
         self.num_latent_tokens = num_latent_tokens
@@ -96,7 +106,9 @@ class DynamicEmbedding(nn.Module):
 
         self.initialize_weights()
 
-    def forward(self, batch, waves):
+    def forward(
+        self, batch: torch.Tensor, waves: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         waves = posemb_sincos_1d(waves, self.wave_dim)
         waves = waves.to(batch.device)
         waves = self.fclayer(waves)
@@ -130,7 +142,7 @@ class DynamicEmbedding(nn.Module):
 
         return x, waves
 
-    def initialize_weights(self):
+    def initialize_weights(self) -> None:
         # Initialize weights using Xavier initialization
         for m in self.modules():
             if isinstance(m, (nn.Linear, nn.Conv2d)):

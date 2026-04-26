@@ -22,7 +22,7 @@ from claymodel.model import Encoder
 
 @click.group()
 @click.version_option(package_name="claymodel")
-def cli():
+def cli() -> None:
     """Clay Foundation Model CLI."""
 
 
@@ -40,7 +40,14 @@ def cli():
     type=float,
     help="Skip chips with valid_fraction below this threshold",
 )
-def embed(input_path, sensor, ckpt, output, device, min_valid):
+def embed(
+    input_path: str,
+    sensor: str,
+    ckpt: str,
+    output: str | None,
+    device: str,
+    min_valid: float,
+) -> None:
     """Generate embeddings from a GeoTIFF file.
 
     Reads the input file, normalizes using sensor-specific statistics,
@@ -64,7 +71,7 @@ def embed(input_path, sensor, ckpt, output, device, min_valid):
 
 @cli.command()
 @click.option("--sensor", default=None, help="Show details for a specific sensor")
-def info(sensor):
+def info(sensor: str | None) -> None:
     """Show model and sensor information.
 
     Without --sensor, lists all supported sensors.
@@ -111,7 +118,7 @@ def info(sensor):
 @cli.command()
 @click.option("--device", default="cpu", help="Device (cpu, cuda)")
 @click.option("--size", default=64, type=int, help="Chip size for benchmark")
-def benchmark(device, size):
+def benchmark(device: str, size: int) -> None:
     """Run a smoke test and print timing.
 
     Creates a tiny model with random weights, runs a forward pass,

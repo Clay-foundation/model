@@ -16,6 +16,7 @@ import random
 import timm
 import torch
 import torch.nn.functional as F
+from box import Box
 from einops import rearrange, reduce, repeat
 from torch import nn
 from torchvision.transforms import v2
@@ -25,8 +26,10 @@ from claymodel.layers import Transformer
 from claymodel.mrl import MRL, MRLLoss
 from claymodel.utils import posemb_sincos_2d_with_gsd
 
+Datacube = dict[str, torch.Tensor]
 
-def configure_training_defaults():
+
+def configure_training_defaults() -> None:
     """Set global defaults for training performance.
 
     Called by the training entrypoint (trainer.py / LightningCLI).
@@ -38,17 +41,24 @@ def configure_training_defaults():
 
 
 class Encoder(nn.Module):
+    mask_ratio: float
+    patch_size: int
+    shuffle: bool
+    dim: int
+    num_patches: int
+    cls_token: nn.Parameter
+
     def __init__(  # noqa: PLR0913
         self,
-        mask_ratio,
-        patch_size,
-        shuffle,
-        dim,
-        depth,
-        heads,
-        dim_head,
-        mlp_ratio,
-    ):
+        mask_ratio: float,
+        patch_size: int,
+        shuffle: bool,
+        dim: int,
+        depth: int,
+        heads: int,
+        dim_head: int,
+        mlp_ratio: float,
+    ) -> None:
         super().__init__()
         self.mask_ratio = mask_ratio
         self.patch_size = patch_size
@@ -73,12 +83,20 @@ class Encoder(nn.Module):
             fused_attn=True,
         )
 
-    def to_patch_embed(self, cube, waves):
+    def to_patch_embed(
+        self, cube: torch.Tensor, waves: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Split the input cube into patches & create embeddings per patch"""
         patches, waves_encoded = self.patch_embedding(cube, waves)  # [B L D]
         return patches, waves_encoded  # ([B L D], [N D])
 
-    def add_encodings(self, patches, time, latlon, gsd):
+    def add_encodings(
+        self,
+        patches: torch.Tensor,
+        time: torch.Tensor,
+        latlon: torch.Tensor,
+        gsd: torch.Tensor,
+    ) -> torch.Tensor:
         """Add position encoding to the patches"""
         B, L, D = patches.shape
 
@@ -107,7 +125,9 @@ class Encoder(nn.Module):
         patches = patches + pos_metadata_encoding  # [B L D] + [B L D] -> [B L D]
         return patches  # [B L D]
 
-    def mask_out(self, patches):
+    def mask_out(
+        self, patches: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Mask out patches randomly by shuffling the patches & masking out the
         first N patches
@@ -178,7 +198,9 @@ class Encoder(nn.Module):
             masked_matrix,
         )  # [B L:(1 - mask_ratio) D], [(1-mask_ratio)], [mask_ratio], [B L]
 
-    def forward(self, datacube):
+    def forward(
+        self, datacube: Datacube
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         cube, time, latlon, gsd, waves = (
             datacube["pixels"],  # [B C H W]
             datacube["time"],  # [B 2]
@@ -229,17 +251,23 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
+    mask_ratio: float
+    patch_size: int
+    encoder_dim: int
+    dim: int
+    num_patches: int
+
     def __init__(  # noqa: PLR0913
         self,
-        mask_ratio,
-        patch_size,
-        encoder_dim,
-        dim,
-        depth,
-        heads,
-        dim_head,
-        mlp_ratio,
-    ):
+        mask_ratio: float,
+        patch_size: int,
+        encoder_dim: int,
+        dim: int,
+        depth: int,
+        heads: int,
+        dim_head: int,
+        mlp_ratio: float,
+    ) -> None:
         super().__init__()
         self.mask_ratio = mask_ratio
         self.patch_size = patch_size
@@ -268,14 +296,14 @@ class Decoder(nn.Module):
 
     def reconstruct_and_add_encoding(  # noqa: PLR0913
         self,
-        unmasked_patches,
-        unmasked_indices,
-        masked_indices,
-        masked_matrix,
-        time,
-        latlon,
-        gsd,
-    ):
+        unmasked_patches: torch.Tensor,
+        unmasked_indices: torch.Tensor,
+        masked_indices: torch.Tensor,
+        masked_matrix: torch.Tensor,
+        time: torch.Tensor,
+        latlon: torch.Tensor,
+        gsd: torch.Tensor,
+    ) -> torch.Tensor:
         B, L = masked_matrix.shape
         grid_size = int(math.sqrt(L))
         self.num_patches = grid_size**2
@@ -337,15 +365,15 @@ class Decoder(nn.Module):
 
     def forward(  # noqa: PLR0913
         self,
-        encoded_unmasked_patches,
-        unmasked_indices,
-        masked_indices,
-        masked_matrix,
-        time,
-        latlon,
-        gsd,
-        waves,
-    ):
+        encoded_unmasked_patches: torch.Tensor,
+        unmasked_indices: torch.Tensor,
+        masked_indices: torch.Tensor,
+        masked_matrix: torch.Tensor,
+        time: torch.Tensor,
+        latlon: torch.Tensor,
+        gsd: torch.Tensor,
+        waves: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         # Change the embedding dimension from encoder to decoder
         encoded_unmasked_patches = self.enc_to_dec(
             encoded_unmasked_patches
@@ -374,31 +402,42 @@ class Decoder(nn.Module):
 
 
 class ClayMAE(nn.Module):
+    mask_ratio: float
+    patch_size: int
+    norm_pix_loss: bool
+    shuffle: bool
+    metadata: Box
+    teacher: nn.Module
+    teacher_chip_size: int
+    matryoshka: bool
+    encoder: Encoder
+    decoder: Decoder
+
     def __init__(  # noqa: PLR0913
         self,
-        mask_ratio,
-        patch_size,
-        norm_pix_loss,
-        shuffle,
-        metadata,
-        teacher,
-        dolls,
-        doll_weights,
+        mask_ratio: float,
+        patch_size: int,
+        norm_pix_loss: bool,
+        shuffle: bool,
+        metadata: Box,
+        teacher: str,
+        dolls: list[int],
+        doll_weights: list[float],
         # ENCODER
-        dim,
-        depth,
-        heads,
-        dim_head,
-        mlp_ratio,
+        dim: int,
+        depth: int,
+        heads: int,
+        dim_head: int,
+        mlp_ratio: float,
         # DECODER
-        decoder_dim,
-        decoder_depth,
-        decoder_heads,
-        decoder_dim_head,
-        decoder_mlp_ratio,
-        matryoshka=False,
-        **kwargs,
-    ):
+        decoder_dim: int,
+        decoder_depth: int,
+        decoder_heads: int,
+        decoder_dim_head: int,
+        decoder_mlp_ratio: float,
+        matryoshka: bool = False,
+        **kwargs: object,
+    ) -> None:
         super().__init__()
         self.mask_ratio = mask_ratio
         self.patch_size = patch_size
@@ -441,12 +480,14 @@ class ClayMAE(nn.Module):
 
         self.freeze_teacher()
 
-    def freeze_teacher(self):
+    def freeze_teacher(self) -> None:
         for param in self.teacher.parameters():
             param.requires_grad = False
         self.teacher.eval()
 
-    def per_pixel_loss(self, cube, pixels, masked_matrix):
+    def per_pixel_loss(
+        self, cube: torch.Tensor, pixels: torch.Tensor, masked_matrix: torch.Tensor
+    ) -> torch.Tensor:
         """
         cube: [B C H W]
         pixels: [B L (C P P)]
@@ -473,7 +514,9 @@ class ClayMAE(nn.Module):
 
         return loss
 
-    def forward(self, datacube):
+    def forward(
+        self, datacube: dict[str, torch.Tensor | list[str]]
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         datacube: dict containing the following keys:
             - pixels: [B C H W]
@@ -571,8 +614,8 @@ class ClayMAE(nn.Module):
         return (loss, reconstruction_loss, representation_loss)
 
 
-def clay_mae_tiny(**kwargs):
-    args = {
+def clay_mae_tiny(**kwargs: object) -> ClayMAE:
+    args: dict[str, object] = {
         # ENCODER
         "dim": 192,
         "depth": 6,
@@ -590,8 +633,8 @@ def clay_mae_tiny(**kwargs):
     return ClayMAE(**args)
 
 
-def clay_mae_small(**kwargs):
-    args = {
+def clay_mae_small(**kwargs: object) -> ClayMAE:
+    args: dict[str, object] = {
         # ENCODER
         "dim": 384,
         "depth": 6,
@@ -609,8 +652,8 @@ def clay_mae_small(**kwargs):
     return ClayMAE(**args)
 
 
-def clay_mae_base(**kwargs):
-    args = {
+def clay_mae_base(**kwargs: object) -> ClayMAE:
+    args: dict[str, object] = {
         # ENCODER
         "dim": 768,
         "depth": 12,
@@ -628,8 +671,8 @@ def clay_mae_base(**kwargs):
     return ClayMAE(**args)
 
 
-def clay_mae_large(**kwargs):
-    args = {
+def clay_mae_large(**kwargs: object) -> ClayMAE:
+    args: dict[str, object] = {
         # ENCODER
         "dim": 1024,
         "depth": 24,

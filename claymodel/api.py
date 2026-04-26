@@ -46,7 +46,11 @@ def _bundled_metadata_path() -> str:
     return str(files("claymodel").joinpath("configs/metadata.yaml"))
 
 
-def normalize(pixels, sensor, metadata=None):
+def normalize(
+    pixels: torch.Tensor,
+    sensor: str,
+    metadata: Box | None = None,
+) -> torch.Tensor:
     """Normalize raw pixel values using sensor-specific z-score statistics.
 
     Applies the same normalization used during Clay v1.5 training:
@@ -89,7 +93,11 @@ def normalize(pixels, sensor, metadata=None):
     return (pixels - mean) / std
 
 
-def load_model(size="large", ckpt_path=None, device="cpu"):
+def load_model(
+    size: str = "large",
+    ckpt_path: str | None = None,
+    device: str = "cpu",
+) -> ClayMAEModule:
     """Load a Clay MAE model ready for inference.
 
     Creates a ClayMAEModule with the bundled metadata and optionally
@@ -159,10 +167,10 @@ class EmbeddingResult:
     metadata: dict = field(default_factory=dict)
 
     @property
-    def shape(self):
+    def shape(self) -> torch.Size:
         return self.embeddings.shape
 
-    def to_geoparquet(self, path):
+    def to_geoparquet(self, path: str | Path) -> object:
         """Export embeddings to GeoParquet format.
 
         Requires the [pipeline] extras: pip install claymodel[pipeline]
@@ -203,15 +211,15 @@ class EmbeddingResult:
 
 
 def embed(  # noqa: PLR0913
-    input_data,
-    sensor,
-    model=None,
-    ckpt_path=None,
-    device="cpu",
-    time=None,
-    latlon=None,
-    quality=False,
-):
+    input_data: torch.Tensor | np.ndarray | str | Path,
+    sensor: str,
+    model: ClayMAEModule | None = None,
+    ckpt_path: str | None = None,
+    device: str = "cpu",
+    time: torch.Tensor | None = None,
+    latlon: torch.Tensor | None = None,
+    quality: bool = False,
+) -> EmbeddingResult:
     """One-line embedding API for Clay Foundation Model.
 
     Accepts raw pixel data (as a tensor, numpy array, or GeoTIFF path),
