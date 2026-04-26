@@ -67,7 +67,7 @@ trainer:
     - class_path: lightning.pytorch.callbacks.LearningRateMonitor
       init_args:
         logging_interval: step
-    - class_path: claymodel.callbacks_wandb.LogIntermediatePredictions
+    - class_path: training.callbacks_wandb.LogIntermediatePredictions
   plugins:
     - class_path: lightning.pytorch.plugins.io.AsyncCheckpointIO
 ckpt_path: checkpoints/v1.5.0/last.ckpt

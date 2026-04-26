@@ -23,10 +23,12 @@ from src.model import Encoder
 ### After (New)
 ```python
 # New package imports — top-level or submodule imports both work
-from claymodel import ClayMAEModule, ClayDataModule, load_metadata
+from claymodel import ClayMAEModule, load_metadata
 # Or the explicit submodule path:
 from claymodel.module import ClayMAEModule
 from claymodel.model import Encoder
+# Training imports (requires pip install claymodel[train]):
+from training.datamodule import ClayDataModule
 ```
 
 ## Installation Methods
@@ -104,8 +106,8 @@ Training workflows require the full development environment:
 from src.datamodule import ClayDataModule
 from src.module import ClayMAEModule
 
-# After (development install)
-from claymodel.datamodule import ClayDataModule
+# After (development install, requires pip install claymodel[train])
+from training.datamodule import ClayDataModule
 from claymodel.module import ClayMAEModule
 ```
 

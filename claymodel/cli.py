@@ -34,19 +34,12 @@ def cli() -> None:
     "--output", "-o", default=None, help="Output path (.parquet or .geoparquet)"
 )
 @click.option("--device", default="cpu", help="Device (cpu, cuda, etc.)")
-@click.option(
-    "--min-valid",
-    default=0.0,
-    type=float,
-    help="Skip chips with valid_fraction below this threshold",
-)
 def embed(
     input_path: str,
     sensor: str,
     ckpt: str,
     output: str | None,
     device: str,
-    min_valid: float,
 ) -> None:
     """Generate embeddings from a GeoTIFF file.
 

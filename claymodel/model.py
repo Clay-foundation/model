@@ -152,9 +152,6 @@ class Encoder(nn.Module):
             patch & 0 indicates an unmasked patch.
         """
         B, L, D = patches.shape
-        # assert (
-        #     L == self.num_patches
-        # ), f"Expected {self.num_patches} patches, got {L} patches."
 
         if self.shuffle:  # Shuffle the patches
             noise = torch.randn((B, L), device=patches.device)  # [B L]

@@ -30,8 +30,7 @@ The easiest way to install Clay Foundation Model is via pip:
 This will install the `claymodel` package and all its dependencies. You can then import and use it in your Python code:
 
 ```python
-from claymodel.datamodule import ClayDataModule
-from claymodel.module import ClayMAEModule
+from claymodel import ClayMAEModule
 ```
 
 ### Development Installation

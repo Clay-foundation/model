@@ -220,7 +220,6 @@ class ClayDataModule(L.LightningDataModule):
         chips_path = sorted(list(Path(self.data_dir).glob("**/*.npz")))
         chips_platform = [chip.parent.name for chip in chips_path]
         # chips_platform = [chip.parent.parent.name for chip in chips_path]
-        print(f"Total number of chips: {len(chips_path)}")
 
         if stage == "fit":
             trn_paths, val_paths = train_test_split(
@@ -256,8 +255,9 @@ class ClayDataModule(L.LightningDataModule):
         elif stage == "predict":
             self.prd_ds = EODataset(
                 chips_path=chips_path,
-                platform=self.platform,
-                metadata_path=self.metadata_path,
+                size=self.size,
+                platforms=self.platforms,
+                metadata=self.metadata,
             )
 
     def train_dataloader(self):
