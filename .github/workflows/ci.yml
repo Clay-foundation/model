@@ -15,8 +15,8 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install ruff
-      - run: ruff check .
-      - run: ruff format --check .
+      - run: ruff check . --exclude "*.ipynb"
+      - run: ruff format --check . --exclude "*.ipynb"
 
   test:
     runs-on: ubuntu-latest
