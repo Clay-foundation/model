@@ -28,5 +28,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -e ".[dev]"
-      - run: pytest tests/ -v --cov=claymodel --cov-report=term-missing
+      - run: pip install hatch
+      - run: hatch run test

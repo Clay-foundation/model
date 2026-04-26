@@ -63,14 +63,20 @@ dev = [
 clay = "claymodel.cli:cli"
 
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools.packages.find]
-include = ["claymodel*"]
+[tool.hatch.build.targets.wheel]
+packages = ["claymodel"]
 
-[tool.setuptools.package-data]
-claymodel = ["configs/*.yaml", "py.typed"]
+[tool.hatch.envs.default]
+dependencies = [
+    "claymodel[dev]",
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest tests/ -v --cov=claymodel --cov-report=term-missing"
+lint = "pre-commit run --all"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
