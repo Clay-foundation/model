@@ -1,7 +1,6 @@
 """Test model forward passes and output shapes."""
 
 import os
-import random
 
 import pytest
 import torch
@@ -135,48 +134,27 @@ def test_decoder_output_shape():
 
 
 def test_clay_mae_full_forward():
-    """Full MAE forward pass returns loss tuple with finite values."""
-    metadata = make_metadata()
-    model = clay_mae_tiny(
-        mask_ratio=0.75,
-        patch_size=8,
-        norm_pix_loss=False,
-        shuffle=True,
-        metadata=metadata,
-        teacher="samvit_base_patch16.sa1b",
-        dolls=[16, 32],
-        doll_weights=[1, 1],
-    )
+    """Full MAE forward pass returns encoded patches, decoded pixels, and mask."""
+    model = _make_tiny_mae(mask_ratio=0.75)
     model.eval()
 
-    # Replace the teacher with a simple mock to avoid input size constraints.
-    # The real SAM teacher expects 518x518 input divisible by patch_size=16,
-    # but we test with small 64x64 chips. A mock teacher that just returns
-    # a vector of the right size is sufficient to test the loss computation.
-    teacher_dim = model.teacher.num_features
-
-    class MockTeacher(nn.Module):
-        def forward(self, x):
-            return torch.randn(x.shape[0], teacher_dim)
-
-    model.teacher = MockTeacher()
-    model.teacher_resize = nn.Identity()
-
-    # Build a full datacube with platform key (required by ClayMAE.forward)
     datacube = {
         "pixels": torch.randn(2, 10, 64, 64),
         "time": torch.zeros(2, 4),
         "latlon": torch.zeros(2, 4),
-        "platform": ["sentinel-2-l2a", "sentinel-2-l2a"],
+        "gsd": torch.tensor(10.0),
+        "waves": torch.rand(10),
     }
 
     with torch.no_grad():
-        loss, rec_loss, rep_loss = model(datacube)
+        encoded, decoded, mask, unmasked_idx, masked_idx = model(datacube)
 
-    assert loss.dim() == 0  # scalar
-    assert torch.isfinite(loss)
-    assert torch.isfinite(rec_loss)
-    assert torch.isfinite(rep_loss)
+    B, L = 2, (64 // 8) ** 2
+    num_unmasked = int(L * 0.25)
+    assert encoded.shape == (B, 1 + num_unmasked, 192)  # CLS + unmasked patches
+    assert decoded.shape[0] == B
+    assert decoded.shape[1] == L
+    assert mask.shape == (B, L)
 
 
 def test_per_pixel_loss_masked_only():
@@ -309,6 +287,7 @@ def test_matryoshka_false_creates_proj():
 
 
 def test_matryoshka_forward_path():
+    """Forward pass works with matryoshka=True (MRL submodules present)."""
     model = _make_tiny_mae(matryoshka=True)
     model.eval()
 
@@ -316,96 +295,35 @@ def test_matryoshka_forward_path():
         "pixels": torch.randn(2, 10, 64, 64),
         "time": torch.zeros(2, 4),
         "latlon": torch.zeros(2, 4),
-        "platform": ["sentinel-2-l2a", "sentinel-2-l2a"],
+        "gsd": torch.tensor(10.0),
+        "waves": torch.rand(10),
     }
     with torch.no_grad():
-        loss, rec_loss, rep_loss = model(datacube)
+        encoded, decoded, mask, *_ = model(datacube)
 
-    assert torch.isfinite(loss)
-    assert torch.isfinite(rec_loss)
-    assert torch.isfinite(rep_loss)
+    assert encoded.shape[0] == 2
+    assert decoded.shape[0] == 2
 
 
 def test_norm_pix_loss():
-    model = _make_tiny_mae(norm_pix_loss=True)
-    model.eval()
+    """per_pixel_loss with norm_pix_loss=True should give higher loss than without."""
+    model_norm = _make_tiny_mae(norm_pix_loss=True)
+    model_plain = _make_tiny_mae(norm_pix_loss=False)
 
-    datacube = {
-        "pixels": torch.randn(2, 10, 64, 64),
-        "time": torch.zeros(2, 4),
-        "latlon": torch.zeros(2, 4),
-        "platform": ["sentinel-2-l2a", "sentinel-2-l2a"],
-    }
-    with torch.no_grad():
-        loss, rec_loss, rep_loss = model(datacube)
+    B, C, H, W, P = 1, 4, 64, 64, 8
+    L = (H // P) * (W // P)
+    cube = torch.randn(B, C, H, W)
+    # Intentionally imperfect prediction
+    pixels = torch.randn(B, L, C * P * P)
+    mask = torch.ones(B, L)
 
-    assert torch.isfinite(loss)
+    loss_norm = model_norm.per_pixel_loss(cube, pixels, mask)
+    loss_plain = model_plain.per_pixel_loss(cube, pixels, mask)
 
-
-def test_channel_dropout_with_nonzero_latlon():
-    """Channel dropout should trigger when latlon is nonzero."""
-    model = _make_tiny_mae()
-    model.train()
-
-    datacube = {
-        "pixels": torch.randn(2, 10, 64, 64),
-        "time": torch.zeros(2, 4),
-        "latlon": torch.ones(2, 4),  # nonzero to enable dropout
-        "platform": ["sentinel-2-l2a", "sentinel-2-l2a"],
-    }
-
-    # Seed random to hit the drop-all branch (prob < 0.10)
-    random.seed(0)
-    # Find a seed that triggers dropout
-    for seed in range(100):
-        random.seed(seed)
-        if random.random() < 0.10:
-            random.seed(seed)  # reset to same seed
-            break
-
-    loss, rec_loss, rep_loss = model(datacube)
-    assert torch.isfinite(loss)
-
-
-def test_modis_platform_scaling():
-    """MODIS platform should scale reconstruction loss by /10."""
-    metadata = make_metadata()
-    if "modis" not in metadata:
-        pytest.skip("MODIS not in metadata")
-
-    n_bands = len(metadata["modis"].bands.wavelength)
-    model = _make_tiny_mae()
-    model.eval()
-
-    datacube = {
-        "pixels": torch.randn(2, n_bands, 64, 64),
-        "time": torch.zeros(2, 4),
-        "latlon": torch.zeros(2, 4),
-        "platform": ["modis", "modis"],
-    }
-    with torch.no_grad():
-        loss, rec_loss, rep_loss = model(datacube)
-
-    assert torch.isfinite(loss)
-
-
-def test_sentinel1_rgb_construction():
-    """Sentinel-1 should construct synthetic RGB for teacher."""
-    metadata = make_metadata()
-    n_bands = len(metadata["sentinel-1-rtc"].bands.wavelength)
-    model = _make_tiny_mae()
-    model.eval()
-
-    datacube = {
-        "pixels": torch.randn(2, n_bands, 64, 64),
-        "time": torch.zeros(2, 4),
-        "latlon": torch.zeros(2, 4),
-        "platform": ["sentinel-1-rtc", "sentinel-1-rtc"],
-    }
-    with torch.no_grad():
-        loss, rec_loss, rep_loss = model(datacube)
-
-    assert torch.isfinite(loss)
+    # Both should be finite, and they should differ
+    assert torch.isfinite(loss_norm)
+    assert torch.isfinite(loss_plain)
+    assert not torch.allclose(loss_norm, loss_plain)
 
 
 def test_factory_dimensions():

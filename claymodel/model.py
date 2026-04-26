@@ -13,7 +13,6 @@ __all__ = [
 
 import math
 import os
-import random
 from typing import Any
 
 import timm
@@ -515,103 +514,44 @@ class ClayMAE(nn.Module):
         return loss
 
     def forward(
-        self, datacube: dict[str, torch.Tensor | list[str]]
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        self,
+        datacube: dict[str, torch.Tensor],
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Run encode-decode forward pass. No loss computation.
+
+        Args:
+            datacube: dict with keys pixels [B C H W], time [B 4],
+                latlon [B 4], gsd (scalar Tensor), waves [C].
+
+        Returns:
+            encoded_patches: [B, 1+L', D] encoded unmasked patches with CLS token
+            decoded_pixels: [B, L, C*P*P] reconstructed pixel patches
+            masked_matrix: [B, L] mask (1=masked, 0=unmasked)
+            unmasked_indices: indices of unmasked patches
+            masked_indices: indices of masked patches
         """
-        datacube: dict containing the following keys:
-            - pixels: [B C H W]
-            - time: [B 4] # week hour
-            - latlon: [B 4] # lat lon
-            - platform: [B 1]
-            - date: [B 1]
-        """
-        platform = datacube["platform"][0]
-        waves = torch.tensor(list(self.metadata[platform].bands.wavelength.values()))
-        gsd = torch.tensor(self.metadata[platform].gsd)
-
-        # Drop channels randomly
-        _pixels = datacube["pixels"].clone()
-        batch_size, channels, _, _ = _pixels.size()
-
-        # Define probabilities for dropping channels
-        prob_drop_all = 0.10  # 10% probability to drop all channels
-        prob_drop_half = 0.20  # 20% probability to drop half the channels
-
-        for i in range(batch_size):
-            if torch.any(
-                datacube["latlon"][i] != 0
-            ):  # Check if latlon is not all zeros
-                rand_val = random.random()
-                if rand_val < prob_drop_all:
-                    _pixels[i, :, :, :] = 0  # Drop all channels
-                elif rand_val < prob_drop_all + prob_drop_half:
-                    channel_indices = torch.randperm(channels)[
-                        : channels // 2
-                    ]  # Get 50% of channel indices
-                    _pixels[i, channel_indices, :, :] = 0  # Drop 50% of channels
-
-        # ENCODER
-        (
-            encoded_unmasked_patches,  # [B (1 + L):(1 - mask_ratio) D]
-            unmasked_indices,  # [(1-mask_ratio)]
-            masked_indices,  # [mask_ratio]
-            masked_matrix,  # [B L]
-        ) = self.encoder(
-            {
-                "pixels": _pixels,
-                "time": datacube["time"],
-                "latlon": datacube["latlon"],
-                "gsd": gsd,
-                "waves": waves,
-            }
+        encoded_patches, unmasked_indices, masked_indices, masked_matrix = self.encoder(
+            datacube
         )
 
-        # DECODER
-        pixels, waves = self.decoder(
-            encoded_unmasked_patches,
+        decoded_pixels, _waves = self.decoder(
+            encoded_patches,
             unmasked_indices,
             masked_indices,
             masked_matrix,
             datacube["time"],
             datacube["latlon"],
-            gsd,
-            waves,
-        )  # [B L (C P P)]
-
-        # MAE
-        reconstruction_loss = self.per_pixel_loss(
-            datacube["pixels"], pixels, masked_matrix
+            datacube["gsd"],
+            datacube["waves"],
         )
-        # MODIS has a 10x reconstruction loss compared to all the other sensors,
-        # so we need to scale it down to improve the learning capability.
-        if platform == "modis":
-            reconstruction_loss /= 10
 
-        # Teacher target (shared by both projection paths)
-        with torch.no_grad():
-            if platform == "sentinel-1-rtc":
-                r = datacube["pixels"][:, 0, :, :]
-                g = datacube["pixels"][:, 1, :, :]
-                b = (r + g) / 2
-                rgb = torch.stack((r, g, b), dim=1)
-            else:
-                indices = self.metadata[platform].rgb_indices
-                rgb = datacube["pixels"][:, indices, :, :]
-            rgb = self.teacher_resize(rgb)
-            target = self.teacher(rgb)
-
-        cls_token = encoded_unmasked_patches[:, 0, :]
-        if self.matryoshka:
-            representations = self.mrl(cls_token)
-            representation_loss = self.mrl_loss(representations, target)
-        else:
-            representations = self.proj(cls_token)
-            representation_loss = (
-                1.0 - F.cosine_similarity(representations, target).mean()
-            )
-
-        loss = 0.9 * reconstruction_loss + 0.1 * representation_loss
-        return (loss, reconstruction_loss, representation_loss)
+        return (
+            encoded_patches,
+            decoded_pixels,
+            masked_matrix,
+            unmasked_indices,
+            masked_indices,
+        )
 
 
 def clay_mae_tiny(**kwargs: Any) -> ClayMAE:

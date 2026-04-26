@@ -1,9 +1,12 @@
 __all__ = ["ClayMAEModule"]
 
+import random
+from collections.abc import Mapping
 from typing import Literal
 
 import lightning as L
 import torch
+import torch.nn.functional as F
 
 from claymodel.metadata import PlatformMetadata, load_metadata_yaml
 from claymodel.model import (
@@ -60,13 +63,10 @@ class ClayMAEModule(L.LightningModule):
                 "matryoshka": matryoshka,
             }
             self.model = model_map[model_size](**model_args)
-            # NOTE: Weight loading from checkpoint is handled by Lightning's
-            # load_from_checkpoint(). The checkpoint strips 'model.' prefix and
-            # excludes teacher/MRL keys. See claymodel/utils.py for the shared
-            # weight-loading utility used by finetune factories.
         else:
             raise ValueError(
-                f"Invalid model size {model_size}. Expected one of {model_map.keys()}"
+                f"Invalid model size {model_size}. "
+                f"Expected one of {list(model_map.keys())}"
             )
 
     def on_train_epoch_start(self) -> None:
@@ -79,7 +79,7 @@ class ClayMAEModule(L.LightningModule):
 
     def forward(
         self, datacube: dict[str, torch.Tensor]
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         return self.model(datacube)
 
     def configure_optimizers(self):  # type: ignore[override]
@@ -106,22 +106,86 @@ class ClayMAEModule(L.LightningModule):
             },
         }
 
-    def shared_step(
-        self, batch: dict[str, torch.Tensor], batch_idx: int, phase: str
+    def _resolve_platform(
+        self, batch: Mapping[str, object]
+    ) -> tuple[str, torch.Tensor, torch.Tensor]:
+        """Extract platform name, wavelengths, and GSD from a batch."""
+        platforms = batch["platform"]
+        assert isinstance(platforms, list)
+        platform = platforms[0]
+        assert isinstance(platform, str)
+        meta = self.metadata[platform]
+        waves = torch.tensor(list(meta.bands.wavelength.values()))
+        gsd = torch.tensor(meta.gsd)
+        return platform, waves, gsd
+
+    def _channel_dropout(
+        self,
+        pixels: torch.Tensor,
+        latlon: torch.Tensor,
     ) -> torch.Tensor:
-        platform = batch["platform"][0]
-        loss, reconstruction_loss, representation_loss = self(batch)
+        """Randomly drop channels as training augmentation.
 
-        losses: dict[str, torch.Tensor] = {
-            "loss": loss,
-            "rec_loss": reconstruction_loss,
-            "rep_loss": representation_loss,
-        }
+        10% chance to zero all channels, 20% chance to zero half.
+        Only applied to samples with nonzero latlon.
+        """
+        pixels = pixels.clone()
+        batch_size, channels, _, _ = pixels.size()
 
-        for loss_name, loss_value in losses.items():
+        for i in range(batch_size):
+            if torch.any(latlon[i] != 0):
+                rand_val = random.random()
+                if rand_val < 0.10:
+                    pixels[i, :, :, :] = 0
+                elif rand_val < 0.30:
+                    drop_idx = torch.randperm(channels)[: channels // 2]
+                    pixels[i, drop_idx, :, :] = 0
+
+        return pixels
+
+    def _teacher_target(
+        self,
+        pixels: torch.Tensor,
+        platform: str,
+    ) -> torch.Tensor:
+        """Compute teacher representation target from RGB bands."""
+        with torch.no_grad():
+            if platform == "sentinel-1-rtc":
+                r = pixels[:, 0, :, :]
+                g = pixels[:, 1, :, :]
+                b = (r + g) / 2
+                rgb = torch.stack((r, g, b), dim=1)
+            else:
+                indices = self.metadata[platform].rgb_indices
+                rgb = pixels[:, indices, :, :]
+            rgb = self.model.teacher_resize(rgb)
+            return self.model.teacher(rgb)
+
+    def _representation_loss(
+        self,
+        cls_token: torch.Tensor,
+        target: torch.Tensor,
+    ) -> torch.Tensor:
+        """Compute representation loss (proj or MRL)."""
+        if self.model.matryoshka:
+            representations = self.model.mrl(cls_token)
+            return self.model.mrl_loss(representations, target)
+        representations = self.model.proj(cls_token)
+        return 1.0 - F.cosine_similarity(representations, target).mean()
+
+    def _log_losses(
+        self,
+        phase: str,
+        platform: str,
+        loss: torch.Tensor,
+        rec_loss: torch.Tensor,
+        rep_loss: torch.Tensor,
+    ) -> None:
+        losses = {"loss": loss, "rec_loss": rec_loss, "rep_loss": rep_loss}
+        for name, value in losses.items():
             self.log(
-                name=f"{phase}/{loss_name}",
-                value=loss_value,
+                name=f"{phase}/{name}",
+                value=value,
                 on_step=True,
                 on_epoch=True,
                 prog_bar=True,
@@ -129,23 +193,68 @@ class ClayMAEModule(L.LightningModule):
                 sync_dist=True,
             )
             self.log(
-                name=f"{phase}_{platform}/{loss_name}",
-                value=loss_value,
+                name=f"{phase}_{platform}/{name}",
+                value=value,
                 on_step=True,
                 on_epoch=True,
                 prog_bar=True,
                 logger=True,
                 sync_dist=True,
             )
-
-        return loss
 
     def training_step(
         self, batch: dict[str, torch.Tensor], batch_idx: int
     ) -> torch.Tensor:
-        return self.shared_step(batch, batch_idx, phase="train")
+        platform, waves, gsd = self._resolve_platform(batch)
+        pixels = self._channel_dropout(batch["pixels"], batch["latlon"])
+
+        datacube = {
+            "pixels": pixels,
+            "time": batch["time"],
+            "latlon": batch["latlon"],
+            "gsd": gsd,
+            "waves": waves,
+        }
+
+        encoded, decoded_pixels, masked_matrix, *_ = self.model(datacube)
+
+        rec_loss = self.model.per_pixel_loss(
+            batch["pixels"], decoded_pixels, masked_matrix
+        )
+        if platform == "modis":
+            rec_loss = rec_loss / 10
+
+        target = self._teacher_target(batch["pixels"], platform)
+        rep_loss = self._representation_loss(encoded[:, 0, :], target)
+
+        loss = 0.9 * rec_loss + 0.1 * rep_loss
+        self._log_losses("train", platform, loss, rec_loss, rep_loss)
+        return loss
 
     def validation_step(
         self, batch: dict[str, torch.Tensor], batch_idx: int
     ) -> torch.Tensor:
-        return self.shared_step(batch, batch_idx, phase="val")
+        platform, waves, gsd = self._resolve_platform(batch)
+
+        datacube = {
+            "pixels": batch["pixels"],
+            "time": batch["time"],
+            "latlon": batch["latlon"],
+            "gsd": gsd,
+            "waves": waves,
+        }
+
+        encoded, decoded_pixels, masked_matrix, *_ = self.model(datacube)
+
+        rec_loss = self.model.per_pixel_loss(
+            batch["pixels"], decoded_pixels, masked_matrix
+        )
+        if platform == "modis":
+            rec_loss = rec_loss / 10
+
+        target = self._teacher_target(batch["pixels"], platform)
+        rep_loss = self._representation_loss(encoded[:, 0, :], target)
+
+        loss = 0.9 * rec_loss + 0.1 * rep_loss
+        self._log_losses("val", platform, loss, rec_loss, rep_loss)
+        return loss

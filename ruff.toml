@@ -22,6 +22,7 @@ select = [
 "scripts/worldcover/worldcover_vrt.py" = ["E501"]
 "claymodel/__init__.py" = ["PLR0911"]
 "claymodel/api.py" = ["PLC0415", "PLR0912", "PLR0915", "PLR2004"]
+"claymodel/module.py" = ["PLR2004"]
 "claymodel/inference/elle.py" = ["PLC0415"]
 "claymodel/inference/masking.py" = ["PLR2004"]
 "tests/*.py" = ["PLC0415", "PLR2004"]
