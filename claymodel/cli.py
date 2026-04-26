@@ -107,7 +107,7 @@ def info(sensor: str | None) -> None:
             m = s.bands.mean[band]
             sd = s.bands.std[band]
             click.echo(f"    {band}: {m} / {sd}")
-        if not hasattr(s, "rgb_indices"):
+        if s.rgb_indices is None:
             click.echo("\n  Note: No RGB indices (SAR sensor)")
     else:
         click.echo("\nClay v1.5 Supported Sensors:")

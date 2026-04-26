@@ -22,7 +22,7 @@ dependencies = [
     "torchvision>=0.19.0",
     "einops~=0.7.0",
     "lightning>=2.0.0",
-    "python-box",
+    "pydantic>=2.0",
     "pyyaml",
     "timm>=0.6.0",
 ]

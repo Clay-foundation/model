@@ -16,7 +16,6 @@ import random
 import timm
 import torch
 import torch.nn.functional as F
-from box import Box
 from einops import rearrange, reduce, repeat
 from torch import nn
 from torchvision.transforms import v2
@@ -403,7 +402,7 @@ class ClayMAE(nn.Module):
     patch_size: int
     norm_pix_loss: bool
     shuffle: bool
-    metadata: Box
+    metadata: object
     teacher: nn.Module
     teacher_chip_size: int
     matryoshka: bool
@@ -416,7 +415,7 @@ class ClayMAE(nn.Module):
         patch_size: int,
         norm_pix_loss: bool,
         shuffle: bool,
-        metadata: Box,
+        metadata: object,
         teacher: str,
         dolls: list[int],
         doll_weights: list[float],

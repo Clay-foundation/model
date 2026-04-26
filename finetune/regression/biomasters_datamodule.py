@@ -21,11 +21,11 @@ from pathlib import Path
 import lightning as L
 import numpy as np
 import torch
-import yaml
-from box import Box
 from tifffile import imread
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
+
+from claymodel.metadata import Metadata
 
 
 class BioMastersDataset(Dataset):
@@ -135,8 +135,7 @@ class BioMastersDataModule(L.LightningDataModule):
         self.train_label_dir = train_label_dir
         self.val_chip_dir = val_chip_dir
         self.val_label_dir = val_label_dir
-        with open(metadata_path) as f:
-            self.metadata = Box(yaml.safe_load(f))
+        self.metadata = Metadata.from_yaml(metadata_path)
         self.batch_size = batch_size
         self.num_workers = num_workers
 

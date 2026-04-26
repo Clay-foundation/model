@@ -4,9 +4,8 @@ from typing import Literal
 
 import lightning as L
 import torch
-import yaml
-from box import Box
 
+from claymodel.metadata import Metadata
 from claymodel.model import (
     ClayMAE,
     Encoder,
@@ -19,7 +18,7 @@ from claymodel.model import (
 
 class ClayMAEModule(L.LightningModule):
     model: ClayMAE
-    metadata: Box
+    metadata: Metadata
 
     def __init__(  # noqa: PLR0913
         self,
@@ -41,8 +40,7 @@ class ClayMAEModule(L.LightningModule):
     ) -> None:
         super().__init__()
         self.save_hyperparameters(logger=True)
-        with open(metadata_path) as f:
-            self.metadata = Box(yaml.safe_load(f))
+        self.metadata = Metadata.from_yaml(metadata_path)
         model_map = {
             "tiny": clay_mae_tiny,
             "small": clay_mae_small,

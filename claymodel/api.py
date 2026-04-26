@@ -17,13 +17,13 @@ from pathlib import Path
 import numpy as np
 import torch
 import yaml
-from box import Box
 
 from claymodel.inference.elle import ELLEProbe
+from claymodel.metadata import Metadata
 from claymodel.module import ClayMAEModule
 
 
-def load_metadata(path: str | Path | None = None) -> Box:
+def load_metadata(path: str | Path | None = None) -> Metadata:
     """Load sensor metadata from a YAML file.
 
     Args:
@@ -31,8 +31,7 @@ def load_metadata(path: str | Path | None = None) -> Box:
             metadata with common public sensors (Sentinel-2, Sentinel-1,
             NAIP, Landsat, MODIS, etc.).
 
-    Returns a Box object with sensor metadata including band info,
-    wavelengths, normalization stats, and GSD for each supported platform.
+    Returns a Metadata object with validated sensor configurations.
 
     Example:
         >>> from claymodel import load_metadata
@@ -43,8 +42,8 @@ def load_metadata(path: str | Path | None = None) -> Box:
     """
     if path is None:
         metadata_file = files("claymodel").joinpath("configs/metadata.yaml")
-        return Box(yaml.safe_load(metadata_file.read_text()))
-    return Box(yaml.safe_load(Path(path).read_text()))
+        return Metadata.model_validate(yaml.safe_load(metadata_file.read_text()))
+    return Metadata.from_yaml(path)
 
 
 def _bundled_metadata_path() -> str:
@@ -55,7 +54,7 @@ def _bundled_metadata_path() -> str:
 def normalize(
     pixels: torch.Tensor,
     sensor: str,
-    metadata: Box | None = None,
+    metadata: Metadata | None = None,
 ) -> torch.Tensor:
     """Normalize raw pixel values using sensor-specific z-score statistics.
 
@@ -222,7 +221,7 @@ def embed(  # noqa: PLR0913
     time: torch.Tensor | None = None,
     latlon: torch.Tensor | None = None,
     quality: bool = False,
-    metadata: Box | None = None,
+    metadata: Metadata | None = None,
 ) -> EmbeddingResult:
     """One-line embedding API for Clay Foundation Model.
 

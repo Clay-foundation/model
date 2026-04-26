@@ -12,20 +12,20 @@ from typing import Literal
 import lightning as L
 import numpy as np
 import torch
-import yaml
-from box import Box
 from einops import rearrange
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.sampler import Sampler
 from torchvision.transforms import v2
 
+from claymodel.metadata import Metadata
+
 
 class EODataset(Dataset):
     """Reads different Earth Observation data sources from a directory."""
 
     def __init__(
-        self, chips_path: list[Path], size: int, platforms: list, metadata: Box
+        self, chips_path: list[Path], size: int, platforms: list, metadata: Metadata
     ) -> None:
         super().__init__()
         self.chips_path = chips_path
@@ -204,8 +204,7 @@ class ClayDataModule(L.LightningDataModule):
         self.data_dir = data_dir
         self.size = size
         self.platforms = platforms
-        with open(metadata_path) as f:
-            self.metadata = Box(yaml.safe_load(f))
+        self.metadata = Metadata.from_yaml(metadata_path)
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.prefetch_factor = prefetch_factor

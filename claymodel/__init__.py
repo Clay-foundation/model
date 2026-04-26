@@ -14,6 +14,7 @@ Example usage:
 from importlib.metadata import version
 
 from claymodel.api import embed, load_metadata, load_model, normalize
+from claymodel.metadata import Metadata
 from claymodel.model import clay_mae_base, clay_mae_large, clay_mae_small, clay_mae_tiny
 from claymodel.module import ClayMAEModule
 
@@ -26,6 +27,7 @@ __all__ = [
     "clay_mae_large",
     "clay_mae_small",
     "clay_mae_tiny",
+    "Metadata",
     "load_metadata",
     "load_model",
     "embed",
