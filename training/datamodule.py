@@ -18,14 +18,18 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.sampler import Sampler
 from torchvision.transforms import v2
 
-from claymodel.metadata import Metadata
+from claymodel.metadata import PlatformMetadata, load_metadata_yaml
 
 
 class EODataset(Dataset):
     """Reads different Earth Observation data sources from a directory."""
 
     def __init__(
-        self, chips_path: list[Path], size: int, platforms: list, metadata: Metadata
+        self,
+        chips_path: list[Path],
+        size: int,
+        platforms: list,
+        metadata: dict[str, PlatformMetadata],
     ) -> None:
         super().__init__()
         self.chips_path = chips_path
@@ -204,7 +208,7 @@ class ClayDataModule(L.LightningDataModule):
         self.data_dir = data_dir
         self.size = size
         self.platforms = platforms
-        self.metadata = Metadata.from_yaml(metadata_path)
+        self.metadata = load_metadata_yaml(metadata_path)
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.prefetch_factor = prefetch_factor

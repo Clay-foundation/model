@@ -5,7 +5,7 @@ from typing import Literal
 import lightning as L
 import torch
 
-from claymodel.metadata import Metadata
+from claymodel.metadata import PlatformMetadata, load_metadata_yaml
 from claymodel.model import (
     ClayMAE,
     Encoder,
@@ -18,7 +18,7 @@ from claymodel.model import (
 
 class ClayMAEModule(L.LightningModule):
     model: ClayMAE
-    metadata: Metadata
+    metadata: dict[str, PlatformMetadata]
 
     def __init__(  # noqa: PLR0913
         self,
@@ -40,7 +40,7 @@ class ClayMAEModule(L.LightningModule):
     ) -> None:
         super().__init__()
         self.save_hyperparameters(logger=True)
-        self.metadata = Metadata.from_yaml(metadata_path)
+        self.metadata = load_metadata_yaml(metadata_path)
         model_map = {
             "tiny": clay_mae_tiny,
             "small": clay_mae_small,

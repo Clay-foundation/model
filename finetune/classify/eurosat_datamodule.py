@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from torchgeo.datasets import EuroSAT as TGEuroSAT
 from torchvision.transforms import v2
 
-from claymodel.metadata import Metadata
+from claymodel.metadata import load_metadata_yaml
 
 S2_BANDS = [
     "B02",
@@ -80,7 +80,7 @@ class EuroSATDataModule(L.LightningDataModule):
         self.num_workers = num_workers
         self.data_dir = data_dir
 
-        metadata = Metadata.from_yaml(metadata_path)["sentinel-2-l2a"]
+        metadata = load_metadata_yaml(metadata_path)["sentinel-2-l2a"]
         mean = list(metadata.bands.mean.values())
         std = list(metadata.bands.std.values())
 

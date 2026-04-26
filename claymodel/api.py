@@ -16,14 +16,15 @@ from pathlib import Path
 
 import numpy as np
 import torch
-import yaml
 
 from claymodel.inference.elle import ELLEProbe
-from claymodel.metadata import Metadata
+from claymodel.metadata import PlatformMetadata, load_metadata_yaml
 from claymodel.module import ClayMAEModule
 
 
-def load_metadata(path: str | Path | None = None) -> Metadata:
+def load_metadata(
+    path: str | Path | None = None,
+) -> dict[str, PlatformMetadata]:
     """Load sensor metadata from a YAML file.
 
     Args:
@@ -31,7 +32,7 @@ def load_metadata(path: str | Path | None = None) -> Metadata:
             metadata with common public sensors (Sentinel-2, Sentinel-1,
             NAIP, Landsat, MODIS, etc.).
 
-    Returns a Metadata object with validated sensor configurations.
+    Returns a validated dict mapping sensor names to PlatformMetadata.
 
     Example:
         >>> from claymodel import load_metadata
@@ -41,9 +42,8 @@ def load_metadata(path: str | Path | None = None) -> Metadata:
         10
     """
     if path is None:
-        metadata_file = files("claymodel").joinpath("configs/metadata.yaml")
-        return Metadata.model_validate(yaml.safe_load(metadata_file.read_text()))
-    return Metadata.from_yaml(path)
+        path = str(files("claymodel").joinpath("configs/metadata.yaml"))
+    return load_metadata_yaml(path)
 
 
 def _bundled_metadata_path() -> str:
@@ -54,7 +54,7 @@ def _bundled_metadata_path() -> str:
 def normalize(
     pixels: torch.Tensor,
     sensor: str,
-    metadata: Metadata | None = None,
+    metadata: dict[str, PlatformMetadata] | None = None,
 ) -> torch.Tensor:
     """Normalize raw pixel values using sensor-specific z-score statistics.
 
@@ -221,7 +221,7 @@ def embed(  # noqa: PLR0913
     time: torch.Tensor | None = None,
     latlon: torch.Tensor | None = None,
     quality: bool = False,
-    metadata: Metadata | None = None,
+    metadata: dict[str, PlatformMetadata] | None = None,
 ) -> EmbeddingResult:
     """One-line embedding API for Clay Foundation Model.
 

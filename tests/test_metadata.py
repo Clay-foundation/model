@@ -1,13 +1,13 @@
 """Test bundled metadata loading (A3 verification)."""
 
 from claymodel.api import load_metadata
-from claymodel.metadata import Metadata, PlatformMetadata
+from claymodel.metadata import PlatformMetadata
 from tests.conftest import make_metadata
 
 
-def test_load_metadata_returns_metadata_type():
+def test_load_metadata_returns_dict():
     metadata = make_metadata()
-    assert isinstance(metadata, Metadata)
+    assert isinstance(metadata, dict)
 
 
 def test_metadata_has_sentinel2():
