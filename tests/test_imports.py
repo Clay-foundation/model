@@ -1,5 +1,7 @@
 """Test that package exports work correctly (A1 verification)."""
 
+from training.datamodule import ClayDataModule
+
 import claymodel
 from claymodel import (
     ClayMAEModule,
@@ -11,7 +13,6 @@ from claymodel import (
     load_metadata,
 )
 from claymodel.inference import DeterministicInference, ELLEProbe, PatchAnalyzer
-from training.datamodule import ClayDataModule
 
 
 def test_version_is_string():
