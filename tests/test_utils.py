@@ -10,6 +10,7 @@ from claymodel.utils import (
     posemb_sincos_2d,
     posemb_sincos_2d_with_gsd,
 )
+from tests.conftest import make_tiny_encoder
 
 
 def test_posemb_sincos_2d_shape():
@@ -36,8 +37,6 @@ def test_posemb_sincos_1d_integer_input():
 
 def test_load_encoder_weights():
     """Test the shared weight loading utility with a fake checkpoint."""
-    from tests.conftest import make_tiny_encoder
-
     # Create source encoder and save as checkpoint
     source = make_tiny_encoder()
     state_dict = {"model.encoder." + k: v for k, v in source.state_dict().items()}
@@ -64,8 +63,6 @@ def test_load_encoder_weights():
 
 def test_load_encoder_weights_no_freeze():
     """With freeze=False, parameters should remain trainable."""
-    from tests.conftest import make_tiny_encoder
-
     source = make_tiny_encoder()
     state_dict = {"model.encoder." + k: v for k, v in source.state_dict().items()}
     ckpt = {"state_dict": state_dict}
@@ -82,8 +79,6 @@ def test_load_encoder_weights_no_freeze():
 
 def test_load_encoder_weights_skips_mismatched():
     """Keys with size mismatch should be skipped, not error."""
-    from tests.conftest import make_tiny_encoder
-
     source = make_tiny_encoder()
     state_dict = {"model.encoder." + k: v for k, v in source.state_dict().items()}
 

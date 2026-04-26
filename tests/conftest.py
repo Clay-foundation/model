@@ -1,5 +1,7 @@
 """Shared test fixtures for Clay model tests."""
 
+from importlib.resources import files
+
 import torch
 import yaml
 from box import Box
@@ -38,7 +40,5 @@ def make_tiny_encoder(mask_ratio=0.0, shuffle=False):
 
 def make_metadata():
     """Load the bundled metadata for testing."""
-    from importlib.resources import files  # noqa: PLC0415
-
     metadata_file = files("claymodel").joinpath("configs/metadata.yaml")
     return Box(yaml.safe_load(metadata_file.read_text()))

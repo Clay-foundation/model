@@ -17,6 +17,7 @@ Reference: https://devlogs.lgnd.ai/posts/2026-03-01-self-aware-embeddings/
 
 from __future__ import annotations
 
+from importlib.resources import files
 from pathlib import Path
 
 import torch
@@ -57,8 +58,6 @@ class ELLEProbe:
         Raises:
             FileNotFoundError: If the bundled probe weights are not available.
         """
-        from importlib.resources import files
-
         probe_path = files("claymodel").joinpath("configs/elle_probe.pt")
         if not Path(str(probe_path)).exists():
             raise FileNotFoundError(

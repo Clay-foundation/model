@@ -13,6 +13,11 @@ Requires the [cli] extras: pip install claymodel[cli]
 import time as time_mod
 
 import click
+import torch
+
+from claymodel.api import embed as embed_fn
+from claymodel.api import load_metadata
+from claymodel.model import Encoder
 
 
 @click.group()
@@ -44,8 +49,6 @@ def embed(input_path, sensor, ckpt, output, device, min_valid):
     Example:
         clay embed image.tif --sensor sentinel-2-l2a --ckpt clay-v1.5.ckpt
     """
-    from claymodel.api import embed as embed_fn
-
     click.echo(f"Embedding {input_path} (sensor={sensor}, device={device})")
 
     start = time_mod.perf_counter()
@@ -71,8 +74,6 @@ def info(sensor):
         clay info
         clay info --sensor sentinel-2-l2a
     """
-    from claymodel.api import load_metadata
-
     metadata = load_metadata()
 
     if sensor:
@@ -120,11 +121,6 @@ def benchmark(device, size):
         clay benchmark
         clay benchmark --device cuda --size 256
     """
-    import torch
-
-    from claymodel.api import load_metadata
-    from claymodel.model import Encoder
-
     click.echo(f"Running benchmark (device={device}, chip_size={size})")
 
     metadata = load_metadata()

@@ -3,7 +3,10 @@
 import pytest
 import torch
 from einops import rearrange
+from torch import nn
 
+from claymodel.model import ClayMAE, Decoder, clay_mae_tiny
+from claymodel.module import ClayMAEModule
 from tests.conftest import make_datacube, make_metadata, make_tiny_encoder
 
 
@@ -46,9 +49,6 @@ def test_encoder_different_channels():
 
 
 def test_clay_mae_tiny_factory():
-    from claymodel.model import clay_mae_tiny
-    from tests.conftest import make_metadata
-
     metadata = make_metadata()
     model = clay_mae_tiny(
         mask_ratio=0.75,
@@ -65,9 +65,6 @@ def test_clay_mae_tiny_factory():
 
 
 def test_factory_functions_return_clay_mae():
-    from claymodel.model import ClayMAE, clay_mae_tiny
-    from tests.conftest import make_metadata
-
     metadata = make_metadata()
     common_args = {
         "mask_ratio": 0.0,
@@ -87,8 +84,6 @@ def test_factory_functions_return_clay_mae():
 
 def test_decoder_output_shape():
     """Decoder should reconstruct patches from encoder output."""
-    from claymodel.model import Decoder
-
     B, L, enc_dim, dec_dim = 2, 64, 192, 96  # 64 patches = (64/8)^2
     patch_size = 8
     channels = 6
@@ -130,10 +125,6 @@ def test_decoder_output_shape():
 
 def test_clay_mae_full_forward():
     """Full MAE forward pass returns loss tuple with finite values."""
-    from torch import nn
-
-    from claymodel.model import clay_mae_tiny
-
     metadata = make_metadata()
     model = clay_mae_tiny(
         mask_ratio=0.75,
@@ -179,8 +170,6 @@ def test_clay_mae_full_forward():
 
 def test_per_pixel_loss_masked_only():
     """per_pixel_loss should compute loss only on masked patches."""
-    from claymodel.model import clay_mae_tiny
-
     metadata = make_metadata()
     model = clay_mae_tiny(
         mask_ratio=0.0,
@@ -226,8 +215,6 @@ def test_mask_out_zero_ratio_keeps_all():
 
 def test_module_invalid_size():
     """ClayMAEModule with invalid size should raise ValueError."""
-    from claymodel.module import ClayMAEModule
-
     with pytest.raises(ValueError, match="Invalid model size"):
         ClayMAEModule(
             model_size="nonexistent",
@@ -241,8 +228,6 @@ def test_module_invalid_size():
 
 def test_module_encoder_property():
     """model.encoder should be a shortcut to model.model.encoder."""
-    from claymodel.module import ClayMAEModule
-
     module = ClayMAEModule(
         model_size="tiny",
         mask_ratio=0.0,

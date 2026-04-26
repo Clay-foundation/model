@@ -1,24 +1,22 @@
 """Test the high-level API (A4 verification)."""
 
 import warnings
+from importlib.resources import files
 
 import numpy as np
 import pytest
 import torch
 
 from claymodel.api import EmbeddingResult, embed, load_metadata, normalize
+from claymodel.module import ClayMAEModule
 
 
 def _bundled_metadata_path():
-    from importlib.resources import files
-
     return str(files("claymodel").joinpath("configs/metadata.yaml"))
 
 
 def _make_tiny_module():
     """Create a tiny ClayMAEModule for testing. Downloads teacher on first call."""
-    from claymodel.module import ClayMAEModule
-
     model = ClayMAEModule(
         model_size="tiny",
         mask_ratio=0.0,

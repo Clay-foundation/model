@@ -1,5 +1,6 @@
 """Test bundled metadata loading (A3 verification)."""
 
+from claymodel.api import load_metadata
 from tests.conftest import make_metadata
 
 
@@ -41,7 +42,5 @@ def test_metadata_all_platforms_have_required_keys():
 
 
 def test_load_metadata_api():
-    from claymodel.api import load_metadata
-
     metadata = load_metadata()
     assert "sentinel-2-l2a" in metadata

@@ -7,16 +7,18 @@ inputs, and computing embeddings.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from importlib.resources import files
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+import numpy as np
+import torch
 import yaml
 from box import Box
 
-if TYPE_CHECKING:
-    import torch
+from claymodel.inference.elle import ELLEProbe
+from claymodel.module import ClayMAEModule
 
 
 def load_metadata() -> Box:
@@ -63,8 +65,6 @@ def normalize(pixels, sensor, metadata=None):
     Returns:
         [B, C, H, W] normalized tensor.
     """
-    import torch
-
     if metadata is None:
         metadata = load_metadata()
 
@@ -114,8 +114,6 @@ def load_model(size="large", ckpt_path=None, device="cpu"):
         ...     encoded, *_ = model.encoder(datacube)
         ...     embeddings = encoded[:, 0, :]  # CLS token
     """
-    from claymodel.module import ClayMAEModule
-
     metadata_path = _bundled_metadata_path()
 
     if ckpt_path is not None:
@@ -253,9 +251,6 @@ def embed(  # noqa: PLR0913
         >>> result.embeddings.shape
         torch.Size([1, 1024])
     """
-    import numpy as np
-    import torch
-
     metadata = load_metadata()
 
     # Handle GeoTIFF input
@@ -344,13 +339,9 @@ def embed(  # noqa: PLR0913
     # Optional ELLE quality scoring
     if quality:
         try:
-            from claymodel.inference.elle import ELLEProbe
-
             probe = ELLEProbe.default()
             result.metadata["quality_score"] = probe.score(cls_embeddings)
-        except (ImportError, FileNotFoundError):
-            import warnings
-
+        except FileNotFoundError:
             warnings.warn(
                 "ELLE probe not available. Install or provide probe weights.",
                 stacklevel=2,
