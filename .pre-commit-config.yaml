@@ -20,6 +20,16 @@ repos:
       types_or: [ python, pyi ]
     - id: ruff-format  # Run the formatter
       types_or: [ python, pyi ]
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.16.0
+  hooks:
+    - id: mypy
+      args: [ claymodel/ ]
+      pass_filenames: false
+      additional_dependencies:
+        - types-PyYAML
+        - pydantic>=2.0
+        - torch>=2.4.0
 
 # https://pre-commit.ci/#configuration
 ci:

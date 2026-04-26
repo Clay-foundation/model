@@ -55,9 +55,11 @@ all = [
 ]
 dev = [
     "claymodel[all]",
+    "mypy",
     "pytest>=7.0",
     "pytest-cov",
     "ruff",
+    "types-PyYAML",
 ]
 
 [project.scripts]
@@ -78,6 +80,21 @@ dependencies = [
 [tool.hatch.envs.default.scripts]
 test = "pytest tests/ -v --cov=claymodel --cov-report=term-missing"
 lint = "pre-commit run --all"
+typecheck = "mypy claymodel/"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = false
+warn_unused_configs = true
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "claymodel.model"
+# ClayMAE.forward() uses a datacube dict with mixed value types
+# (Tensor, list[str]) that mypy can't narrow without a TypedDict.
+# Suppressing until Stage 7 refactors the forward signature.
+disable_error_code = ["arg-type", "union-attr", "index", "call-overload", "assignment"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

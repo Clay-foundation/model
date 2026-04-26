@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 __all__ = [
     "ClayMAE",
     "Encoder",
@@ -12,6 +14,7 @@ __all__ = [
 import math
 import os
 import random
+from typing import Any
 
 import timm
 import torch
@@ -22,6 +25,7 @@ from torchvision.transforms import v2
 
 from claymodel.embedding import DynamicEmbedding
 from claymodel.layers import Transformer
+from claymodel.metadata import PlatformMetadata
 from claymodel.mrl import MRL, MRLLoss
 from claymodel.utils import posemb_sincos_2d_with_gsd
 
@@ -402,7 +406,7 @@ class ClayMAE(nn.Module):
     patch_size: int
     norm_pix_loss: bool
     shuffle: bool
-    metadata: object
+    metadata: dict[str, PlatformMetadata]
     teacher: nn.Module
     teacher_chip_size: int
     matryoshka: bool
@@ -415,7 +419,7 @@ class ClayMAE(nn.Module):
         patch_size: int,
         norm_pix_loss: bool,
         shuffle: bool,
-        metadata: object,
+        metadata: dict[str, PlatformMetadata],
         teacher: str,
         dolls: list[int],
         doll_weights: list[float],
@@ -610,8 +614,8 @@ class ClayMAE(nn.Module):
         return (loss, reconstruction_loss, representation_loss)
 
 
-def clay_mae_tiny(**kwargs: object) -> ClayMAE:
-    args: dict[str, object] = {
+def clay_mae_tiny(**kwargs: Any) -> ClayMAE:
+    args: dict[str, Any] = {
         # ENCODER
         "dim": 192,
         "depth": 6,
@@ -629,8 +633,8 @@ def clay_mae_tiny(**kwargs: object) -> ClayMAE:
     return ClayMAE(**args)
 
 
-def clay_mae_small(**kwargs: object) -> ClayMAE:
-    args: dict[str, object] = {
+def clay_mae_small(**kwargs: Any) -> ClayMAE:
+    args: dict[str, Any] = {
         # ENCODER
         "dim": 384,
         "depth": 6,
@@ -648,8 +652,8 @@ def clay_mae_small(**kwargs: object) -> ClayMAE:
     return ClayMAE(**args)
 
 
-def clay_mae_base(**kwargs: object) -> ClayMAE:
-    args: dict[str, object] = {
+def clay_mae_base(**kwargs: Any) -> ClayMAE:
+    args: dict[str, Any] = {
         # ENCODER
         "dim": 768,
         "depth": 12,
@@ -667,8 +671,8 @@ def clay_mae_base(**kwargs: object) -> ClayMAE:
     return ClayMAE(**args)
 
 
-def clay_mae_large(**kwargs: object) -> ClayMAE:
-    args: dict[str, object] = {
+def clay_mae_large(**kwargs: Any) -> ClayMAE:
+    args: dict[str, Any] = {
         # ENCODER
         "dim": 1024,
         "depth": 24,

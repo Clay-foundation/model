@@ -40,7 +40,7 @@ def posemb_sincos_2d_with_gsd(
     h: int,
     w: int,
     dim: int,
-    gsd: torch.Tensor | float = 1.0,
+    gsd: torch.Tensor = torch.tensor(1.0),
     temperature: int = 10000,
     dtype: torch.dtype = torch.float32,
 ) -> torch.Tensor:

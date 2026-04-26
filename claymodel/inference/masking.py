@@ -42,6 +42,7 @@ class PatchAnalyzer:
         if self.nodata == "nan":
             is_valid = ~torch.isnan(pixels).any(dim=1)  # [B, H, W]
         else:
+            assert isinstance(self.nodata, (int, float))
             is_valid = (pixels != self.nodata).any(dim=1)  # [B, H, W]
 
         patches = rearrange(

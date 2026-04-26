@@ -82,16 +82,20 @@ class ClayMAEModule(L.LightningModule):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         return self.model(datacube)
 
-    def configure_optimizers(self) -> dict[str, object]:
+    def configure_optimizers(self):  # type: ignore[override]
         optimizer = torch.optim.AdamW(
             self.parameters(),
-            lr=self.hparams.lr,
-            weight_decay=self.hparams.wd,
-            betas=(self.hparams.b1, self.hparams.b2),
+            lr=self.hparams["lr"],
+            weight_decay=self.hparams["wd"],
+            betas=(self.hparams["b1"], self.hparams["b2"]),
             fused=True,
         )
         scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer, T_0=5000, T_mult=1, eta_min=self.hparams.lr * 100, last_epoch=-1
+            optimizer,
+            T_0=5000,
+            T_mult=1,
+            eta_min=self.hparams["lr"] * 100,
+            last_epoch=-1,
         )
 
         return {

@@ -85,7 +85,8 @@ class Transformer(nn.Module):
             )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        for attn, ff in self.layers:
+        for layer in self.layers:
+            attn, ff = layer[0], layer[1]  # type: ignore[index]
             x = attn(x) + x
             x = ff(x) + x
         return self.norm(x)

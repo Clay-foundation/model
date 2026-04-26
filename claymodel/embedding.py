@@ -67,7 +67,7 @@ class WavesTransformer(nn.Module):
         weights = self.fc_weight(
             out[self.num_latent_tokens : -1] + x[self.num_latent_tokens : -1]
         )
-        bias = None if self.is_decoder else self.fc_bias(out[-1])
+        bias = None if self.is_decoder else self.fc_bias(out[-1])  # type: ignore[misc]
         return weights, bias
 
 
