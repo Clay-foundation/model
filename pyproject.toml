@@ -65,7 +65,7 @@ build-backend = "setuptools.build_meta"
 include = ["claymodel*"]
 
 [tool.setuptools.package-data]
-claymodel = ["configs/*.yaml"]
+claymodel = ["configs/*.yaml", "py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -12,10 +12,10 @@ References:
 
 from lightning.pytorch.cli import LightningCLI
 
-from claymodel.finetune.segment.chesapeake_datamodule import (
+from finetune.segment.chesapeake_datamodule import (
     ChesapeakeDataModule,  # noqa: F401
 )
-from claymodel.finetune.segment.chesapeake_model import (
+from finetune.segment.chesapeake_model import (
     ChesapeakeSegmentor,  # noqa: F401
 )
 

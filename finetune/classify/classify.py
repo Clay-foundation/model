@@ -3,7 +3,7 @@ Command line interface to run the neural network model!
 
 From the project root directory, do:
 
-    python regression.py fit --config configs/regression_biomasters.yaml
+    python classify.py fit --config configs/classify_eurosat.yaml
 
 References:
 - https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html
@@ -12,23 +12,19 @@ References:
 
 from lightning.pytorch.cli import LightningCLI
 
-from claymodel.finetune.regression.biomasters_datamodule import (
-    BioMastersDataModule,  # noqa: F401
+from finetune.classify.eurosat_datamodule import (
+    EuroSATDataModule,  # noqa: F401
 )
-from claymodel.finetune.regression.biomasters_model import (
-    BioMastersClassifier,  # noqa: F401
-)
+from finetune.classify.eurosat_model import EuroSATClassifier  # noqa: F401
 
 
 # %%
 def cli_main():
     """
-    Command-line inteface to run Regression with BioMastersDataModule.
+    Command-line inteface to run Clasifier model with EuroSATDataModule.
     """
     cli = LightningCLI(
-        BioMastersClassifier,
-        BioMastersDataModule,
-        save_config_kwargs={"overwrite": True},
+        EuroSATClassifier, EuroSATDataModule, save_config_kwargs={"overwrite": True}
     )
     return cli
 

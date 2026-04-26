@@ -3,7 +3,7 @@ import torch
 from torch import nn, optim
 from torchmetrics import Accuracy
 
-from claymodel.finetune.classify.factory import Classifier
+from finetune.classify.factory import Classifier
 
 
 class EuroSATClassifier(L.LightningModule):

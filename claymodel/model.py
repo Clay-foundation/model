@@ -1,3 +1,14 @@
+__all__ = [
+    "ClayMAE",
+    "Encoder",
+    "Decoder",
+    "clay_mae_tiny",
+    "clay_mae_small",
+    "clay_mae_base",
+    "clay_mae_large",
+    "configure_training_defaults",
+]
+
 import math
 import os
 import random
@@ -9,8 +20,8 @@ from einops import rearrange, reduce, repeat
 from torch import nn
 from torchvision.transforms import v2
 
-from claymodel.backbone import Transformer
-from claymodel.factory import DynamicEmbedding
+from claymodel.embedding import DynamicEmbedding
+from claymodel.layers import Transformer
 from claymodel.mrl import MRL, MRLLoss
 from claymodel.utils import posemb_sincos_2d_with_gsd
 

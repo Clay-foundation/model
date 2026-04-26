@@ -1,3 +1,5 @@
+__all__ = ["ClayMAEModule"]
+
 from typing import Literal
 
 import lightning as L

@@ -9,18 +9,17 @@ repos:
       exclude: '^docs/tutorials/.*\.ipynb$'
     - id: check-yaml
     - id: end-of-file-fixer
+      exclude: '\.ipynb$'
     - id: trailing-whitespace
+      exclude: '\.ipynb$'
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.13.3
   hooks:
     - id: ruff  # Run the linter
       args: [ --fix ]
       types_or: [ python, pyi ]
-    - id: ruff  # Run the linter for Jupyter notebooks with the PLR0913 rule ignored
-      args: [ --fix, --ignore=PLR0913 ]
-      types: [ jupyter ]
     - id: ruff-format  # Run the formatter
-      types_or: [ python, pyi, jupyter ]
+      types_or: [ python, pyi ]
 
 # https://pre-commit.ci/#configuration
 ci:

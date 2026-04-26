@@ -7,6 +7,8 @@ inputs, and computing embeddings.
 
 from __future__ import annotations
 
+__all__ = ["load_metadata", "normalize", "load_model", "EmbeddingResult", "embed"]
+
 import warnings
 from dataclasses import dataclass, field
 from importlib.resources import files
