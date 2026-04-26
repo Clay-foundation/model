@@ -27,7 +27,7 @@ class ClayMAEModule(L.LightningModule):
         norm_pix_loss: bool = False,
         patch_size: int = 8,
         shuffle: bool = False,
-        metadata_path: str = "configs/metadata.yaml",
+        metadata_path: str = "claymodel/configs/metadata.yaml",
         teacher: str = "vit_large_patch14_reg4_dinov2.lvd142m",
         dolls: list[int] = [16, 32, 64, 128, 256, 768],
         doll_weights: list[float] = [1, 1, 1, 1, 1, 1],

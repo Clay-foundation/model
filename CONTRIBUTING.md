@@ -19,11 +19,6 @@ cd model
 
 # Install in development mode with all extras
 pip install -e ".[dev]"
-
-# Or using mamba for a full environment
-mamba env create --file environment.yml
-mamba activate claymodel
-pip install -e ".[dev]"
 ```
 
 ### Verify Installation

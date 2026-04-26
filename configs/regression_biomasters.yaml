@@ -1,7 +1,7 @@
 # lightning.pytorch==2.1.2
 seed_everything: 42
 data:
-  metadata_path: configs/metadata.yaml
+  metadata_path: claymodel/configs/metadata.yaml
   batch_size: 25
   num_workers: 8
   train_chip_dir: data/biomasters/train_cube

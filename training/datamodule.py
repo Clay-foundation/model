@@ -190,7 +190,7 @@ class ClayDataModule(L.LightningDataModule):
         self,
         data_dir: str = "data",
         size: int = 224,
-        metadata_path: str = "configs/metadata.yaml",
+        metadata_path: str = "claymodel/configs/metadata.yaml",
         platforms: list = [
             "landsat-c2l1",
             "landsat-c2l2-sr",

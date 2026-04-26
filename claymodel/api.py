@@ -46,11 +46,6 @@ def load_metadata(
     return load_metadata_yaml(path)
 
 
-def _bundled_metadata_path() -> str:
-    """Resolve the absolute path to the bundled metadata.yaml."""
-    return str(files("claymodel").joinpath("configs/metadata.yaml"))
-
-
 def normalize(
     pixels: torch.Tensor,
     sensor: str,
@@ -129,7 +124,11 @@ def load_model(
         >>> model = load_model("large", ckpt_path="clay-v1.5.ckpt")
         >>> model = load_model("large", metadata_path="my_sensors.yaml")
     """
-    resolved_path = str(metadata_path) if metadata_path else _bundled_metadata_path()
+    resolved_path = (
+        str(metadata_path)
+        if metadata_path
+        else str(files("claymodel").joinpath("configs/metadata.yaml"))
+    )
 
     if ckpt_path is not None:
         model = ClayMAEModule.load_from_checkpoint(

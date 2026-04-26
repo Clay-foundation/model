@@ -35,25 +35,11 @@ from claymodel import ClayMAEModule
 
 ### Development Installation
 
-For development or advanced usage, you can set up the full development environment:
-
-To help out with development, start by cloning this [repo-url](/../../)
+For development or advanced usage, clone the repository and install with dev extras:
 
     git clone <repo-url>
     cd model
-
-Then we recommend [using mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html)
-to install the dependencies. A virtual environment will also be created with Python and
-[JupyterLab](https://github.com/jupyterlab/jupyterlab) installed.
-
-    mamba env create --file environment.yml
-
-> [!NOTE]
-> The command above has been tested on Linux devices with CUDA GPUs.
-
-Activate the virtual environment first.
-
-    mamba activate claymodel
+    pip install -e ".[dev]"
 
 Finally, double-check that the libraries have been installed.
 

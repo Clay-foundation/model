@@ -54,12 +54,8 @@ If you need to train models or contribute to development:
 git clone https://github.com/Clay-foundation/model.git
 cd model
 
-# Create environment
-mamba env create --file environment.yml
-mamba activate claymodel
-
 # Install in development mode
-pip install -e .
+pip install -e ".[dev]"
 ```
 
 ## Code Migration Examples
@@ -147,9 +143,7 @@ For development work, you still need the full repository:
 ```bash
 git clone https://github.com/Clay-foundation/model.git
 cd model
-mamba env create --file environment.yml
-mamba activate claymodel
-pip install -e .
+pip install -e ".[dev]"
 ```
 
 ## Benefits of Migration
