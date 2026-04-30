@@ -6,8 +6,8 @@ rasterio.
 import math
 import random
 from collections import defaultdict
+from collections.abc import Iterator, Sequence
 from pathlib import Path
-from typing import Literal
 
 import lightning as L
 import numpy as np
@@ -21,20 +21,20 @@ from torchvision.transforms import v2
 from claymodel.metadata import PlatformMetadata, load_metadata_yaml
 
 
-class EODataset(Dataset):
+class EODataset(Dataset[dict[str, torch.Tensor | str]]):
     """Reads different Earth Observation data sources from a directory."""
 
     def __init__(
         self,
         chips_path: list[Path],
         size: int,
-        platforms: list,
+        platforms: Sequence[str],
         metadata: dict[str, PlatformMetadata],
     ) -> None:
         super().__init__()
         self.chips_path = chips_path
         self.size = size
-        self.transforms = {}
+        self.transforms: dict[str, v2.Compose] = {}
 
         # Generate transforms for each platform using a helper function
         for platform in platforms:
@@ -42,7 +42,11 @@ class EODataset(Dataset):
             std = list(metadata[platform].bands.std.values())
             self.transforms[platform] = self.create_transforms(mean, std)
 
-    def create_transforms(self, mean, std):
+    def create_transforms(
+        self,
+        mean: Sequence[float],
+        std: Sequence[float],
+    ) -> v2.Compose:
         return v2.Compose(
             [
                 v2.RandomHorizontalFlip(p=0.5),
@@ -52,11 +56,11 @@ class EODataset(Dataset):
             ]
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.chips_path)
 
-    def __getitem__(self, idx):
-        chip_path = self.chips_path[idx]
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor | str]:
+        chip_path = self.chips_path[index]
         with np.load(chip_path, allow_pickle=False) as chip:
             platform = chip_path.parent.name
             if platform == "sentinel-1-rtc":
@@ -64,9 +68,7 @@ class EODataset(Dataset):
                 pixels[pixels <= 0] = (
                     1e-10  # replace corrupted pixels in sentinel-1-rtc with small value
                 )
-                pixels = 10 * np.log10(
-                    pixels
-                )  # convert to dB scale, more interpretable pixels
+                pixels = 10 * np.log10(pixels)  # convert to dB scale, more interpretable pixels
             else:
                 pixels = chip["pixels"].astype(np.float32)
 
@@ -96,22 +98,20 @@ class EODataset(Dataset):
 
 
 class ClayDistributedSampler(Sampler):
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
-        dataset,
-        platforms,
-        batch_size,
-        num_replicas=None,
-        rank=None,
-        shuffle=True,
-    ):
+        dataset: EODataset,
+        platforms: Sequence[str],
+        batch_size: int,
+        num_replicas: int | None = None,
+        rank: int | None = None,
+        shuffle: bool = True,
+    ) -> None:
         self.dataset = dataset
         self.platforms = platforms
         self.batch_size = batch_size
         self.num_replicas = (
-            num_replicas
-            if num_replicas is not None
-            else torch.distributed.get_world_size()
+            num_replicas if num_replicas is not None else torch.distributed.get_world_size()
         )
         self.rank = rank if rank is not None else torch.distributed.get_rank()
         self.shuffle = shuffle
@@ -136,13 +136,12 @@ class ClayDistributedSampler(Sampler):
                 self.adjusted_indices[platform] = indices
 
         self.num_samples = math.ceil(
-            ((self.max_len * len(self.platforms)) - self.num_replicas)
-            / self.num_replicas
+            ((self.max_len * len(self.platforms)) - self.num_replicas) / self.num_replicas
         )
         self.total_size = self.num_samples * self.num_replicas
         self.num_samples_per_platform = self.max_len // self.num_replicas
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[list[int]]:
         rng = np.random.default_rng(self.epoch)
         platform_batches = {}
         for platform, indices in self.adjusted_indices.items():
@@ -166,7 +165,9 @@ class ClayDistributedSampler(Sampler):
         self.epoch = epoch
 
 
-def batch_collate(batch):
+def batch_collate(
+    batch: list[dict[str, torch.Tensor | str]],
+) -> dict[str, torch.Tensor | list[str]]:
     """Collate function for DataLoader.
 
     Merge the first two dimensions of the input tensors.
@@ -191,36 +192,40 @@ class ClayDataModule(L.LightningDataModule):
         data_dir: str = "data",
         size: int = 224,
         metadata_path: str = "claymodel/configs/metadata.yaml",
-        platforms: list = [
-            "landsat-c2l1",
-            "landsat-c2l2-sr",
-            "linz",
-            "modis",
-            "naip",
-            "sentinel-1-rtc",
-            "sentinel-2-l2a",
-        ],
+        platforms: Sequence[str] | None = None,
         batch_size: int = 10,
         num_workers: int = 8,
         prefetch_factor: int = 2,
-    ):
+    ) -> None:
         super().__init__()
         self.data_dir = data_dir
         self.size = size
-        self.platforms = platforms
+        self.platforms = (
+            list(platforms)
+            if platforms is not None
+            else [
+                "landsat-c2l1",
+                "landsat-c2l2-sr",
+                "linz",
+                "modis",
+                "naip",
+                "sentinel-1-rtc",
+                "sentinel-2-l2a",
+            ]
+        )
         self.metadata = load_metadata_yaml(metadata_path)
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.prefetch_factor = prefetch_factor
         self.split_ratio = 0.8
 
-    def setup(self, stage: Literal["fit", "predict"] | None = None) -> None:
+    def setup(self, stage: str | None = None) -> None:
         # Get list of GeoTIFF filepaths from s3 bucket or data/ folder
         # if self.data_dir.startswith("s3://"):
         #     dp = torchdata.datapipes.iter.IterableWrapper(iterable=[self.data_dir])
         #     chips_path = list(dp.list_files_by_s3(masks="*.npz"))
         # else:  # if self.data_dir is a local data path
-        chips_path = sorted(list(Path(self.data_dir).glob("**/*.npz")))
+        chips_path = sorted(Path(self.data_dir).glob("**/*.npz"))
         chips_platform = [chip.parent.name for chip in chips_path]
         # chips_platform = [chip.parent.parent.name for chip in chips_path]
 
@@ -263,7 +268,7 @@ class ClayDataModule(L.LightningDataModule):
                 metadata=self.metadata,
             )
 
-    def train_dataloader(self):
+    def train_dataloader(self) -> DataLoader:
         return DataLoader(
             self.trn_ds,
             num_workers=self.num_workers,
@@ -273,7 +278,7 @@ class ClayDataModule(L.LightningDataModule):
             prefetch_factor=self.prefetch_factor,
         )
 
-    def val_dataloader(self):
+    def val_dataloader(self) -> DataLoader:
         return DataLoader(
             self.val_ds,
             num_workers=self.num_workers,
@@ -283,7 +288,7 @@ class ClayDataModule(L.LightningDataModule):
             prefetch_factor=self.prefetch_factor,
         )
 
-    def predict_dataloader(self):
+    def predict_dataloader(self) -> DataLoader:
         return DataLoader(
             dataset=self.prd_ds,
             batch_size=self.batch_size,

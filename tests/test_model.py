@@ -1,6 +1,7 @@
 """Test model forward passes and output shapes."""
 
 import os
+from typing import Any, cast
 
 import pytest
 import torch
@@ -24,7 +25,7 @@ def test_encoder_output_shape():
     encoder = make_tiny_encoder()
     datacube = make_datacube(batch_size=2, channels=6, size=64)
     with torch.no_grad():
-        encoded, unmasked_idx, masked_idx, mask_matrix = encoder(datacube)
+        encoded, _unmasked_idx, _masked_idx, mask_matrix = encoder(datacube)
 
     B = 2
     L = (64 // 8) ** 2  # 64 patches
@@ -38,7 +39,7 @@ def test_encoder_with_masking():
     encoder = make_tiny_encoder(mask_ratio=0.75, shuffle=True)
     datacube = make_datacube(batch_size=2, channels=6, size=64)
     with torch.no_grad():
-        encoded, unmasked_idx, masked_idx, mask_matrix = encoder(datacube)
+        encoded, _unmasked_idx, masked_idx, _mask_matrix = encoder(datacube)
 
     B = 2
     L = (64 // 8) ** 2
@@ -118,7 +119,7 @@ def test_decoder_output_shape():
     mask_matrix[:, num_unmasked:] = 1
 
     with torch.no_grad():
-        pixels, waves = decoder(
+        pixels, _waves = decoder(
             encoded,
             unmasked_idx,
             masked_idx,
@@ -147,7 +148,7 @@ def test_clay_mae_full_forward():
     }
 
     with torch.no_grad():
-        encoded, decoded, mask, unmasked_idx, masked_idx = model(datacube)
+        encoded, decoded, mask, _unmasked_idx, _masked_idx = model(datacube)
 
     B, L = 2, (64 // 8) ** 2
     num_unmasked = int(L * 0.25)
@@ -261,15 +262,15 @@ def _make_tiny_mae(matryoshka=False, **overrides):
         "matryoshka": matryoshka,
     }
     defaults.update(overrides)
-    model = clay_mae_tiny(**defaults)
-    teacher_dim = model.teacher.num_features
+    model = clay_mae_tiny(**cast(Any, defaults))  # noqa: TC006
+    teacher_dim = cast(int, cast(Any, model.teacher).num_features)  # noqa: TC006
 
     class MockTeacher(nn.Module):
         def forward(self, x):
             return torch.randn(x.shape[0], teacher_dim)
 
     model.teacher = MockTeacher()
-    model.teacher_resize = nn.Identity()
+    model.teacher_resize = nn.Identity()  # ty: ignore[invalid-assignment]
     return model
 
 
@@ -299,7 +300,7 @@ def test_matryoshka_forward_path():
         "waves": torch.rand(10),
     }
     with torch.no_grad():
-        encoded, decoded, mask, *_ = model(datacube)
+        encoded, decoded, _mask, *_ = model(datacube)
 
     assert encoded.shape[0] == 2
     assert decoded.shape[0] == 2

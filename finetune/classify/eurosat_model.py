@@ -20,14 +20,26 @@ class EuroSATClassifier(L.LightningModule):
         b2 (float): Beta2 parameter for the Adam optimizer.
     """
 
-    def __init__(self, num_classes, ckpt_path, lr, wd, b1, b2):  # noqa: PLR0913
+    def __init__(
+        self,
+        num_classes: int,
+        ckpt_path: str | None,
+        lr: float,
+        wd: float,
+        b1: float,
+        b2: float,
+    ) -> None:
         super().__init__()
         self.save_hyperparameters()
+        self.lr = lr
+        self.wd = wd
+        self.b1 = b1
+        self.b2 = b2
         self.model = Classifier(num_classes=num_classes, ckpt_path=ckpt_path)
         self.loss_fn = nn.CrossEntropyLoss()
         self.accuracy = Accuracy(task="multiclass", num_classes=num_classes)
 
-    def forward(self, datacube):
+    def forward(self, datacube: dict[str, torch.Tensor]) -> torch.Tensor:
         """
         Forward pass through the classifier.
 
@@ -39,9 +51,7 @@ class EuroSATClassifier(L.LightningModule):
             torch.Tensor: The output logits from the classifier.
         """
         # Wavelengths for Sentinel 2 bands of EuroSAT dataset
-        waves = torch.tensor(
-            [0.493, 0.56, 0.665, 0.704, 0.74, 0.783, 0.842, 0.865, 1.61, 2.19]
-        )
+        waves = torch.tensor([0.493, 0.56, 0.665, 0.704, 0.74, 0.783, 0.842, 0.865, 1.61, 2.19])
         gsd = torch.tensor(10.0)
 
         return self.model(
@@ -54,7 +64,7 @@ class EuroSATClassifier(L.LightningModule):
             }
         )
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> dict[str, object]:  # ty: ignore[invalid-method-override]
         """
         Configure the optimizer and learning rate scheduler.
 
@@ -63,17 +73,13 @@ class EuroSATClassifier(L.LightningModule):
             scheduler.
         """
         optimizer = optim.AdamW(
-            [
-                param
-                for name, param in self.model.named_parameters()
-                if param.requires_grad
-            ],
-            lr=self.hparams.lr,
-            weight_decay=self.hparams.wd,
-            betas=(self.hparams.b1, self.hparams.b2),
+            [param for name, param in self.model.named_parameters() if param.requires_grad],
+            lr=self.lr,
+            weight_decay=self.wd,
+            betas=(self.b1, self.b2),
         )
         scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer, T_0=100, T_mult=1, eta_min=self.hparams.lr * 100, last_epoch=-1
+            optimizer, T_0=100, T_mult=1, eta_min=self.lr * 100, last_epoch=-1
         )
         return {
             "optimizer": optimizer,
@@ -83,7 +89,12 @@ class EuroSATClassifier(L.LightningModule):
             },
         }
 
-    def shared_step(self, batch, batch_idx, phase):
+    def shared_step(
+        self,
+        batch: dict[str, torch.Tensor],
+        batch_idx: int,
+        phase: str,
+    ) -> torch.Tensor:
         """
         Perform a shared step for both training and validation.
 
@@ -120,7 +131,7 @@ class EuroSATClassifier(L.LightningModule):
         )
         return loss
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> torch.Tensor:
         """
         Perform a training step.
 
@@ -133,7 +144,7 @@ class EuroSATClassifier(L.LightningModule):
         """
         return self.shared_step(batch, batch_idx, "train")
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> torch.Tensor:
         """
         Perform a validation step.
 

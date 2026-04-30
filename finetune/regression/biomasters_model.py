@@ -8,24 +8,21 @@ from finetune.regression.factory import Regressor
 
 
 class NoNaNRMSE(nn.Module):
-    def __init__(self, threshold=400):
+    def __init__(self, threshold: int = 400) -> None:
         super().__init__()
 
         self.threshold = threshold
 
-    def forward(self, logits, target):
+    def forward(self, logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         not_nan = target < self.threshold
 
-        # logits = logits.squeeze(1)
         diff = logits - target
         diff[~not_nan] = 0
         diff2 = torch.square(diff)
         diff2m = (diff2 / not_nan.sum((-1, -2, -3), keepdim=True)).sum((-1, -2, -3))
         diff2msqrt = torch.sqrt(diff2m)
 
-        rmse = diff2msqrt.mean()
-
-        return rmse
+        return diff2msqrt.mean()
 
 
 class BioMastersClassifier(L.LightningModule):
@@ -42,15 +39,25 @@ class BioMastersClassifier(L.LightningModule):
         b2 (float): Beta2 parameter for the Adam optimizer.
     """
 
-    def __init__(self, ckpt_path, lr, wd, b1, b2):  # noqa: PLR0913
+    def __init__(
+        self,
+        ckpt_path: str | None,
+        lr: float,
+        wd: float,
+        b1: float,
+        b2: float,
+    ) -> None:
         super().__init__()
         self.save_hyperparameters()
-        # self.model = Classifier(num_classes=1, ckpt_path=ckpt_path)
+        self.lr = lr
+        self.wd = wd
+        self.b1 = b1
+        self.b2 = b2
         self.model = Regressor(num_classes=1, ckpt_path=ckpt_path)
         self.loss_fn = NoNaNRMSE()
         self.score_fn = MeanSquaredError()
 
-    def forward(self, datacube):
+    def forward(self, datacube: dict[str, torch.Tensor]) -> torch.Tensor:
         """
         Forward pass through the classifier.
 
@@ -61,12 +68,9 @@ class BioMastersClassifier(L.LightningModule):
         Returns:
             torch.Tensor: The output logits from the classifier.
         """
-        # Wavelengths for S1 and S2 bands of BioMasters dataset
         waves = torch.tensor(
             [
-                # 3.5,  # S1
-                # 4.0,
-                0.493,  # S2
+                0.493,
                 0.56,
                 0.665,
                 0.704,
@@ -90,7 +94,7 @@ class BioMastersClassifier(L.LightningModule):
             }
         )
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> dict[str, object]:  # ty: ignore[invalid-method-override]
         """
         Configure the optimizer and learning rate scheduler.
 
@@ -99,14 +103,10 @@ class BioMastersClassifier(L.LightningModule):
             scheduler.
         """
         optimizer = optim.AdamW(
-            [
-                param
-                for name, param in self.model.named_parameters()
-                if param.requires_grad
-            ],
-            lr=self.hparams.lr,
-            weight_decay=self.hparams.wd,
-            betas=(self.hparams.b1, self.hparams.b2),
+            [param for name, param in self.model.named_parameters() if param.requires_grad],
+            lr=self.lr,
+            weight_decay=self.wd,
+            betas=(self.b1, self.b2),
         )
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
         return {
@@ -117,7 +117,12 @@ class BioMastersClassifier(L.LightningModule):
             },
         }
 
-    def shared_step(self, batch, batch_idx, phase):
+    def shared_step(
+        self,
+        batch: dict[str, torch.Tensor],
+        batch_idx: int,
+        phase: str,
+    ) -> torch.Tensor:
         """
         Perform a shared step for both training and validation.
 
@@ -164,7 +169,7 @@ class BioMastersClassifier(L.LightningModule):
         )
         return loss
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> torch.Tensor:
         """
         Perform a training step.
 
@@ -177,7 +182,7 @@ class BioMastersClassifier(L.LightningModule):
         """
         return self.shared_step(batch, batch_idx, "train")
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> torch.Tensor:
         """
         Perform a validation step.
 

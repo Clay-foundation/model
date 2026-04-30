@@ -1,5 +1,7 @@
 """Tier 1 integration tests: full pipeline, no teacher calls needed."""
 
+from typing import Any, cast
+
 import lightning as L
 import pytest
 import torch
@@ -124,7 +126,7 @@ def test_embed_then_geoparquet_roundtrip(tiny_module, tmp_path):
     )
 
     path = tmp_path / "test.parquet"
-    gdf = result.to_geoparquet(str(path))
+    gdf = cast(Any, result.to_geoparquet(str(path)))  # noqa: TC006
 
     assert path.exists()
     assert len(gdf) == 2

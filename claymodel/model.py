@@ -1,19 +1,17 @@
-from __future__ import annotations
-
 __all__ = [
     "ClayMAE",
-    "Encoder",
     "Decoder",
-    "clay_mae_tiny",
-    "clay_mae_small",
+    "Encoder",
     "clay_mae_base",
     "clay_mae_large",
+    "clay_mae_small",
+    "clay_mae_tiny",
     "configure_training_defaults",
 ]
 
 import math
 import os
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import timm
 import torch
@@ -24,9 +22,11 @@ from torchvision.transforms import v2
 
 from claymodel.embedding import DynamicEmbedding
 from claymodel.layers import Transformer
-from claymodel.metadata import PlatformMetadata
 from claymodel.mrl import MRL, MRLLoss
 from claymodel.utils import posemb_sincos_2d_with_gsd
+
+if TYPE_CHECKING:
+    from claymodel.metadata import PlatformMetadata
 
 Datacube = dict[str, torch.Tensor]
 
@@ -100,7 +100,7 @@ class Encoder(nn.Module):
         gsd: torch.Tensor,
     ) -> torch.Tensor:
         """Add position encoding to the patches"""
-        B, L, D = patches.shape
+        B, L, _D = patches.shape
 
         grid_size = int(math.sqrt(L))
         self.num_patches = grid_size**2
@@ -120,12 +120,9 @@ class Encoder(nn.Module):
 
         pos_encoding = repeat(pos_encoding, "L D -> B L D", B=B)  # [B L (D - 8)]
         time_latlon = repeat(time_latlon, "B D -> B L D", L=L)  # [B L 8]
-        pos_metadata_encoding = torch.cat(
-            (pos_encoding, time_latlon), dim=-1
-        )  # [B L D]
+        pos_metadata_encoding = torch.cat((pos_encoding, time_latlon), dim=-1)  # [B L D]
 
-        patches = patches + pos_metadata_encoding  # [B L D] + [B L D] -> [B L D]
-        return patches  # [B L D]
+        return patches + pos_metadata_encoding  # [B L D] + [B L D] -> [B L D]
 
     def mask_out(
         self, patches: torch.Tensor
@@ -153,14 +150,12 @@ class Encoder(nn.Module):
             A tensor of shape (B, L) containing the mask matrix, 1 indicates a masked
             patch & 0 indicates an unmasked patch.
         """
-        B, L, D = patches.shape
+        B, L, _D = patches.shape
 
         if self.shuffle:  # Shuffle the patches
             noise = torch.randn((B, L), device=patches.device)  # [B L]
         else:  # Don't shuffle, useful for interpolation & inspection of embeddings
-            noise = rearrange(
-                torch.arange(B * L, device=patches.device), "(B L) -> B L", B=B, L=L
-            )
+            noise = rearrange(torch.arange(B * L, device=patches.device), "(B L) -> B L", B=B, L=L)
 
         random_indices = torch.argsort(noise, dim=-1)  # [B L]
         reverse_indices = torch.argsort(random_indices, dim=-1)  # [B L]
@@ -182,12 +177,8 @@ class Encoder(nn.Module):
         )  # [B L] -> [B L] - reorder the patches
 
         # mask out the patches
-        batch_indices = rearrange(
-            torch.arange(B, device=patches.device), "B -> B 1"
-        )  # [B 1]
-        unmasked_patches = patches[
-            batch_indices, unmasked_indices, :
-        ]  # [B L:(1 - mask_ratio) D]
+        batch_indices = rearrange(torch.arange(B, device=patches.device), "B -> B 1")  # [B 1]
+        unmasked_patches = patches[batch_indices, unmasked_indices, :]  # [B L:(1 - mask_ratio) D]
         _ = patches[batch_indices, masked_indices, :]  # [B L:mask_ratio D]
 
         return (
@@ -208,9 +199,9 @@ class Encoder(nn.Module):
             datacube["waves"],  # [N]
         )  # [B C H W]
 
-        B, C, H, W = cube.shape
+        B = cube.shape[0]
 
-        patches, waves_encoded = self.to_patch_embed(
+        patches, _waves_encoded = self.to_patch_embed(
             cube, waves
         )  # [B L D] - patchify & create embeddings per patch
         patches = self.add_encodings(
@@ -232,9 +223,7 @@ class Encoder(nn.Module):
 
         # Add class tokens
         cls_tokens = repeat(self.cls_token, "1 1 D -> B 1 D", B=B)  # [B 1 D]
-        unmasked_patches = torch.cat(
-            (cls_tokens, unmasked_patches), dim=1
-        )  # [B (1 + L) D]
+        unmasked_patches = torch.cat((cls_tokens, unmasked_patches), dim=1)  # [B (1 + L) D]
 
         # pass the unmasked patches through the transformer
         encoded_unmasked_patches = self.transformer(
@@ -273,9 +262,7 @@ class Decoder(nn.Module):
         self.encoder_dim = encoder_dim
         self.dim = dim
 
-        self.enc_to_dec = (
-            nn.Linear(encoder_dim, dim) if encoder_dim != dim else nn.Identity()
-        )
+        self.enc_to_dec = nn.Linear(encoder_dim, dim) if encoder_dim != dim else nn.Identity()
         self.mask_patch = nn.Parameter(torch.randn(dim))
         self.transformer = Transformer(
             dim=dim,
@@ -312,21 +299,15 @@ class Decoder(nn.Module):
         )  # [B 1 D], [B L:(1 - mask_ratio) D]
 
         pos_encoding = (
-            posemb_sincos_2d_with_gsd(
-                h=grid_size, w=grid_size, dim=(self.dim - 8), gsd=gsd
-            )
+            posemb_sincos_2d_with_gsd(h=grid_size, w=grid_size, dim=(self.dim - 8), gsd=gsd)
             .to(unmasked_patches.device)
             .detach()
         )  # [L D]
-        time_latlon = (
-            torch.hstack((time, latlon)).to(unmasked_patches.device).detach()
-        )  # [B 8]
+        time_latlon = torch.hstack((time, latlon)).to(unmasked_patches.device).detach()  # [B 8]
 
         pos_encoding = repeat(pos_encoding, "L D -> B L D", B=B)  # [B L (D - 8)]
         time_latlon = repeat(time_latlon, "B D -> B L D", L=L)  # [B L 8]
-        pos_metadata_encoding = torch.cat(
-            (pos_encoding, time_latlon), dim=-1
-        )  # [B L D]
+        pos_metadata_encoding = torch.cat((pos_encoding, time_latlon), dim=-1)  # [B L D]
 
         batch_indices = rearrange(
             torch.arange(B, device=unmasked_patches.device), "B -> B 1"
@@ -352,15 +333,9 @@ class Decoder(nn.Module):
         decoder_patches[batch_indices, unmasked_indices, :] = (
             unmasked_patches  # [B L:(1 - mask_ratio) D])
         )
-        decoder_patches[batch_indices, masked_indices, :] = (
-            masked_patches  # [B L:mask_ratio D])
-        )
+        decoder_patches[batch_indices, masked_indices, :] = masked_patches  # [B L:mask_ratio D])
 
-        decoder_patches = torch.cat(
-            (cls_tokens, decoder_patches), dim=1
-        )  # [B (1 + L) D]
-
-        return decoder_patches  # [B (1 + L) D]
+        return torch.cat((cls_tokens, decoder_patches), dim=1)  # [B (1 + L) D]
 
     def forward(  # noqa: PLR0913
         self,
@@ -374,9 +349,7 @@ class Decoder(nn.Module):
         waves: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         # Change the embedding dimension from encoder to decoder
-        encoded_unmasked_patches = self.enc_to_dec(
-            encoded_unmasked_patches
-        )  # [B (1 + L) D]
+        encoded_unmasked_patches = self.enc_to_dec(encoded_unmasked_patches)  # [B (1 + L) D]
 
         # Reconstruct the patches to feed into the decoder transformer
         decoder_patches = self.reconstruct_and_add_encoding(
@@ -392,9 +365,7 @@ class Decoder(nn.Module):
         # Pass the decoder patches through the transformer
         decoded_patches = self.transformer(decoder_patches)  # [B (1 + L) D]
 
-        pixels, waves = self.embed_to_pixels(
-            decoded_patches, waves
-        )  # [B (1 + L) (C P P)]
+        pixels, waves = self.embed_to_pixels(decoded_patches, waves)  # [B (1 + L) (C P P)]
         # Remove the class token
         pixels = pixels[:, 1:, :]
         return pixels, waves  # [B L (C P P)], [B N]
@@ -405,7 +376,7 @@ class ClayMAE(nn.Module):
     patch_size: int
     norm_pix_loss: bool
     shuffle: bool
-    metadata: dict[str, PlatformMetadata]
+    metadata: dict[str, "PlatformMetadata"]
     teacher: nn.Module
     teacher_chip_size: int
     matryoshka: bool
@@ -418,7 +389,7 @@ class ClayMAE(nn.Module):
         patch_size: int,
         norm_pix_loss: bool,
         shuffle: bool,
-        metadata: dict[str, PlatformMetadata],
+        metadata: dict[str, "PlatformMetadata"],
         teacher: str,
         dolls: list[int],
         doll_weights: list[float],
@@ -444,16 +415,15 @@ class ClayMAE(nn.Module):
         self.shuffle = shuffle
         self.metadata = metadata
         self.teacher = timm.create_model(teacher, pretrained=True, num_classes=0)
+        teacher_features = cast("int", self.teacher.num_features)
         self.teacher_chip_size = 518
-        self.teacher_resize = v2.Resize(
-            size=(self.teacher_chip_size, self.teacher_chip_size)
-        )
+        self.teacher_resize = v2.Resize(size=(self.teacher_chip_size, self.teacher_chip_size))
         self.matryoshka = matryoshka
         if matryoshka:
-            self.mrl = MRL(features=self.teacher.num_features, dolls=dolls)
+            self.mrl = MRL(features=teacher_features, dolls=dolls)
             self.mrl_loss = MRLLoss(weights=doll_weights)
         else:
-            self.proj = nn.Linear(dim, self.teacher.num_features)
+            self.proj = nn.Linear(dim, teacher_features)
 
         self.encoder = Encoder(
             mask_ratio=mask_ratio,
@@ -507,11 +477,7 @@ class ClayMAE(nn.Module):
         loss = F.l1_loss(patches, pixels, reduction="none")  # loss per pixel
         loss = reduce(loss, "B L D -> B L", reduction="mean")  # loss per patch
 
-        loss = (
-            loss * masked_matrix
-        ).sum() / masked_matrix.sum()  # loss on masked patches only
-
-        return loss
+        return (loss * masked_matrix).sum() / masked_matrix.sum()  # loss on masked patches only
 
     def forward(
         self,
@@ -530,9 +496,7 @@ class ClayMAE(nn.Module):
             unmasked_indices: indices of unmasked patches
             masked_indices: indices of masked patches
         """
-        encoded_patches, unmasked_indices, masked_indices, masked_matrix = self.encoder(
-            datacube
-        )
+        encoded_patches, unmasked_indices, masked_indices, masked_matrix = self.encoder(datacube)
 
         decoded_pixels, _waves = self.decoder(
             encoded_patches,

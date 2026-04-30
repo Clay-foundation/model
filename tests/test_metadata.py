@@ -1,4 +1,4 @@
-"""Test bundled metadata loading (A3 verification)."""
+"""Test bundled metadata loading."""
 
 from claymodel.api import load_metadata
 from claymodel.metadata import PlatformMetadata

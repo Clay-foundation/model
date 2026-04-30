@@ -2,6 +2,7 @@
 
 import tempfile
 
+import pytest
 import torch
 
 from claymodel.utils import (
@@ -97,8 +98,5 @@ def test_load_encoder_weights_skips_mismatched():
 
 def test_posemb_sincos_2d_bad_dim():
     """Dimension not divisible by 4 should raise AssertionError."""
-    try:
+    with pytest.raises(AssertionError):
         posemb_sincos_2d(h=8, w=8, dim=63)
-        assert False, "Should have raised AssertionError"
-    except AssertionError:
-        pass

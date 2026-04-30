@@ -21,11 +21,11 @@ Launch into a [JupyterLab](https://jupyterlab.readthedocs.io) environment on
 
 ## Installation
 
-### Pip Installation (Recommended)
+### uv Installation (Recommended)
 
-The easiest way to install Clay Foundation Model is via pip:
+The easiest way to install Clay Foundation Model is via `uv`:
 
-    pip install git+https://github.com/Clay-foundation/model.git
+    uv pip install git+https://github.com/Clay-foundation/model.git
 
 This will install the `claymodel` package and all its dependencies. You can then import and use it in your Python code:
 
@@ -33,27 +33,34 @@ This will install the `claymodel` package and all its dependencies. You can then
 from claymodel import ClayMAEModule
 ```
 
+If you want the `clay` CLI, install the `cli` extra:
+
+    uv pip install "claymodel[cli]"
+
 ### Development Installation
 
 For development or advanced usage, clone the repository and install with dev extras:
 
     git clone <repo-url>
     cd model
-    pip install -e ".[dev]"
+    uv pip install -e ".[dev]"
 
 Finally, double-check that the libraries have been installed.
 
-    mamba list
+    uv run pytest tests/test_imports.py -q
 
 
 ## Usage
 
 ### Running jupyter lab
 
-    mamba activate claymodel
-    python -m ipykernel install --user --name claymodel  # to install virtual env properly
-    jupyter kernelspec list --json                       # see if kernel is installed
-    jupyter lab &
+    uv run jupyter lab
+
+### Using the clay CLI
+
+    clay info
+    clay info --sensor sentinel-2-l2a
+    clay benchmark
 
 
 ### Running the model
@@ -62,22 +69,22 @@ The neural network model can be run via
 [LightningCLI v2](https://pytorch-lightning.medium.com/introducing-lightningcli-v2supercharge-your-training-c070d43c7dd6).
 
 > [!NOTE]
-> If you installed via pip, you'll need to clone the repository to access the trainer script and config files.
+> If you installed from the package, you'll need to clone the repository to access the trainer script and config files.
 
 To check out the different options available, and look at the hyperparameter
 configurations, run:
 
-    python trainer.py --help
+    uv run python trainer.py --help
 
 To quickly test the model on one batch in the validation set:
 
-    python trainer.py fit --model ClayMAEModule --data ClayDataModule --config configs/config.yaml --trainer.fast_dev_run=True
+    uv run python trainer.py fit --model ClayMAEModule --data ClayDataModule --config configs/config.yaml --trainer.fast_dev_run=True
 
 To train the model:
 
-    python trainer.py fit --model ClayMAEModule --data ClayDataModule --config configs/config.yaml
+    uv run python trainer.py fit --model ClayMAEModule --data ClayDataModule --config configs/config.yaml
 
-More options can be found using `python trainer.py fit --help`, or at the
+More options can be found using `uv run python trainer.py fit --help`, or at the
 [LightningCLI docs](https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html).
 
 ## Contributing

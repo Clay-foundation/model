@@ -13,23 +13,22 @@ References:
 from lightning.pytorch.cli import LightningCLI
 
 from finetune.classify.eurosat_datamodule import (
-    EuroSATDataModule,  # noqa: F401
+    EuroSATDataModule,
 )
-from finetune.classify.eurosat_model import EuroSATClassifier  # noqa: F401
+from finetune.classify.eurosat_model import EuroSATClassifier
 
 
-# %%
-def cli_main():
+def cli_main() -> LightningCLI:
     """
     Command-line inteface to run Clasifier model with EuroSATDataModule.
     """
-    cli = LightningCLI(
-        EuroSATClassifier, EuroSATDataModule, save_config_kwargs={"overwrite": True}
+    return LightningCLI(
+        EuroSATClassifier,
+        EuroSATDataModule,
+        save_config_kwargs={"overwrite": True},
     )
-    return cli
 
 
-# %%
 if __name__ == "__main__":
     cli_main()
 

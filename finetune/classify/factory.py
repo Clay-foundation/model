@@ -16,7 +16,7 @@ class Classifier(nn.Module):
         device (torch.device): The device to run the model on.
     """
 
-    def __init__(self, num_classes=10, ckpt_path=None):
+    def __init__(self, num_classes: int = 10, ckpt_path: str | None = None) -> None:
         """
         Initialize the Classifier.
 
@@ -28,18 +28,6 @@ class Classifier(nn.Module):
         """
         super().__init__()
 
-        # Initialize Clay Encoder with parameters from base model. Set
-        # mask_ratio to 0.0 & shuffle to False for downstream tasks.
-        # self.clay_encoder = Encoder(
-        #     mask_ratio=0.0,
-        #     patch_size=8,
-        #     shuffle=False,
-        #     dim=768,
-        #     depth=12,
-        #     heads=12,
-        #     dim_head=64,
-        #     mlp_ratio=4.0,
-        # )
         self.clay_encoder = Encoder(
             mask_ratio=0.0,
             patch_size=8,
@@ -62,15 +50,13 @@ class Classifier(nn.Module):
         )
 
         # Determine the device to run the model on
-        self.device = (
-            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        )
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
         # Load Clay MAE pretrained weights for the Encoder
         if ckpt_path:
-            load_encoder_weights(self.clay_encoder, ckpt_path, device=self.device)
+            load_encoder_weights(self.clay_encoder, ckpt_path, device=str(self.device))
 
-    def forward(self, datacube):
+    def forward(self, datacube: dict[str, torch.Tensor]) -> torch.Tensor:
         """
         Forward pass of the Classifier.
 
@@ -81,15 +67,6 @@ class Classifier(nn.Module):
         Returns:
             torch.Tensor: The output logits.
         """
-        # Get the embeddings from the encoder
-        embeddings, *_ = self.clay_encoder(
-            datacube
-        )  # embeddings: batch x (1 + row x col) x 768
-
-        # Use only the first embedding i.e cls token
+        embeddings, *_ = self.clay_encoder(datacube)
         embeddings = embeddings[:, 0, :]
-
-        # Pass the embeddings through the head to get the logits
-        logits = self.head(embeddings)
-
-        return logits
+        return self.head(embeddings)

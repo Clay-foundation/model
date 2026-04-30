@@ -15,6 +15,7 @@ Dataset URL: https://lila.science/datasets/chesapeakelandcover
 
 import re
 from pathlib import Path
+from typing import Any
 
 import lightning as L
 import numpy as np
@@ -36,7 +37,13 @@ class ChesapeakeDataset(Dataset):
         platform (str): Platform identifier used in metadata.
     """
 
-    def __init__(self, chip_dir, label_dir, metadata, platform):
+    def __init__(
+        self,
+        chip_dir: str | Path,
+        label_dir: str | Path,
+        metadata: Any,
+        platform: str,
+    ) -> None:
         self.chip_dir = Path(chip_dir)
         self.label_dir = Path(label_dir)
         self.metadata = metadata
@@ -46,12 +53,10 @@ class ChesapeakeDataset(Dataset):
         )
 
         # Load chip and label file names
-        self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npy")][
-            :1000
-        ]
+        self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npy")][:1000]
         self.labels = [re.sub("_naip-new_", "_lc_", chip) for chip in self.chips]
 
-    def create_transforms(self, mean, std):
+    def create_transforms(self, mean: list[float], std: list[float]) -> v2.Compose:
         """
         Create normalization transforms.
 
@@ -68,10 +73,10 @@ class ChesapeakeDataset(Dataset):
             ],
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.chips)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:  # ty: ignore[invalid-method-override]
         """
         Get a sample from the dataset.
 
@@ -91,13 +96,12 @@ class ChesapeakeDataset(Dataset):
         label_mapping = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 15: 6}
         remapped_label = np.vectorize(label_mapping.get)(label)
 
-        sample = {
+        return {
             "pixels": self.transform(torch.from_numpy(chip)),
             "label": torch.from_numpy(remapped_label[0]),
-            "time": torch.zeros(4),  # Placeholder for time information
-            "latlon": torch.zeros(4),  # Placeholder for latlon information
+            "time": torch.zeros(4),
+            "latlon": torch.zeros(4),
         }
-        return sample
 
 
 class ChesapeakeDataModule(L.LightningDataModule):
@@ -117,15 +121,15 @@ class ChesapeakeDataModule(L.LightningDataModule):
 
     def __init__(  # noqa: PLR0913
         self,
-        train_chip_dir,
-        train_label_dir,
-        val_chip_dir,
-        val_label_dir,
-        metadata_path,
-        batch_size,
-        num_workers,
-        platform,
-    ):
+        train_chip_dir: str | Path,
+        train_label_dir: str | Path,
+        val_chip_dir: str | Path,
+        val_label_dir: str | Path,
+        metadata_path: str,
+        batch_size: int,
+        num_workers: int,
+        platform: str,
+    ) -> None:
         super().__init__()
         self.train_chip_dir = train_chip_dir
         self.train_label_dir = train_label_dir
@@ -136,7 +140,7 @@ class ChesapeakeDataModule(L.LightningDataModule):
         self.num_workers = num_workers
         self.platform = platform
 
-    def setup(self, stage=None):
+    def setup(self, stage: str | None = None) -> None:
         """
         Setup datasets for training and validation.
 
@@ -157,7 +161,7 @@ class ChesapeakeDataModule(L.LightningDataModule):
                 self.platform,
             )
 
-    def train_dataloader(self):
+    def train_dataloader(self) -> DataLoader:
         """
         Create DataLoader for training data.
 
@@ -171,7 +175,7 @@ class ChesapeakeDataModule(L.LightningDataModule):
             num_workers=self.num_workers,
         )
 
-    def val_dataloader(self):
+    def val_dataloader(self) -> DataLoader:
         """
         Create DataLoader for validation data.
 

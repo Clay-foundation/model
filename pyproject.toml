@@ -1,17 +1,24 @@
+[build-system]
+requires = ["uv_build>=0.9.3,<1"]
+build-backend = "uv_build"
+
 [project]
 name = "claymodel"
 version = "1.5.0"
 description = "An open source AI model and interface for Earth observation from the Clay Foundation"
 readme = "README.md"
-license = {text = "Apache-2.0"}
-authors = [
-    {name = "Clay Foundation", email = "hello@madewithclay.org"}
+license = "Apache-2.0"
+authors = [{ name = "Clay Foundation", email = "hello@madewithclay.org" }]
+keywords = [
+    "earth-observation",
+    "satellite-imagery",
+    "machine-learning",
+    "foundation-model",
+    "geospatial",
 ]
-keywords = ["earth-observation", "satellite-imagery", "machine-learning", "foundation-model", "geospatial"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -19,14 +26,16 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 requires-python = ">=3.11"
+license-files = ["LICENSE"]
 dependencies = [
-    "torch>=2.4.0",
-    "torchvision>=0.19.0",
+    "click>=8.1",
     "einops~=0.7.0",
     "lightning>=2.0.0",
     "pydantic>=2.0",
     "pyyaml",
     "timm>=0.6.0",
+    "torch>=2.4.0",
+    "torchvision>=0.19.0",
 ]
 
 [project.optional-dependencies]
@@ -44,7 +53,6 @@ finetune = [
     "rasterio",
 ]
 cli = [
-    "click",
     "rasterio",
 ]
 pipeline = [
@@ -55,48 +63,110 @@ pipeline = [
 all = [
     "claymodel[train,finetune,cli,pipeline]",
 ]
-dev = [
-    "claymodel[all]",
-    "mypy",
-    "pytest>=7.0",
-    "pytest-cov",
-    "ruff",
-    "types-PyYAML",
-]
 
 [project.scripts]
 clay = "claymodel.cli:cli"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["claymodel"]
-
-[tool.hatch.envs.default]
-dependencies = [
-    "claymodel[dev]",
+[dependency-groups]
+dev = [
+    "pre-commit>=4.3",
+    "pytest>=8.4.2",
+    "pytest-cov>=7",
+    "ruff>=0.15.11",
+    "ty>=0.0.1a23",
 ]
 
-[tool.hatch.envs.default.scripts]
-test = "pytest tests/ -v --cov=claymodel --cov-report=term-missing"
-lint = "pre-commit run --all"
-typecheck = "mypy claymodel/"
+[tool.uv.build-backend]
+module-root = ""
+module-name = "claymodel"
 
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = false
-warn_unused_configs = true
-ignore_missing_imports = true
-check_untyped_defs = true
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+force-exclude = true
 
-[[tool.mypy.overrides]]
-module = "claymodel.model"
-# ClayMAE.forward() uses a datacube dict with mixed value types
-# (Tensor, list[str]) that mypy can't narrow without a TypedDict.
-# Suppressing until Stage 7 refactors the forward signature.
-disable_error_code = ["arg-type", "union-attr", "index", "call-overload", "assignment"]
+[tool.ruff.lint]
+extend-select = [
+    "ANN",
+    "B",
+    "C4",
+    "E",
+    "EXE",
+    "F",
+    "FA",
+    "FLY",
+    "FURB",
+    "G",
+    "I",
+    "ISC",
+    "LOG",
+    "NPY",
+    "PERF",
+    "PGH",
+    "PIE",
+    "PL",
+    "PT",
+    "PYI",
+    "RET",
+    "RSE",
+    "RUF",
+    "SIM",
+    "SLOT",
+    "TCH",
+    "TRY",
+    "UP",
+    "W",
+]
+ignore = [
+    "ANN401",
+    "COM812",
+    "COM819",
+    "D206",
+    "D300",
+    "E111",
+    "E114",
+    "E117",
+    "PT012",
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+    "RET505",
+    "RET506",
+    "RUF005",
+    "SIM108",
+    "TRY003",
+    "W191",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["claymodel", "training", "finetune"]
+
+[tool.ruff.lint.per-file-ignores]
+"docs/clay_over_aoi.ipynb" = ["E501"]
+"finetune/embedder/how-to-embed.ipynb" = ["E501", "PLR2004"]
+"finetune/segment/chesapeake_inference.ipynb" = ["PLR0913"]
+"finetune/regression/biomasters_inference.ipynb" = ["PLR0913"]
+"scripts/worldcover/worldcover_vrt.py" = ["E501"]
+"claymodel/__init__.py" = ["PLR0911"]
+"claymodel/api.py" = ["PLC0415", "PLR0912", "PLR0915", "PLR2004"]
+"claymodel/module.py" = ["PLR2004"]
+"claymodel/inference/elle.py" = ["PLC0415"]
+"claymodel/inference/masking.py" = ["PLR2004"]
+"tests/*.py" = [
+    "ANN001",
+    "ANN003",
+    "ANN201",
+    "ANN202",
+    "PLC0415",
+    "PLR2004",
+    "RUF029",
+    "SIM117",
+    "SIM300",
+]
+
+[tool.ruff.lint.pylint]
+max-args = 6
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

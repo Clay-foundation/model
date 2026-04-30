@@ -20,10 +20,9 @@ class MRL(nn.Module):
 
     dolls: list[int]
 
-    def __init__(
-        self, features: int, dolls: list[int] = [16, 32, 64, 128, 256, 768]
-    ) -> None:
+    def __init__(self, features: int, dolls: list[int] | None = None) -> None:
         super().__init__()
+        dolls = [16, 32, 64, 128, 256, 768] if dolls is None else dolls
         self.dolls = dolls
         self.layers = nn.ModuleDict()
         for doll in dolls:
@@ -31,8 +30,7 @@ class MRL(nn.Module):
 
     def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
         "x: (batch, features)"
-        logits = [self.layers[f"mrl_{doll}"](x[:, :doll]) for doll in self.dolls]
-        return logits
+        return [self.layers[f"mrl_{doll}"](x[:, :doll]) for doll in self.dolls]
 
 
 class MRLLoss(nn.Module):
@@ -43,9 +41,7 @@ class MRLLoss(nn.Module):
         self.weights = weights
         self.criterion = nn.CosineSimilarity(dim=1, eps=1e-6)
 
-    def forward(
-        self, representations: list[torch.Tensor], targets: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, representations: list[torch.Tensor], targets: torch.Tensor) -> torch.Tensor:
         """
         representations: [(batch, features), ...]
         targets: (batch, features)

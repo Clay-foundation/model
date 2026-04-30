@@ -24,16 +24,16 @@ class RegressionEncoder(Encoder):
 
     def __init__(  # noqa: PLR0913
         self,
-        mask_ratio,
-        patch_size,
-        shuffle,
-        dim,
-        depth,
-        heads,
-        dim_head,
-        mlp_ratio,
-        ckpt_path=None,
-    ):
+        mask_ratio: float,
+        patch_size: int,
+        shuffle: bool,
+        dim: int,
+        depth: int,
+        heads: int,
+        dim_head: int,
+        mlp_ratio: float,
+        ckpt_path: str | None = None,
+    ) -> None:
         super().__init__(
             mask_ratio,
             patch_size,
@@ -45,14 +45,12 @@ class RegressionEncoder(Encoder):
             mlp_ratio,
         )
         # Set device
-        self.device = (
-            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        )
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         # Load model from checkpoint if provided
         if ckpt_path:
-            load_encoder_weights(self, ckpt_path, device=self.device)
+            load_encoder_weights(self, ckpt_path, device=str(self.device))
 
-    def forward(self, datacube):
+    def forward(self, datacube: dict[str, torch.Tensor]) -> torch.Tensor:  # ty: ignore[invalid-method-override]
         """
         Forward pass of the RegressionEncoder.
 
@@ -71,10 +69,10 @@ class RegressionEncoder(Encoder):
             datacube["waves"],  # [N]
         )
 
-        B, C, H, W = cube.shape
+        B = cube.shape[0]
 
         # Patchify and create embeddings per patch
-        patches, waves_encoded = self.to_patch_embed(cube, waves)  # [B L D]
+        patches, _ = self.to_patch_embed(cube, waves)  # [B L D]
         patches = self.add_encodings(patches, time, latlon, gsd)  # [B L D]
 
         # Add class tokens
@@ -85,9 +83,7 @@ class RegressionEncoder(Encoder):
         patches = self.transformer(patches)
 
         # Remove class token
-        patches = patches[:, 1:, :]  # [B, L, D]
-
-        return patches
+        return patches[:, 1:, :]  # [B, L, D]
 
 
 class Regressor(nn.Module):
@@ -99,7 +95,7 @@ class Regressor(nn.Module):
         ckpt_path (str): Path to the checkpoint file.
     """
 
-    def __init__(self, num_classes, ckpt_path):
+    def __init__(self, num_classes: int, ckpt_path: str | None) -> None:
         super().__init__()
         # Initialize the encoder
         self.encoder = RegressionEncoder(
@@ -132,7 +128,7 @@ class Regressor(nn.Module):
         self.pixel_shuffle = nn.PixelShuffle(upscale_factor=r)
         self.conv_out = nn.Conv2d(C_out, num_classes, kernel_size=3, padding=1)
 
-    def forward(self, datacube):
+    def forward(self, datacube: dict[str, torch.Tensor]) -> torch.Tensor:
         """
         Forward pass of the Regressor.
 
@@ -144,7 +140,7 @@ class Regressor(nn.Module):
             torch.Tensor: The regression output.
         """
         cube = datacube["pixels"]  # [B C H_in W_in]
-        B, C, H_in, W_in = cube.shape
+        _, _, H_in, W_in = cube.shape
 
         # Get embeddings from the encoder
         patches = self.encoder(datacube)  # [B, L, D]
@@ -163,6 +159,4 @@ class Regressor(nn.Module):
         x = self.pixel_shuffle(x)  # [B, C_out, H_in, W_in]
 
         # Final convolution to get desired output channels
-        x = self.conv_out(x)  # [B, num_outputs, H_in, W_in]
-
-        return x
+        return self.conv_out(x)  # [B, num_outputs, H_in, W_in]

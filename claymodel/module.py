@@ -2,13 +2,14 @@ __all__ = ["ClayMAEModule"]
 
 import random
 from collections.abc import Mapping
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import lightning as L
 import torch
 import torch.nn.functional as F
+from lightning.pytorch.utilities.types import OptimizerLRScheduler
 
-from claymodel.metadata import PlatformMetadata, load_metadata_yaml
+from claymodel.metadata import load_metadata_yaml
 from claymodel.model import (
     ClayMAE,
     Encoder,
@@ -18,10 +19,13 @@ from claymodel.model import (
     clay_mae_tiny,
 )
 
+if TYPE_CHECKING:
+    from claymodel.metadata import PlatformMetadata
+
 
 class ClayMAEModule(L.LightningModule):
     model: ClayMAE
-    metadata: dict[str, PlatformMetadata]
+    metadata: dict[str, "PlatformMetadata"]
 
     def __init__(  # noqa: PLR0913
         self,
@@ -32,18 +36,20 @@ class ClayMAEModule(L.LightningModule):
         shuffle: bool = False,
         metadata_path: str = "claymodel/configs/metadata.yaml",
         teacher: str = "vit_large_patch14_reg4_dinov2.lvd142m",
-        dolls: list[int] = [16, 32, 64, 128, 256, 768],
-        doll_weights: list[float] = [1, 1, 1, 1, 1, 1],
+        dolls: list[int] | None = None,
+        doll_weights: list[float] | None = None,
         matryoshka: bool = False,
         lr: float = 1e-5,
         wd: float = 0.05,
         b1: float = 0.9,
         b2: float = 0.95,
-        embeddings_level: Literal["mean", "patch", "group"] = "mean",  # noqa: E501 unused, kept for ckpt compat
+        embeddings_level: Literal["mean", "patch", "group"] = "mean",
     ) -> None:
         super().__init__()
-        self.save_hyperparameters(logger=True)
         self.metadata = load_metadata_yaml(metadata_path)
+        dolls = [16, 32, 64, 128, 256, 768] if dolls is None else dolls
+        doll_weights = [1, 1, 1, 1, 1, 1] if doll_weights is None else doll_weights
+        self.save_hyperparameters(logger=True)
         model_map = {
             "tiny": clay_mae_tiny,
             "small": clay_mae_small,
@@ -65,8 +71,7 @@ class ClayMAEModule(L.LightningModule):
             self.model = model_map[model_size](**model_args)
         else:
             raise ValueError(
-                f"Invalid model size {model_size}. "
-                f"Expected one of {list(model_map.keys())}"
+                f"Invalid model size {model_size}. Expected one of {list(model_map.keys())}"
             )
 
     def on_train_epoch_start(self) -> None:
@@ -82,7 +87,7 @@ class ClayMAEModule(L.LightningModule):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         return self.model(datacube)
 
-    def configure_optimizers(self):  # type: ignore[override]
+    def configure_optimizers(self) -> OptimizerLRScheduler:
         optimizer = torch.optim.AdamW(
             self.parameters(),
             lr=self.hparams["lr"],
@@ -202,9 +207,7 @@ class ClayMAEModule(L.LightningModule):
                 sync_dist=True,
             )
 
-    def training_step(
-        self, batch: dict[str, torch.Tensor], batch_idx: int
-    ) -> torch.Tensor:
+    def training_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> torch.Tensor:
         platform, waves, gsd = self._resolve_platform(batch)
         pixels = self._channel_dropout(batch["pixels"], batch["latlon"])
 
@@ -218,9 +221,7 @@ class ClayMAEModule(L.LightningModule):
 
         encoded, decoded_pixels, masked_matrix, *_ = self.model(datacube)
 
-        rec_loss = self.model.per_pixel_loss(
-            batch["pixels"], decoded_pixels, masked_matrix
-        )
+        rec_loss = self.model.per_pixel_loss(batch["pixels"], decoded_pixels, masked_matrix)
         if platform == "modis":
             rec_loss = rec_loss / 10
 
@@ -231,9 +232,7 @@ class ClayMAEModule(L.LightningModule):
         self._log_losses("train", platform, loss, rec_loss, rep_loss)
         return loss
 
-    def validation_step(
-        self, batch: dict[str, torch.Tensor], batch_idx: int
-    ) -> torch.Tensor:
+    def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> torch.Tensor:
         platform, waves, gsd = self._resolve_platform(batch)
 
         datacube = {
@@ -246,9 +245,7 @@ class ClayMAEModule(L.LightningModule):
 
         encoded, decoded_pixels, masked_matrix, *_ = self.model(datacube)
 
-        rec_loss = self.model.per_pixel_loss(
-            batch["pixels"], decoded_pixels, masked_matrix
-        )
+        rec_loss = self.model.per_pixel_loss(batch["pixels"], decoded_pixels, masked_matrix)
         if platform == "modis":
             rec_loss = rec_loss / 10
 

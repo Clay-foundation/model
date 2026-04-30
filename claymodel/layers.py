@@ -2,7 +2,7 @@
 Repository: https://github.com/lucidrains/vit-pytorch
 """
 
-__all__ = ["FeedForward", "Attention", "Transformer"]
+__all__ = ["Attention", "FeedForward", "Transformer"]
 
 import torch
 import torch.nn.functional as F
@@ -46,7 +46,7 @@ class Attention(nn.Module):
         x = self.norm(x)
 
         qkv = self.to_qkv(x).chunk(3, dim=-1)
-        q, k, v = map(lambda t: rearrange(t, "b n (h d) -> b h n d", h=self.heads), qkv)
+        q, k, v = (rearrange(t, "b n (h d) -> b h n d", h=self.heads) for t in qkv)
 
         if self.fused_attn:
             x = F.scaled_dot_product_attention(q, k, v, dropout_p=0.0)
@@ -60,7 +60,7 @@ class Attention(nn.Module):
 
 
 class Transformer(nn.Module):
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         dim: int,
         depth: int,
@@ -76,9 +76,7 @@ class Transformer(nn.Module):
             self.layers.append(
                 nn.ModuleList(
                     [
-                        Attention(
-                            dim, heads=heads, dim_head=dim_head, fused_attn=fused_attn
-                        ),
+                        Attention(dim, heads=heads, dim_head=dim_head, fused_attn=fused_attn),
                         FeedForward(dim, mlp_dim),
                     ]
                 )
@@ -86,7 +84,7 @@ class Transformer(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.layers:
-            attn, ff = layer[0], layer[1]  # type: ignore[index]
+            attn, ff = layer[0], layer[1]  # ty: ignore[not-subscriptable]
             x = attn(x) + x
             x = ff(x) + x
         return self.norm(x)
