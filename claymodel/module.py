@@ -2,6 +2,7 @@ __all__ = ["ClayMAEModule"]
 
 import random
 from collections.abc import Mapping
+from importlib.resources import files
 from typing import TYPE_CHECKING, Literal
 
 import lightning as L
@@ -34,7 +35,7 @@ class ClayMAEModule(L.LightningModule):
         norm_pix_loss: bool = False,
         patch_size: int = 8,
         shuffle: bool = False,
-        metadata_path: str = "claymodel/configs/metadata.yaml",
+        metadata_path: str | None = None,
         teacher: str = "vit_large_patch14_reg4_dinov2.lvd142m",
         dolls: list[int] | None = None,
         doll_weights: list[float] | None = None,
@@ -46,6 +47,8 @@ class ClayMAEModule(L.LightningModule):
         embeddings_level: Literal["mean", "patch", "group"] = "mean",
     ) -> None:
         super().__init__()
+        if metadata_path is None:
+            metadata_path = str(files("claymodel").joinpath("configs/metadata.yaml"))
         self.metadata = load_metadata_yaml(metadata_path)
         dolls = [16, 32, 64, 128, 256, 768] if dolls is None else dolls
         doll_weights = [1, 1, 1, 1, 1, 1] if doll_weights is None else doll_weights
