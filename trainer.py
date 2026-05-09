@@ -20,5 +20,3 @@ def cli_main() -> LightningCLI:
 
 if __name__ == "__main__":
     cli_main()
-
-    print("Done!")

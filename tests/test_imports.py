@@ -12,7 +12,7 @@ from claymodel import (
     clay_mae_tiny,
     load_metadata,
 )
-from claymodel.inference import DeterministicInference, ELLEProbe, PatchAnalyzer
+from claymodel.inference import DeterministicInference, PatchAnalyzer
 
 
 def test_version_is_string():
@@ -54,5 +54,4 @@ def test_import_unknown_raises_attribute_error():
 
 def test_inference_package_exports():
     assert callable(DeterministicInference)
-    assert ELLEProbe is not None
     assert PatchAnalyzer is not None

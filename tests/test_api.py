@@ -1,6 +1,5 @@
 """Test the high-level API."""
 
-import warnings
 from importlib.resources import files
 
 import numpy as np
@@ -174,19 +173,6 @@ def test_embed_sentinel1_db_conversion():
     result = embed(pixels, sensor="sentinel-1-rtc", model=model)
     assert result.embeddings.shape == (1, 192)
     assert not torch.isnan(result.embeddings).any()
-
-
-def test_embed_quality_warns_when_probe_missing():
-    """quality=True should warn, not error, when probe weights missing."""
-    model = _make_tiny_module()
-    pixels = torch.randn(1, 10, 64, 64)
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        result = embed(pixels, sensor="sentinel-2-l2a", model=model, quality=True)
-        assert result.embeddings.shape == (1, 192)
-        # Should have warned about missing probe
-        probe_warned = any("ELLE" in str(w_.message) or "probe" in str(w_.message) for w_ in w)
-        assert probe_warned
 
 
 def test_normalize_output_device_matches_input():

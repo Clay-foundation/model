@@ -2,7 +2,6 @@
 
 __all__ = ["EmbeddingResult", "embed", "load_metadata", "load_model", "normalize"]
 
-import warnings
 from dataclasses import dataclass, field
 from importlib.resources import files
 from pathlib import Path
@@ -10,7 +9,6 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from claymodel.inference.elle import ELLEProbe
 from claymodel.metadata import PlatformMetadata, load_metadata_yaml
 from claymodel.module import ClayMAEModule
 
@@ -125,7 +123,6 @@ def embed(  # noqa: PLR0913
     device: str = "cpu",
     time: torch.Tensor | None = None,
     latlon: torch.Tensor | None = None,
-    quality: bool = False,
     metadata: dict[str, PlatformMetadata] | None = None,
 ) -> EmbeddingResult:
     """Embed pixels or a GeoTIFF with a Clay model."""
@@ -181,21 +178,9 @@ def embed(  # noqa: PLR0913
         encoded, *_ = model.encoder(datacube)
         cls_embeddings = encoded[:, 0, :]
 
-    result = EmbeddingResult(
+    return EmbeddingResult(
         embeddings=cls_embeddings,
         sensor=sensor,
         gsd=float(sensor_meta.gsd),
         metadata={"latlon": latlon, "time": time},
     )
-
-    if quality:
-        try:
-            probe = ELLEProbe.default()
-            result.metadata["quality_score"] = probe.score(cls_embeddings)
-        except FileNotFoundError:
-            warnings.warn(
-                "ELLE probe not available. Install or provide probe weights.",
-                stacklevel=2,
-            )
-
-    return result
