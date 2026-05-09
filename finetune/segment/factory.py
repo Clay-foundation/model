@@ -164,6 +164,4 @@ class Segmentor(nn.Module):
         x = self.pixel_shuffle(x)  # [B, C_out, H_in, W_in]
 
         # Final convolution to get desired output channels
-        x = self.conv_out(x)  # [B, num_outputs, H_in, W_in]
-
         return self.conv_out(x)  # [B, num_outputs, H_in, W_in]
