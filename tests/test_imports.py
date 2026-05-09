@@ -13,7 +13,6 @@ from claymodel import (
     load_metadata,
 )
 from claymodel.inference import DeterministicInference, ELLEProbe, PatchAnalyzer
-from training.datamodule import ClayDataModule
 
 
 def test_version_is_string():
@@ -26,6 +25,9 @@ def test_import_clay_mae_module():
 
 
 def test_import_clay_data_module():
+    pytest.importorskip("sklearn", reason="requires [train] extra")
+    from training.datamodule import ClayDataModule
+
     assert ClayDataModule is not None
 
 
