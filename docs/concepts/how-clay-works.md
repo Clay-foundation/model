@@ -83,7 +83,7 @@ For temporal analysis:
 
 At raster edges, chips may be partially filled with nodata pixels. Clay handles this through its masking mechanism, but embedding quality degrades with too many missing pixels.
 
-**Recommendation**: Use `PatchAnalyzer.valid_fraction()` to assess chip quality and skip chips with `valid_fraction < 0.5`. The CLI supports this via `clay embed --min-valid 0.5`.
+**Recommendation**: Use `PatchAnalyzer.valid_fraction()` to assess chip quality and skip chips with `valid_fraction < 0.5`.
 
 ## Normalization
 

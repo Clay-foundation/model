@@ -116,7 +116,7 @@ during training. These can be used for inferencing when passing data from any of
 these systems.
 
 The normalization and wavelength parameters can be found in the following
-[metadata file](https://github.com/Clay-foundation/model/blob/main/configs/metadata.yaml).
+[metadata file](https://github.com/Clay-foundation/model/blob/main/claymodel/configs/metadata.yaml).
 
 ## Training Card
 

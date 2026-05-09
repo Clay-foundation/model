@@ -48,7 +48,7 @@ print(f"Using {sensor} with {len(waves)} bands at {sensor_meta.gsd}m resolution"
 
 ## Supported Sensors
 
-Clay v1.5 is **sensor-agnostic** and can work with **any satellite instrument** as long as you provide the required metadata. The `configs/metadata.yaml` file contains specifications for commonly used sensors:
+Clay v1.5 is **sensor-agnostic** and can work with **any satellite instrument** as long as you provide the required metadata. The bundled `claymodel/configs/metadata.yaml` file contains specifications for commonly used sensors:
 
 ```python
 from claymodel import load_metadata
@@ -72,8 +72,8 @@ for category, sensors in sensor_categories.items():
     for sensor_name in sensors:
         if sensor_name in metadata:
             sensor_data = metadata[sensor_name]
-            bands = sensor_data["band_order"]
-            gsd = sensor_data["gsd"]
+            bands = sensor_data.band_order
+            gsd = sensor_data.gsd
             num_bands = len(bands)
             print(f"   • {sensor_name}: {num_bands} bands, {gsd}m GSD")
 
@@ -82,7 +82,7 @@ print(f"\n🎯 Total supported sensors: {len(metadata)} (and growing!)")
 
 ## Adding New Sensors
 
-Clay can work with **any satellite instrument**! To add a new sensor, simply add its specification to `configs/metadata.yaml`:
+Clay can work with **any satellite instrument**! To add a new sensor, simply add its specification to `claymodel/configs/metadata.yaml`:
 
 ```yaml
 # Example: Adding a new instrument
@@ -150,7 +150,7 @@ def compute_normalization_stats(data_chips, band_names):
 We welcome contributions of new sensor specifications! To contribute:
 
 1. **Fork the repository** on GitHub
-2. **Add your sensor** to `configs/metadata.yaml`
+2. **Add your sensor** to `claymodel/configs/metadata.yaml`
 3. **Test your sensor** with Clay to ensure it works
 4. **Submit a pull request** with:
    - Sensor metadata
@@ -173,15 +173,15 @@ For local development, you can:
 
 1. **Copy the metadata file** to your project:
    ```bash
-   cp configs/metadata.yaml my_local_metadata.yaml
+   cp claymodel/configs/metadata.yaml my_local_metadata.yaml
    ```
 
 2. **Add your sensor** to the local copy
 
 3. **Use your local metadata** in code:
    ```python
-   with open("my_local_metadata.yaml", "r") as f:
-       metadata = yaml.safe_load(f)
+   from claymodel import load_metadata
+   metadata = load_metadata("my_local_metadata.yaml")
    ```
 
 This approach lets you experiment with new sensors without modifying the main repository.

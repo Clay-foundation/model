@@ -38,20 +38,21 @@ uv run ruff format --check claymodel/ tests/
 
 ```
 claymodel/
-    __init__.py          # Package exports (lazy imports)
+    __init__.py          # Package exports
     api.py               # High-level API: embed(), load_model(), normalize()
-    cli.py               # `clay` commands: embed, info, benchmark
+    cli.py               # `clay` commands: info, benchmark
     model.py             # Core model: Encoder, Decoder, ClayMAE, factory functions
     module.py            # Lightning module: ClayMAEModule
     utils.py             # Utilities: position embeddings, weight loading
-    datamodule.py        # Training data loading
+    metadata.py          # PlatformMetadata Pydantic model, YAML loading
     configs/
         metadata.yaml    # Bundled sensor metadata (wavelengths, normalization stats)
     inference/
         deterministic.py # DeterministicInference context manager
         elle.py          # ELLE quality scoring probe
         masking.py       # PatchAnalyzer for chip quality filtering
-    finetune/            # Downstream task examples
+training/                # Training data loading, callbacks
+finetune/                # Downstream task examples
 tests/                   # Test suite
 docs/                    # Documentation (Jupyter Book)
 configs/                 # Training configs
@@ -90,8 +91,8 @@ uv run ruff format --check claymodel/ tests/
 uv run ruff format claymodel/ tests/
 ```
 
-Configuration is in `ruff.toml`. Key rules:
-- Max line length: 88 (ruff default)
+Configuration is in `pyproject.toml`. Key rules:
+- Max line length: 100
 - Max function arguments: 6 (with exceptions for model constructors)
 - Import sorting enforced (isort-compatible)
 
@@ -115,7 +116,7 @@ Configuration is in `ruff.toml`. Key rules:
 - **No changes to model computation**: Clay v1.5 must produce identical embeddings. Any refactoring must be verified with before/after numerical comparison.
 - **Test new functionality**: Add tests for new features. Tests should be fast (<30s total).
 - **Follow existing patterns**: Look at how similar features are implemented before adding new ones.
-- **Sensor metadata in metadata.yaml**: When adding new sensor support, add entries to both `configs/metadata.yaml` and `claymodel/configs/metadata.yaml`.
+- **Sensor metadata in metadata.yaml**: When adding new sensor support, add entries to `claymodel/configs/metadata.yaml`.
 
 ## Adding New Sensors
 
@@ -123,7 +124,7 @@ To add support for a new satellite sensor:
 
 1. Compute normalization statistics (mean/std per band) from a representative sample
 2. Find the central wavelength of each band in micrometers
-3. Add an entry to `configs/metadata.yaml` and `claymodel/configs/metadata.yaml`
+3. Add an entry to `claymodel/configs/metadata.yaml`
 4. Test with `clay info --sensor your-sensor` and `normalize(pixels, "your-sensor")`
 5. Submit a PR with the metadata and a brief description of the instrument
 
