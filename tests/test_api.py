@@ -2,8 +2,6 @@
 
 import warnings
 from importlib.resources import files
-from typing import Any, cast
-from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -157,7 +155,7 @@ def test_embed_3d_numpy():
 
 def test_embed_invalid_input_type():
     """embed() with invalid type should raise TypeError."""
-    with pytest.raises(TypeError, match="Tensor, ndarray, or file path"):
+    with pytest.raises(TypeError, match="Tensor or ndarray"):
         embed(42, sensor="sentinel-2-l2a")  # ty: ignore[invalid-argument-type]
 
 
@@ -231,47 +229,3 @@ def test_load_model_with_checkpoint(tmp_path):
                 original.state_dict()[key],
                 loaded.state_dict()[key],
             ), f"Mismatch in {key}"
-
-
-def test_to_geoparquet_with_geometry(tmp_path):
-    """to_geoparquet should produce a valid file with point geometry."""
-    pytest.importorskip("geopandas")
-
-    latlon = torch.tensor([[37.0, -122.0], [38.0, -121.0], [39.0, -120.0]])
-    emb = EmbeddingResult(
-        embeddings=torch.randn(3, 64),
-        sensor="sentinel-2-l2a",
-        gsd=10.0,
-        metadata={"latlon": latlon},
-    )
-    path = tmp_path / "test.parquet"
-    gdf = cast(Any, emb.to_geoparquet(str(path)))  # noqa: TC006
-
-    assert path.exists()
-    assert len(gdf) == 3
-    assert gdf.geometry.iloc[0] is not None
-
-
-def test_to_geoparquet_without_geometry(tmp_path):
-    """to_geoparquet should work with no latlon metadata."""
-    pytest.importorskip("geopandas")
-
-    emb = EmbeddingResult(
-        embeddings=torch.randn(2, 64),
-        sensor="naip",
-        gsd=1.0,
-    )
-    path = tmp_path / "test_no_geo.parquet"
-    gdf = cast(Any, emb.to_geoparquet(str(path)))  # noqa: TC006
-
-    assert path.exists()
-    assert len(gdf) == 2
-
-
-def test_to_geoparquet_import_error():
-    """Raise ImportError with helpful message if geopandas missing."""
-    emb = EmbeddingResult(embeddings=torch.randn(1, 64))
-
-    with patch.dict("sys.modules", {"geopandas": None}):
-        with pytest.raises(ImportError, match="geopandas"):
-            emb.to_geoparquet("out.parquet")

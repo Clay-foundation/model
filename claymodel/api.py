@@ -116,47 +116,9 @@ class EmbeddingResult:
     def shape(self) -> torch.Size:
         return self.embeddings.shape
 
-    def to_geoparquet(self, path: str | Path) -> object:
-        """Export embeddings to GeoParquet format.
-
-        Requires the [pipeline] extras: pip install claymodel[pipeline]
-
-        Args:
-            path: Output file path (should end in .parquet or .geoparquet).
-        """
-        try:
-            import geopandas as gpd
-            import pandas as pd
-            from shapely.geometry import Point
-        except ImportError as e:
-            raise ImportError(
-                "GeoParquet export requires geopandas. "
-                "Install with: pip install claymodel[pipeline]"
-            ) from e
-
-        records = []
-        for i in range(self.embeddings.shape[0]):
-            record = {
-                "embedding": self.embeddings[i].cpu().numpy().tolist(),
-                "sensor": self.sensor,
-                "gsd": self.gsd,
-            }
-            if "latlon" in self.metadata and self.metadata["latlon"] is not None:
-                lat = self.metadata["latlon"][i][0].item()
-                lon = self.metadata["latlon"][i][1].item()
-                record["geometry"] = Point(lon, lat)
-            else:
-                record["geometry"] = None
-            records.append(record)
-
-        df = pd.DataFrame(records)
-        gdf = gpd.GeoDataFrame(df, geometry="geometry")
-        gdf.to_parquet(Path(path))
-        return gdf
-
 
 def embed(  # noqa: PLR0913
-    input_data: torch.Tensor | np.ndarray | str | Path,
+    input_data: torch.Tensor | np.ndarray,
     sensor: str,
     model: ClayMAEModule | None = None,
     ckpt_path: str | None = None,
@@ -170,19 +132,7 @@ def embed(  # noqa: PLR0913
     if metadata is None:
         metadata = load_metadata()
 
-    if isinstance(input_data, (str, Path)):
-        input_data = str(input_data)
-        try:
-            import rasterio
-        except ImportError as e:
-            raise ImportError(
-                "GeoTIFF reading requires rasterio. Install with: pip install claymodel[cli]"
-            ) from e
-
-        with rasterio.open(input_data) as src:
-            pixels = src.read().astype(np.float32)
-            pixels = torch.from_numpy(pixels).unsqueeze(0)
-    elif isinstance(input_data, np.ndarray):
+    if isinstance(input_data, np.ndarray):
         pixels = torch.from_numpy(np.asarray(input_data, dtype=np.float32))
         if pixels.ndim == 3:
             pixels = pixels.unsqueeze(0)
@@ -191,9 +141,7 @@ def embed(  # noqa: PLR0913
         if pixels.ndim == 3:
             pixels = pixels.unsqueeze(0)
     else:
-        raise TypeError(
-            f"input_data must be a Tensor, ndarray, or file path, got {type(input_data)}"
-        )
+        raise TypeError(f"input_data must be a Tensor or ndarray, got {type(input_data)}")
 
     if sensor not in metadata:
         raise ValueError(f"Unknown sensor {sensor!r}. Available: {list(metadata.keys())}")

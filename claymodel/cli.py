@@ -5,7 +5,6 @@ import time as time_mod
 import click
 import torch
 
-from claymodel.api import embed as embed_fn
 from claymodel.api import load_metadata
 from claymodel.model import Encoder
 
@@ -14,41 +13,6 @@ from claymodel.model import Encoder
 @click.version_option(package_name="claymodel")
 def cli() -> None:
     """Clay Foundation Model CLI."""
-
-
-@cli.command()
-@click.argument("input_path", type=click.Path(exists=True))
-@click.option("--sensor", required=True, help="Sensor name (e.g., sentinel-2-l2a)")
-@click.option("--ckpt", required=True, help="Path to Clay checkpoint file")
-@click.option("--output", "-o", default=None, help="Output path (.parquet or .geoparquet)")
-@click.option("--device", default="cpu", help="Device (cpu, cuda, etc.)")
-@click.option(
-    "--metadata",
-    default=None,
-    type=click.Path(exists=True),
-    help="Path to custom metadata YAML (default: bundled sensors)",
-)
-def embed(
-    input_path: str,
-    sensor: str,
-    ckpt: str,
-    output: str | None,
-    device: str,
-    metadata: str | None,
-) -> None:
-    """Generate embeddings from a GeoTIFF."""
-    click.echo(f"Embedding {input_path} (sensor={sensor}, device={device})")
-
-    meta = load_metadata(metadata) if metadata else None
-    start = time_mod.perf_counter()
-    result = embed_fn(input_path, sensor=sensor, ckpt_path=ckpt, device=device, metadata=meta)
-    elapsed = time_mod.perf_counter() - start
-
-    click.echo(f"Embeddings shape: {result.shape} ({elapsed:.2f}s)")
-
-    if output:
-        result.to_geoparquet(output)
-        click.echo(f"Saved to {output}")
 
 
 @cli.command()

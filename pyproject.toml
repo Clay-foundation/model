@@ -52,16 +52,8 @@ finetune = [
     "tifffile",
     "rasterio",
 ]
-cli = [
-    "rasterio",
-]
-pipeline = [
-    "geopandas",
-    "pyarrow",
-    "pystac-client",
-]
 all = [
-    "claymodel[train,finetune,cli,pipeline]",
+    "claymodel[train,finetune]",
 ]
 
 [project.scripts]
@@ -149,7 +141,7 @@ known-first-party = ["claymodel", "training", "finetune"]
 "finetune/regression/biomasters_inference.ipynb" = ["PLR0913"]
 "scripts/worldcover/worldcover_vrt.py" = ["E501"]
 "claymodel/__init__.py" = ["PLR0911"]
-"claymodel/api.py" = ["PLC0415", "PLR0912", "PLR0915", "PLR2004"]
+"claymodel/api.py" = ["PLR0912", "PLR0915", "PLR2004"]
 "claymodel/module.py" = ["PLR2004"]
 "claymodel/inference/elle.py" = ["PLC0415"]
 "claymodel/inference/masking.py" = ["PLR2004"]

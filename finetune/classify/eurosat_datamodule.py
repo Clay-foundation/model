@@ -68,7 +68,7 @@ class EuroSAT(TGEuroSAT):
             }
             return cast(
                 "dict[str, torch.Tensor]",
-                self.transforms(sample),  # ty: ignore[missing-argument]
+                self.transforms(sample),
             )
 
         return {

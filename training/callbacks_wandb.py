@@ -16,7 +16,7 @@ from einops import rearrange
 try:
     import wandb
 except ImportError:
-    wandb = None  # ty: ignore[invalid-assignment]
+    wandb = None
 
 
 def get_wandb_logger(trainer: L.Trainer) -> pl_loggers.WandbLogger:

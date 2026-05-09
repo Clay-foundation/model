@@ -4,7 +4,7 @@ repos:
     hooks:
       - id: check-added-large-files
         args: ["--maxkb=512", "--enforce-all"]
-        exclude: "^docs/tutorials/.*\\.ipynb$"
+        exclude: "^(docs/tutorials/.*\\.ipynb|uv\\.lock)$"
       - id: check-yaml
       - id: end-of-file-fixer
         exclude: "\\.ipynb$"
@@ -27,7 +27,7 @@ repos:
       - id: ty-check
         name: ty check
         language: system
-        entry: uv run ty check claymodel training finetune trainer.py tests --exclude "*.ipynb"
+        entry: uv run ty check claymodel tests --exclude "*.ipynb"
         pass_filenames: false
       - id: uv-lock
         name: Lock dependencies with uv

@@ -1,9 +1,6 @@
 """Tier 1 integration tests: full pipeline, no teacher calls needed."""
 
-from typing import Any, cast
-
 import lightning as L
-import pytest
 import torch
 
 from claymodel.api import embed, load_metadata, load_model, normalize
@@ -111,31 +108,6 @@ def test_load_model_all_sizes():
         model = load_model(size=size)
         assert model.model.encoder.dim == dim
         assert not model.training
-
-
-def test_embed_then_geoparquet_roundtrip(tiny_module, tmp_path):
-    """Full pipeline: pixels -> embed -> GeoParquet -> read back."""
-    gpd = pytest.importorskip("geopandas")
-
-    pixels = torch.randn(2, 10, 64, 64)
-    result = embed(
-        pixels,
-        sensor="sentinel-2-l2a",
-        model=tiny_module,
-        latlon=torch.tensor([[0.5, 0.5, -0.5, -0.5], [0.6, 0.6, -0.6, -0.6]]),
-    )
-
-    path = tmp_path / "test.parquet"
-    gdf = cast(Any, result.to_geoparquet(str(path)))  # noqa: TC006
-
-    assert path.exists()
-    assert len(gdf) == 2
-    assert gdf.geometry.iloc[0] is not None
-
-    # Read back and verify embedding values preserved
-    loaded = gpd.read_parquet(path)
-    assert len(loaded) == 2
-    assert loaded.iloc[0]["sensor"] == "sentinel-2-l2a"
 
 
 def test_filter_then_embed_pipeline(tiny_module):
