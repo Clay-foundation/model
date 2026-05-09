@@ -4,7 +4,7 @@ import pytest
 
 import claymodel
 from claymodel import (
-    ClayMAEModule,
+    Encoder,
     __version__,
     clay_mae_base,
     clay_mae_large,
@@ -20,8 +20,8 @@ def test_version_is_string():
     assert len(__version__) > 0
 
 
-def test_import_clay_mae_module():
-    assert ClayMAEModule is not None
+def test_import_encoder():
+    assert Encoder is not None
 
 
 def test_import_clay_data_module():

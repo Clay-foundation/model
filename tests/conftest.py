@@ -64,22 +64,13 @@ def _bundled_metadata_path():
 
 @pytest.fixture(scope="session")
 def tiny_module():
-    """Session-scoped tiny ClayMAEModule for integration tests.
+    """Session-scoped tiny Encoder for integration tests.
 
-    Uses the real teacher (downloaded and cached by timm), but encoder
-    weights are random. The model is in eval mode with mask_ratio=0.
+    Random weights, eval mode, no masking. No teacher download.
     """
-    model = ClayMAEModule(
-        model_size="tiny",
-        mask_ratio=0.0,
-        shuffle=False,
-        metadata_path=_bundled_metadata_path(),
-        teacher="samvit_base_patch16.sa1b",
-    )
-    model.eval()
-    model.model.encoder.mask_ratio = 0.0
-    model.model.encoder.shuffle = False
-    return model
+    encoder = make_tiny_encoder()
+    encoder.eval()
+    return encoder
 
 
 @pytest.fixture(scope="session")
@@ -100,14 +91,14 @@ def tiny_training_module():
 
     # Mock teacher to avoid input size constraints in Tier 1
     # Tier 2 (slow) tests use the real teacher via tiny_real_teacher_module
-    teacher_dim = module.model.teacher.num_features
+    teacher_dim = module.teacher.num_features
 
     class MockTeacher(nn.Module):
         def forward(self, x):
             return torch.randn(x.shape[0], cast(int, teacher_dim))  # noqa: TC006
 
-    module.model.teacher = MockTeacher()
-    module.model.teacher_resize = nn.Identity()  # ty: ignore[invalid-assignment]
+    module.teacher = MockTeacher()
+    module.teacher_resize = nn.Identity()  # ty: ignore[invalid-assignment]
     module.log = MagicMock()  # ty: ignore[invalid-assignment]
     return module
 
@@ -129,7 +120,7 @@ def tiny_real_teacher_module():
         metadata_path=_bundled_metadata_path(),
         teacher="samvit_base_patch16.sa1b",
     )
-    module.model.teacher_resize = v2.Resize(size=(512, 512))
+    module.teacher_resize = v2.Resize(size=(512, 512))
     module.log = MagicMock()  # ty: ignore[invalid-assignment]
     return module
 

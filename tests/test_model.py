@@ -6,7 +6,6 @@ from typing import Any, cast
 import pytest
 import torch
 from einops import rearrange
-from torch import nn
 
 from claymodel.model import (
     ClayMAE,
@@ -247,8 +246,8 @@ def test_configure_training_defaults():
             os.environ["TORCH_CUDNN_V8_API_DISABLED"] = old_env
 
 
-def _make_tiny_mae(matryoshka=False, **overrides):
-    """Create a tiny ClayMAE with a mock teacher for fast testing."""
+def _make_tiny_mae(**overrides):
+    """Create a tiny ClayMAE for fast testing."""
     metadata = make_metadata()
     defaults = {
         "mask_ratio": 0.75,
@@ -256,40 +255,14 @@ def _make_tiny_mae(matryoshka=False, **overrides):
         "norm_pix_loss": False,
         "shuffle": True,
         "metadata": metadata,
-        "teacher": "samvit_base_patch16.sa1b",
-        "dolls": [16, 32],
-        "doll_weights": [1, 1],
-        "matryoshka": matryoshka,
     }
     defaults.update(overrides)
-    model = clay_mae_tiny(**cast(Any, defaults))  # noqa: TC006
-    teacher_dim = cast(int, cast(Any, model.teacher).num_features)  # noqa: TC006
-
-    class MockTeacher(nn.Module):
-        def forward(self, x):
-            return torch.randn(x.shape[0], teacher_dim)
-
-    model.teacher = MockTeacher()
-    model.teacher_resize = nn.Identity()  # ty: ignore[invalid-assignment]
-    return model
+    return clay_mae_tiny(**cast(Any, defaults))  # noqa: TC006
 
 
-def test_matryoshka_flag_creates_mrl():
-    model = _make_tiny_mae(matryoshka=True)
-    assert hasattr(model, "mrl")
-    assert hasattr(model, "mrl_loss")
-    assert not hasattr(model, "proj")
-
-
-def test_matryoshka_false_creates_proj():
-    model = _make_tiny_mae(matryoshka=False)
-    assert hasattr(model, "proj")
-    assert not hasattr(model, "mrl")
-
-
-def test_matryoshka_forward_path():
-    """Forward pass works with matryoshka=True (MRL submodules present)."""
-    model = _make_tiny_mae(matryoshka=True)
+def test_clay_mae_forward():
+    """Forward pass works on ClayMAE (encoder + decoder, no teacher)."""
+    model = _make_tiny_mae()
     model.eval()
 
     datacube = {
@@ -336,9 +309,6 @@ def test_factory_dimensions():
         "norm_pix_loss": False,
         "shuffle": False,
         "metadata": metadata,
-        "teacher": "samvit_base_patch16.sa1b",
-        "dolls": [16],
-        "doll_weights": [1],
     }
 
     small = clay_mae_small(**common)

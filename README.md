@@ -30,12 +30,8 @@ The easiest way to install Clay Foundation Model is via `uv`:
 This will install the `claymodel` package and all its dependencies. You can then import and use it in your Python code:
 
 ```python
-from claymodel import ClayMAEModule
+from claymodel import load_model, embed
 ```
-
-If you want the `clay` CLI, install the `cli` extra:
-
-    uv pip install "claymodel[cli]"
 
 ### Development Installation
 

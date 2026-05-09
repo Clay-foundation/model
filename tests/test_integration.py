@@ -1,11 +1,11 @@
 """Tier 1 integration tests: full pipeline, no teacher calls needed."""
 
-import lightning as L
 import torch
 
 from claymodel.api import embed, load_metadata, load_model, normalize
 from claymodel.inference.deterministic import DeterministicInference
 from claymodel.inference.masking import PatchAnalyzer
+from claymodel.model import Encoder
 
 
 def test_embed_all_optical_sensors(tiny_module, metadata):
@@ -44,7 +44,7 @@ def test_embed_sentinel1_db_conversion_applied(tiny_module):
         "waves": waves,
     }
     with torch.no_grad():
-        encoded, *_ = tiny_module.encoder(datacube)
+        encoded, *_ = tiny_module(datacube)
         manual_emb = encoded[:, 0, :]
 
     assert torch.allclose(result_via_embed.embeddings, manual_emb, atol=1e-5)
@@ -84,30 +84,14 @@ def test_embed_3d_4d_equivalence(tiny_module):
     assert torch.allclose(r_4d.embeddings, r_3d.embeddings, atol=1e-6)
 
 
-def test_checkpoint_roundtrip_embedding_identity(tiny_module, tmp_path):
-    """Save/load preserves inference output, not just weights."""
-    pixels = torch.randn(1, 10, 64, 64)
-
-    r_before = embed(pixels.clone(), sensor="sentinel-2-l2a", model=tiny_module)
-
-    ckpt_path = tmp_path / "roundtrip.ckpt"
-    trainer = L.Trainer(max_steps=0, enable_checkpointing=False)
-    trainer.strategy.connect(tiny_module)
-    trainer.save_checkpoint(str(ckpt_path))
-
-    loaded = load_model(size="tiny", ckpt_path=str(ckpt_path))
-    r_after = embed(pixels.clone(), sensor="sentinel-2-l2a", model=loaded)
-
-    assert torch.allclose(r_before.embeddings, r_after.embeddings, atol=1e-6)
-
-
 def test_load_model_all_sizes():
     """All model sizes construct successfully via load_model()."""
     expected_dims = {"tiny": 192, "small": 384, "base": 768, "large": 1024}
     for size, dim in expected_dims.items():
-        model = load_model(size=size)
-        assert model.model.encoder.dim == dim
-        assert not model.training
+        encoder = load_model(size=size)
+        assert isinstance(encoder, Encoder)
+        assert encoder.dim == dim
+        assert not encoder.training
 
 
 def test_filter_then_embed_pipeline(tiny_module):

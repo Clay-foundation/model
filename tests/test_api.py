@@ -1,32 +1,12 @@
 """Test the high-level API."""
 
-from importlib.resources import files
-
 import numpy as np
 import pytest
 import torch
 
 from claymodel.api import EmbeddingResult, embed, load_metadata, load_model, normalize
-from claymodel.module import ClayMAEModule
-
-
-def _bundled_metadata_path():
-    return str(files("claymodel").joinpath("configs/metadata.yaml"))
-
-
-def _make_tiny_module():
-    """Create a tiny ClayMAEModule for testing. Downloads teacher on first call."""
-    model = ClayMAEModule(
-        model_size="tiny",
-        mask_ratio=0.0,
-        shuffle=False,
-        metadata_path=_bundled_metadata_path(),
-        teacher="samvit_base_patch16.sa1b",
-    )
-    model.eval()
-    model.model.encoder.mask_ratio = 0.0
-    model.model.encoder.shuffle = False
-    return model
+from claymodel.model import Encoder
+from tests.conftest import make_tiny_encoder
 
 
 def test_normalize_sentinel2():
@@ -82,10 +62,11 @@ def test_embedding_result_metadata():
 
 
 def test_embed_with_preloaded_model():
-    """Test embed() end-to-end with a tiny model (no checkpoint needed)."""
-    model = _make_tiny_module()
+    """Test embed() end-to-end with a tiny encoder (no checkpoint needed)."""
+    encoder = make_tiny_encoder()
+    encoder.eval()
     pixels = torch.randn(1, 10, 64, 64)
-    result = embed(pixels, sensor="sentinel-2-l2a", model=model)
+    result = embed(pixels, sensor="sentinel-2-l2a", model=encoder)
 
     assert result.embeddings.shape == (1, 192)  # tiny dim=192
     assert result.sensor == "sentinel-2-l2a"
@@ -96,12 +77,13 @@ def test_embed_numerical_identity():
     """Verify embed() produces identical output to manual datacube path."""
     metadata = load_metadata()
     sensor = "sentinel-2-l2a"
-    model = _make_tiny_module()
+    encoder = make_tiny_encoder()
+    encoder.eval()
 
     raw_pixels = torch.randn(1, 10, 64, 64)
 
     # Path 1: via embed()
-    result = embed(raw_pixels.clone(), sensor=sensor, model=model)
+    result = embed(raw_pixels.clone(), sensor=sensor, model=encoder)
 
     # Path 2: manual datacube
     normalized = normalize(raw_pixels.clone(), sensor, metadata=metadata)
@@ -113,7 +95,7 @@ def test_embed_numerical_identity():
         "waves": torch.tensor(list(metadata[sensor].bands.wavelength.values())),
     }
     with torch.no_grad():
-        encoded, *_ = model.encoder(datacube)
+        encoded, *_ = encoder(datacube)
         manual_emb = encoded[:, 0, :]
 
     assert torch.allclose(result.embeddings, manual_emb, atol=1e-6)
@@ -128,27 +110,30 @@ def test_embed_requires_model_or_ckpt():
 
 def test_embed_with_numpy_array():
     """embed() should accept numpy arrays."""
-    model = _make_tiny_module()
+    encoder = make_tiny_encoder()
+    encoder.eval()
     rng = np.random.default_rng(42)
     pixels = rng.standard_normal((1, 10, 64, 64)).astype(np.float32)
-    result = embed(pixels, sensor="sentinel-2-l2a", model=model)
+    result = embed(pixels, sensor="sentinel-2-l2a", model=encoder)
     assert result.embeddings.shape == (1, 192)
 
 
 def test_embed_auto_unsqueeze_3d():
     """3D tensor [C, H, W] should be auto-unsqueezed to [1, C, H, W]."""
-    model = _make_tiny_module()
+    encoder = make_tiny_encoder()
+    encoder.eval()
     pixels = torch.randn(10, 64, 64)  # 3D — no batch dim
-    result = embed(pixels, sensor="sentinel-2-l2a", model=model)
+    result = embed(pixels, sensor="sentinel-2-l2a", model=encoder)
     assert result.embeddings.shape == (1, 192)
 
 
 def test_embed_3d_numpy():
     """3D numpy array should be auto-unsqueezed."""
-    model = _make_tiny_module()
+    encoder = make_tiny_encoder()
+    encoder.eval()
     rng = np.random.default_rng(42)
     pixels = rng.standard_normal((10, 64, 64)).astype(np.float32)
-    result = embed(pixels, sensor="sentinel-2-l2a", model=model)
+    result = embed(pixels, sensor="sentinel-2-l2a", model=encoder)
     assert result.embeddings.shape == (1, 192)
 
 
@@ -160,17 +145,19 @@ def test_embed_invalid_input_type():
 
 def test_embed_unknown_sensor():
     """embed() with unknown sensor should raise ValueError."""
-    model = _make_tiny_module()
+    encoder = make_tiny_encoder()
+    encoder.eval()
     with pytest.raises(ValueError, match="Unknown sensor"):
-        embed(torch.randn(1, 3, 64, 64), sensor="fake-sensor", model=model)
+        embed(torch.randn(1, 3, 64, 64), sensor="fake-sensor", model=encoder)
 
 
 def test_embed_sentinel1_db_conversion():
     """For sentinel-1-rtc, embed() should convert linear power to dB."""
-    model = _make_tiny_module()
+    encoder = make_tiny_encoder()
+    encoder.eval()
     # Use linear power values (positive, raw)
     pixels = torch.rand(1, 2, 64, 64) + 0.01  # positive values
-    result = embed(pixels, sensor="sentinel-1-rtc", model=model)
+    result = embed(pixels, sensor="sentinel-1-rtc", model=encoder)
     assert result.embeddings.shape == (1, 192)
     assert not torch.isnan(result.embeddings).any()
 
@@ -183,35 +170,45 @@ def test_normalize_output_device_matches_input():
 
 
 def test_load_model_no_checkpoint():
-    """load_model without checkpoint returns a working model with random weights."""
-    model = load_model(size="tiny")
-    assert isinstance(model, ClayMAEModule)
-    assert not model.training  # eval mode
-    assert model.model.encoder.mask_ratio == 0.0
-    assert model.model.encoder.shuffle is False
+    """load_model without checkpoint returns a working encoder with random weights."""
+    encoder = load_model(size="tiny")
+    assert isinstance(encoder, Encoder)
+    assert not encoder.training  # eval mode
+    assert encoder.mask_ratio == 0.0
+    assert encoder.shuffle is False
 
 
 def test_load_model_with_checkpoint(tmp_path):
     """Save and reload a tiny model checkpoint."""
     import lightning as L
 
-    original = _make_tiny_module()
+    from claymodel.module import ClayMAEModule
+    from tests.conftest import _bundled_metadata_path
+
+    # Create a full module to save a checkpoint
+    original = ClayMAEModule(
+        model_size="tiny",
+        mask_ratio=0.0,
+        shuffle=False,
+        metadata_path=_bundled_metadata_path(),
+        teacher="samvit_base_patch16.sa1b",
+    )
     ckpt_path = tmp_path / "tiny.ckpt"
 
-    # Use Lightning's Trainer to save a proper checkpoint
     trainer = L.Trainer(max_steps=0, enable_checkpointing=False)
     trainer.strategy.connect(original)
     trainer.save_checkpoint(str(ckpt_path))
 
-    # Reload
+    # Reload as Encoder (no teacher download)
     loaded = load_model(size="tiny", ckpt_path=str(ckpt_path))
-    assert isinstance(loaded, ClayMAEModule)
+    assert isinstance(loaded, Encoder)
     assert not loaded.training
 
-    # Weights should match
-    for key in original.state_dict():
-        if "teacher" not in key:
+    # Encoder weights should match
+    original_encoder = original.model.encoder
+    for key in loaded.state_dict():
+        if key in original_encoder.state_dict():
             assert torch.allclose(
-                original.state_dict()[key],
+                original_encoder.state_dict()[key],
                 loaded.state_dict()[key],
             ), f"Mismatch in {key}"

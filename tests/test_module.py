@@ -29,14 +29,14 @@ def _make_module(**overrides: object):
     module = ClayMAEModule(**cast(Any, defaults))  # noqa: TC006
 
     # Mock the teacher to avoid input size constraints
-    teacher_dim = module.model.teacher.num_features
+    teacher_dim = module.teacher.num_features
 
     class MockTeacher(nn.Module):
         def forward(self, x):
             return torch.randn(x.shape[0], cast(int, teacher_dim))  # noqa: TC006
 
-    module.model.teacher = MockTeacher()
-    module.model.teacher_resize = nn.Identity()  # ty: ignore[invalid-assignment]
+    module.teacher = MockTeacher()
+    module.teacher_resize = nn.Identity()  # ty: ignore[invalid-assignment]
     return module
 
 
@@ -71,11 +71,11 @@ def test_configure_optimizers_uses_hparams():
 
 def test_on_train_epoch_start_sets_teacher_eval():
     module = _make_module()
-    module.model.teacher.train()
-    assert module.model.teacher.training
+    module.teacher.train()
+    assert module.teacher.training
 
     module.on_train_epoch_start()
-    assert not module.model.teacher.training
+    assert not module.teacher.training
 
 
 def test_training_step_returns_finite_loss():

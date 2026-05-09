@@ -7,7 +7,7 @@ This guide helps you migrate from the old development setup to the new pip-insta
 Clay Foundation Model is now available as a proper Python package called `claymodel`. This means:
 
 - ✅ **Easy installation**: `uv pip install git+https://github.com/Clay-foundation/model.git`
-- ✅ **Clean imports**: `from claymodel.module import ClayMAEModule`
+- ✅ **Clean imports**: `from claymodel import load_model, embed`
 - ✅ **Better distribution**: No need to clone the entire repository for inference
 
 ## Import Changes
@@ -22,12 +22,11 @@ from src.model import Encoder
 
 ### After (New)
 ```python
-# New package imports — top-level or submodule imports both work
-from claymodel import ClayMAEModule, load_metadata
-# Or the explicit submodule path:
+# Inference imports
+from claymodel import load_model, embed, Encoder
+
+# Training imports (requires full repo + dev install):
 from claymodel.module import ClayMAEModule
-from claymodel.model import Encoder
-# Training imports (requires `uv pip install "claymodel[train]"`):
 from training.datamodule import ClayDataModule
 ```
 
@@ -60,37 +59,19 @@ uv pip install -e ".[dev]"
 
 ## Code Migration Examples
 
-### Loading Pretrained Models
-
-```python
-# Before
-import sys
-sys.path.append('path/to/model/src')
-from module import ClayMAEModule
-
-# After
-from claymodel.module import ClayMAEModule
-```
-
 ### Generating Embeddings
 
 ```python
 # Before
 from src.module import ClayMAEModule
-
-# After
-from claymodel.module import ClayMAEModule
-
-# Usage — the encoder now takes a datacube dict
 model = ClayMAEModule.load_from_checkpoint("clay-v1.5.ckpt")
 model.eval()
 model.model.encoder.mask_ratio = 0.0
 
-# Build a datacube dict (see quickstart.md for full example)
-datacube = {"pixels": chips, "time": time, "latlon": latlon, "gsd": gsd, "waves": waves}
-with torch.no_grad():
-    encoded, *_ = model.encoder(datacube)
-    embeddings = encoded[:, 0, :]  # CLS token [B, 1024]
+# After — no teacher download, fast startup
+from claymodel import embed, load_model
+encoder = load_model("large", ckpt_path="clay-v1.5.ckpt")
+result = embed(pixels, sensor="sentinel-2-l2a", model=encoder)
 ```
 
 ### Training Workflows

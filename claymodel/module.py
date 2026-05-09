@@ -3,12 +3,15 @@ __all__ = ["ClayMAEModule"]
 import random
 from collections.abc import Mapping
 from importlib.resources import files
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import lightning as L
+import timm
 import torch
 import torch.nn.functional as F
 from lightning.pytorch.utilities.types import OptimizerLRScheduler
+from torch import nn
+from torchvision.transforms import v2
 
 from claymodel.metadata import load_metadata_yaml
 from claymodel.model import (
@@ -19,6 +22,7 @@ from claymodel.model import (
     clay_mae_small,
     clay_mae_tiny,
 )
+from claymodel.mrl import MRL, MRLLoss
 
 if TYPE_CHECKING:
     from claymodel.metadata import PlatformMetadata
@@ -65,10 +69,6 @@ class ClayMAEModule(L.LightningModule):
                 "norm_pix_loss": norm_pix_loss,
                 "shuffle": shuffle,
                 "metadata": self.metadata,
-                "teacher": teacher,
-                "dolls": dolls,
-                "doll_weights": doll_weights,
-                "matryoshka": matryoshka,
             }
             self.model = model_map[model_size](**model_args)
         else:
@@ -76,8 +76,50 @@ class ClayMAEModule(L.LightningModule):
                 f"Invalid model size {model_size}. Expected one of {list(model_map.keys())}"
             )
 
+        # Teacher model and representation loss components (training only)
+        self.teacher = timm.create_model(teacher, pretrained=True, num_classes=0)
+        teacher_features = cast("int", self.teacher.num_features)
+        self.teacher_chip_size = 518
+        self.teacher_resize = v2.Resize(size=(self.teacher_chip_size, self.teacher_chip_size))
+        self.matryoshka = matryoshka
+        if matryoshka:
+            self.mrl = MRL(features=teacher_features, dolls=dolls)
+            self.mrl_loss = MRLLoss(weights=doll_weights)
+        else:
+            self.proj = nn.Linear(self.model.encoder.dim, teacher_features)
+
+        self._freeze_teacher()
+
+    def _freeze_teacher(self) -> None:
+        for param in self.teacher.parameters():
+            param.requires_grad = False
+        self.teacher.eval()
+
+    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Remap old checkpoint keys where teacher lived under model.*."""
+        state_dict = checkpoint.get("state_dict", checkpoint)
+        prefixes = (
+            "model.teacher.",
+            "model.proj.",
+            "model.mrl.",
+            "model.mrl_loss.",
+            "model.teacher_resize.",
+        )
+        remapped = {}
+        keys_to_remove = []
+        for key in state_dict:
+            for prefix in prefixes:
+                if key.startswith(prefix):
+                    new_key = key.replace("model.", "", 1)
+                    remapped[new_key] = state_dict[key]
+                    keys_to_remove.append(key)
+                    break
+        for key in keys_to_remove:
+            del state_dict[key]
+        state_dict.update(remapped)
+
     def on_train_epoch_start(self) -> None:
-        self.model.teacher.eval()
+        self.teacher.eval()
 
     @property
     def encoder(self) -> Encoder:
@@ -165,8 +207,8 @@ class ClayMAEModule(L.LightningModule):
             else:
                 indices = self.metadata[platform].rgb_indices
                 rgb = pixels[:, indices, :, :]
-            rgb = self.model.teacher_resize(rgb)
-            return self.model.teacher(rgb)
+            rgb = self.teacher_resize(rgb)
+            return self.teacher(rgb)
 
     def _representation_loss(
         self,
@@ -174,10 +216,10 @@ class ClayMAEModule(L.LightningModule):
         target: torch.Tensor,
     ) -> torch.Tensor:
         """Compute representation loss (proj or MRL)."""
-        if self.model.matryoshka:
-            representations = self.model.mrl(cls_token)
-            return self.model.mrl_loss(representations, target)
-        representations = self.model.proj(cls_token)
+        if self.matryoshka:
+            representations = self.mrl(cls_token)
+            return self.mrl_loss(representations, target)
+        representations = self.proj(cls_token)
         return 1.0 - F.cosine_similarity(representations, target).mean()
 
     def _log_losses(

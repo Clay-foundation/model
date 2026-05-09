@@ -10,7 +10,15 @@ import numpy as np
 import torch
 
 from claymodel.metadata import PlatformMetadata, load_metadata_yaml
-from claymodel.module import ClayMAEModule
+from claymodel.model import Encoder
+from claymodel.utils import load_encoder_weights
+
+_ENCODER_CONFIGS: dict[str, dict[str, int]] = {
+    "tiny": {"dim": 192, "depth": 6, "heads": 4, "dim_head": 48, "mlp_ratio": 2},
+    "small": {"dim": 384, "depth": 6, "heads": 6, "dim_head": 64, "mlp_ratio": 2},
+    "base": {"dim": 768, "depth": 12, "heads": 12, "dim_head": 64, "mlp_ratio": 4},
+    "large": {"dim": 1024, "depth": 24, "heads": 16, "dim_head": 64, "mlp_ratio": 4},
+}
 
 
 def load_metadata(
@@ -48,57 +56,40 @@ def load_model(
     size: str = "large",
     ckpt_path: str | None = None,
     device: str = "cpu",
-    metadata_path: str | Path | None = None,
-) -> ClayMAEModule:
-    """Load a Clay MAE model ready for inference.
+) -> Encoder:
+    """Load a Clay encoder ready for inference.
 
-    Creates a ClayMAEModule and optionally loads weights from a checkpoint.
-    The model is returned in eval mode with mask_ratio=0 and shuffle=False
-    for deterministic inference.
-
-    Note: The model includes a DINOv2 teacher (~300MB) that is downloaded
-    on first use. The teacher is frozen and not needed for embedding
-    extraction, but is part of the architecture.
+    Creates an Encoder and optionally loads weights from a checkpoint.
+    The encoder is returned in eval mode with mask_ratio=0 and shuffle=False
+    for deterministic inference. No teacher model is downloaded.
 
     Args:
         size: Model size - "tiny", "small", "base", or "large".
-        ckpt_path: Path to checkpoint file. If None, creates model with
+        ckpt_path: Path to checkpoint file. If None, creates encoder with
             random weights (useful for testing).
         device: Device to load model onto ("cpu", "cuda", etc.).
-        metadata_path: Path to a custom metadata YAML file. If None,
-            uses the bundled metadata with common public sensors.
 
     Returns:
-        ClayMAEModule instance in eval mode.
+        Encoder instance in eval mode.
 
     Example:
-        >>> model = load_model("large", ckpt_path="clay-v1.5.ckpt")
-        >>> model = load_model("large", metadata_path="my_sensors.yaml")
+        >>> encoder = load_model("large", ckpt_path="clay-v1.5.ckpt")
     """
-    resolved_path = (
-        str(metadata_path)
-        if metadata_path
-        else str(files("claymodel").joinpath("configs/metadata.yaml"))
+    if size not in _ENCODER_CONFIGS:
+        raise ValueError(f"Invalid size {size!r}. Expected one of {list(_ENCODER_CONFIGS.keys())}")
+
+    encoder = Encoder(
+        mask_ratio=0.0,
+        patch_size=8,
+        shuffle=False,
+        **_ENCODER_CONFIGS[size],
     )
 
     if ckpt_path is not None:
-        model = ClayMAEModule.load_from_checkpoint(
-            ckpt_path,
-            metadata_path=resolved_path,
-            map_location=device,
-        )
-    else:
-        model = ClayMAEModule(
-            model_size=size,
-            mask_ratio=0.0,
-            shuffle=False,
-            metadata_path=resolved_path,
-        )
+        load_encoder_weights(encoder, ckpt_path, device=device, freeze=False)
 
-    model.model.encoder.mask_ratio = 0.0
-    model.model.encoder.shuffle = False
-    model.eval()
-    return model.to(device)
+    encoder.eval()
+    return encoder.to(device)
 
 
 @dataclass
@@ -118,7 +109,7 @@ class EmbeddingResult:
 def embed(  # noqa: PLR0913
     input_data: torch.Tensor | np.ndarray,
     sensor: str,
-    model: ClayMAEModule | None = None,
+    model: Encoder | None = None,
     ckpt_path: str | None = None,
     device: str = "cpu",
     time: torch.Tensor | None = None,
@@ -188,7 +179,7 @@ def embed(  # noqa: PLR0913
         model = load_model(ckpt_path=ckpt_path, device=device)
 
     with torch.no_grad():
-        encoded, *_ = model.encoder(datacube)
+        encoded, *_ = model(datacube)
         cls_embeddings = encoded[:, 0, :]
 
     return EmbeddingResult(

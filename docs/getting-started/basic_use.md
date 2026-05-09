@@ -6,44 +6,17 @@ The most common use case is generating embeddings with the pretrained Clay v1.5 
 
 ```python
 import torch
-from claymodel import load_metadata, normalize
-from claymodel.api import load_model
+from claymodel import embed, load_model
 
-# Load pretrained model (uses bundled metadata, sets mask_ratio=0)
-model = load_model(ckpt_path="clay-v1.5.ckpt")
+# Load encoder (no teacher download, fast startup)
+encoder = load_model("large", ckpt_path="clay-v1.5.ckpt")
 
-# Load sensor metadata (bundled with package — no file path needed)
-metadata = load_metadata()
+# Generate embeddings for a Sentinel-2 chip
+pixels = torch.randn(1, 10, 256, 256)  # [batch, bands, height, width]
+result = embed(pixels, sensor="sentinel-2-l2a", model=encoder)
 
-# Example: Generate embeddings for a Sentinel-2 chip
-sensor = "sentinel-2-l2a"
-sensor_meta = metadata[sensor]
-
-# Wavelengths are in micrometers — use as-is from metadata
-waves = torch.tensor(list(sensor_meta.bands.wavelength.values()))
-
-# Your Sentinel-2 data: (batch, bands, height, width) = (1, 10, 256, 256)
-pixels = torch.randn(1, 10, 256, 256)
-
-# Normalize using per-band z-score statistics from training
-pixels = normalize(pixels, sensor, metadata=metadata)
-
-# Build datacube dict — the model's expected input format
-datacube = {
-    "pixels": pixels,
-    "time": torch.zeros(1, 4),     # (week_sin, week_cos, hour_sin, hour_cos)
-    "latlon": torch.zeros(1, 4),   # (lat_sin, lat_cos, lon_sin, lon_cos)
-    "gsd": torch.tensor(float(sensor_meta.gsd)),
-    "waves": waves,
-}
-
-# Generate 1024-dimensional embeddings
-with torch.no_grad():
-    encoded, *_ = model.encoder(datacube)
-    embeddings = encoded[:, 0, :]  # CLS token
-
-print(f"Generated embeddings shape: {embeddings.shape}")  # [1, 1024]
-print(f"Using {sensor} with {len(waves)} bands at {sensor_meta.gsd}m resolution")
+print(f"Generated embeddings shape: {result.shape}")  # [1, 1024]
+print(f"Sensor: {result.sensor}, GSD: {result.gsd}m")
 ```
 
 ## Supported Sensors
@@ -246,32 +219,14 @@ For processing multiple chips efficiently:
 
 ```python
 import torch
-from claymodel import load_metadata, normalize
-from claymodel.api import load_model
+from claymodel import embed, load_model
 
-model = load_model(ckpt_path="clay-v1.5.ckpt")
-metadata = load_metadata()
+encoder = load_model("large", ckpt_path="clay-v1.5.ckpt")
 
 # Process batch of Sentinel-2 chips
-batch_size = 8
-sensor = "sentinel-2-l2a"
-sensor_meta = metadata[sensor]
-
-# Simulated batch of chips — normalize before feeding to model
-chips = torch.randn(batch_size, 10, 256, 256)
-chips = normalize(chips, sensor, metadata=metadata)
-
-datacube = {
-    "pixels": chips,
-    "time": torch.zeros(batch_size, 4),
-    "latlon": torch.zeros(batch_size, 4),
-    "gsd": torch.tensor(float(sensor_meta.gsd)),
-    "waves": torch.tensor(list(sensor_meta.bands.wavelength.values())),
-}
-
-with torch.no_grad():
-    encoded, *_ = model.encoder(datacube)
-    embeddings = encoded[:, 0, :]  # CLS token per chip
+chips = torch.randn(8, 10, 256, 256)  # [batch, bands, height, width]
+result = embed(chips, sensor="sentinel-2-l2a", model=encoder)
+embeddings = result.embeddings  # [8, 1024]
 
 print(f"Batch embeddings shape: {embeddings.shape}")  # [8, 1024]
 ```
@@ -282,43 +237,18 @@ Here's a complete example showing how to process data from different sensors:
 
 ```python
 import torch
-from claymodel import load_metadata, normalize
-from claymodel.api import load_model
+from claymodel import embed, load_metadata, load_model
 
-# Load model and metadata
-model = load_model(ckpt_path="clay-v1.5.ckpt")
+encoder = load_model("large", ckpt_path="clay-v1.5.ckpt")
 metadata = load_metadata()
 
-def process_sensor_data(pixels, sensor_name):
-    """Process chips from any supported sensor."""
-    sensor_meta = metadata[sensor_name]
-
-    # Normalize and build datacube
-    normalized = normalize(pixels, sensor_name, metadata=metadata)
-    datacube = {
-        "pixels": normalized,
-        "time": torch.zeros(1, 4),
-        "latlon": torch.zeros(1, 4),
-        "gsd": torch.tensor(float(sensor_meta.gsd)),
-        "waves": torch.tensor(list(sensor_meta.bands.wavelength.values())),
-    }
-
-    with torch.no_grad():
-        encoded, *_ = model.encoder(datacube)
-        return encoded[:, 0, :]  # CLS token
-
-# Example with different sensors
-sensors_to_test = ["sentinel-2-l2a", "naip", "landsat-c2l2-sr"]
-
-for sensor in sensors_to_test:
-    sensor_meta = metadata[sensor]
-    num_bands = len(sensor_meta.band_order)
-
-    # Simulate data for this sensor
+# Embed data from different sensors using the same encoder
+for sensor_name in ["sentinel-2-l2a", "naip", "landsat-c2l2-sr"]:
+    num_bands = len(metadata[sensor_name].band_order)
     pixels = torch.randn(1, num_bands, 256, 256)
-    embeddings = process_sensor_data(pixels, sensor)
 
-    print(f"{sensor}: {num_bands} bands → {embeddings.shape[1]}D embedding")
+    result = embed(pixels, sensor=sensor_name, model=encoder)
+    print(f"{sensor_name}: {num_bands} bands → {result.shape[1]}D embedding")
 ```
 
 ## Running Jupyter Lab

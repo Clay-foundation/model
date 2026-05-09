@@ -10,18 +10,15 @@ __all__ = [
 ]
 
 import math
-from typing import TYPE_CHECKING, Any, TypedDict, cast
+from typing import TYPE_CHECKING, Any, TypedDict
 
-import timm
 import torch
 import torch.nn.functional as F
 from einops import rearrange, reduce, repeat
 from torch import nn
-from torchvision.transforms import v2
 
 from claymodel.embedding import DynamicEmbedding
 from claymodel.layers import Transformer
-from claymodel.mrl import MRL, MRLLoss
 from claymodel.utils import posemb_sincos_2d_with_gsd
 
 if TYPE_CHECKING:
@@ -375,14 +372,17 @@ class Decoder(nn.Module):
 
 
 class ClayMAE(nn.Module):
+    """Clay Masked Autoencoder: encoder + decoder.
+
+    Does not include the teacher model or representation loss components,
+    which live in ClayMAEModule (the training wrapper).
+    """
+
     mask_ratio: float
     patch_size: int
     norm_pix_loss: bool
     shuffle: bool
     metadata: dict[str, "PlatformMetadata"]
-    teacher: nn.Module
-    teacher_chip_size: int
-    matryoshka: bool
     encoder: Encoder
     decoder: Decoder
 
@@ -393,9 +393,6 @@ class ClayMAE(nn.Module):
         norm_pix_loss: bool,
         shuffle: bool,
         metadata: dict[str, "PlatformMetadata"],
-        teacher: str,
-        dolls: list[int],
-        doll_weights: list[float],
         # ENCODER
         dim: int,
         depth: int,
@@ -408,7 +405,6 @@ class ClayMAE(nn.Module):
         decoder_heads: int,
         decoder_dim_head: int,
         decoder_mlp_ratio: float,
-        matryoshka: bool = False,
         **kwargs: object,
     ) -> None:
         super().__init__()
@@ -417,16 +413,6 @@ class ClayMAE(nn.Module):
         self.norm_pix_loss = norm_pix_loss
         self.shuffle = shuffle
         self.metadata = metadata
-        self.teacher = timm.create_model(teacher, pretrained=True, num_classes=0)
-        teacher_features = cast("int", self.teacher.num_features)
-        self.teacher_chip_size = 518
-        self.teacher_resize = v2.Resize(size=(self.teacher_chip_size, self.teacher_chip_size))
-        self.matryoshka = matryoshka
-        if matryoshka:
-            self.mrl = MRL(features=teacher_features, dolls=dolls)
-            self.mrl_loss = MRLLoss(weights=doll_weights)
-        else:
-            self.proj = nn.Linear(dim, teacher_features)
 
         self.encoder = Encoder(
             mask_ratio=mask_ratio,
@@ -449,13 +435,6 @@ class ClayMAE(nn.Module):
             dim_head=decoder_dim_head,
             mlp_ratio=decoder_mlp_ratio,
         )
-
-        self.freeze_teacher()
-
-    def freeze_teacher(self) -> None:
-        for param in self.teacher.parameters():
-            param.requires_grad = False
-        self.teacher.eval()
 
     def per_pixel_loss(
         self, cube: torch.Tensor, pixels: torch.Tensor, masked_matrix: torch.Tensor

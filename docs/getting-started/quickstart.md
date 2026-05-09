@@ -18,37 +18,16 @@ wget https://huggingface.co/made-with-clay/Clay/resolve/main/v1.5/clay-v1.5.ckpt
 
 ```python
 import torch
-from claymodel import load_metadata, normalize
-from claymodel.api import load_model
+from claymodel import embed, load_model
 
-# Load model (uses bundled metadata, sets mask_ratio=0 for inference)
-model = load_model(ckpt_path="clay-v1.5.ckpt")
+# Load encoder (no teacher download, fast startup)
+encoder = load_model("large", ckpt_path="clay-v1.5.ckpt")
 
-# Load sensor metadata
-metadata = load_metadata()
-
-# Prepare Sentinel-2 data
-sensor = "sentinel-2-l2a"
+# Generate embeddings from Sentinel-2 data
 pixels = torch.randn(1, 10, 256, 256)  # [batch, bands, height, width]
+result = embed(pixels, sensor="sentinel-2-l2a", model=encoder)
 
-# Normalize using sensor statistics (per-band z-score)
-pixels = normalize(pixels, sensor, metadata=metadata)
-
-# Build datacube with required keys
-datacube = {
-    "pixels": pixels,
-    "time": torch.zeros(1, 4),     # (week_sin, week_cos, hour_sin, hour_cos)
-    "latlon": torch.zeros(1, 4),   # (lat_sin, lat_cos, lon_sin, lon_cos)
-    "gsd": torch.tensor(float(metadata[sensor].gsd)),
-    "waves": torch.tensor(list(metadata[sensor].bands.wavelength.values())),
-}
-
-# Generate embeddings
-with torch.no_grad():
-    encoded, *_ = model.encoder(datacube)
-    embeddings = encoded[:, 0, :]  # CLS token
-
-print(f"Embeddings shape: {embeddings.shape}")  # [1, 1024]
+print(f"Embeddings shape: {result.shape}")  # [1, 1024]
 ```
 
 ## 4. Next Steps

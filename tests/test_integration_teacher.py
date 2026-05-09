@@ -86,7 +86,7 @@ def test_training_step_matryoshka_real_teacher():
         dolls=[16, 32, 64, 128],
         doll_weights=[1, 1, 1, 1],
     )
-    module.model.teacher_resize = v2.Resize(size=(512, 512))
+    module.teacher_resize = v2.Resize(size=(512, 512))
     module.log = MagicMock()
 
     batch = {
@@ -116,9 +116,9 @@ def test_teacher_is_frozen_after_training_step(tiny_real_teacher_module):
     }
     module.training_step(batch, batch_idx=0)
 
-    for param in module.model.teacher.parameters():
+    for param in module.teacher.parameters():
         assert not param.requires_grad
-    assert not module.model.teacher.training
+    assert not module.teacher.training
 
 
 @pytest.mark.slow
@@ -126,7 +126,7 @@ def test_representation_loss_similar_vs_random(tiny_real_teacher_module):
     """Representation loss is lower when projection output matches target."""
     module = tiny_real_teacher_module
     pixels = torch.randn(1, 10, 64, 64)
-    encoder_dim = module.model.encoder.dim  # 192 for tiny
+    encoder_dim = module.encoder.dim  # 192 for tiny
 
     # Get real teacher target (256-dim for SAM)
     target = module._teacher_target(pixels, "sentinel-2-l2a")
@@ -136,7 +136,7 @@ def test_representation_loss_similar_vs_random(tiny_real_teacher_module):
     with torch.no_grad():
         # Find a CLS token whose projection is close to target
         # by inverting: cls = proj.weight^T @ target (approximate)
-        proj = module.model.proj
+        proj = module.proj
         cls_good = F.linear(target, proj.weight.T)  # [1, encoder_dim]
         cls_random = torch.randn(1, encoder_dim)
 
