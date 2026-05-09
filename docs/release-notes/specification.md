@@ -74,15 +74,15 @@ PATCH SIZE = 8
 
 OPTIMIZER
     AdamW
-    Learning rate = 1e-5
+    Learning rate = 5e-6
     Weight decay = 0.05
     Beta 1 = 0.9
     Beta 2 = 0.95
 
 SCHEDULER
     CosineAnnealingWarmRestarts
-    T_0 = 1000
-    T_mult = 2
+    T_0 = 5000
+    T_mult = 1
     eta_min = Learning rate * 100
 
 ENCODER
