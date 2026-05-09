@@ -1,7 +1,8 @@
-"""Test the high-level API (A4 verification)."""
+"""Test the high-level API."""
 
 import warnings
 from importlib.resources import files
+from typing import Any, cast
 from unittest.mock import patch
 
 import numpy as np
@@ -49,11 +50,8 @@ def test_normalize_preserves_shape():
 
 def test_normalize_unknown_sensor():
     pixels = torch.randn(1, 3, 64, 64)
-    try:
+    with pytest.raises(ValueError, match="nonexistent-sensor"):
         normalize(pixels, "nonexistent-sensor")
-        assert False, "Should have raised ValueError"
-    except ValueError as e:
-        assert "nonexistent-sensor" in str(e)
 
 
 def test_normalize_different_sensors():
@@ -160,7 +158,7 @@ def test_embed_3d_numpy():
 def test_embed_invalid_input_type():
     """embed() with invalid type should raise TypeError."""
     with pytest.raises(TypeError, match="Tensor, ndarray, or file path"):
-        embed(42, sensor="sentinel-2-l2a")
+        embed(42, sensor="sentinel-2-l2a")  # ty: ignore[invalid-argument-type]
 
 
 def test_embed_unknown_sensor():
@@ -189,9 +187,7 @@ def test_embed_quality_warns_when_probe_missing():
         result = embed(pixels, sensor="sentinel-2-l2a", model=model, quality=True)
         assert result.embeddings.shape == (1, 192)
         # Should have warned about missing probe
-        probe_warned = any(
-            "ELLE" in str(w_.message) or "probe" in str(w_.message) for w_ in w
-        )
+        probe_warned = any("ELLE" in str(w_.message) or "probe" in str(w_.message) for w_ in w)
         assert probe_warned
 
 
@@ -249,7 +245,7 @@ def test_to_geoparquet_with_geometry(tmp_path):
         metadata={"latlon": latlon},
     )
     path = tmp_path / "test.parquet"
-    gdf = emb.to_geoparquet(str(path))
+    gdf = cast(Any, emb.to_geoparquet(str(path)))  # noqa: TC006
 
     assert path.exists()
     assert len(gdf) == 3
@@ -266,7 +262,7 @@ def test_to_geoparquet_without_geometry(tmp_path):
         gsd=1.0,
     )
     path = tmp_path / "test_no_geo.parquet"
-    gdf = emb.to_geoparquet(str(path))
+    gdf = cast(Any, emb.to_geoparquet(str(path)))  # noqa: TC006
 
     assert path.exists()
     assert len(gdf) == 2

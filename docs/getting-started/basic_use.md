@@ -323,12 +323,9 @@ for sensor in sensors_to_test:
 
 ## Running Jupyter Lab
 
-If you installed the development environment:
+If you installed with `uv pip install -e ".[dev]"`:
 
-    mamba activate claymodel
-    python -m ipykernel install --user --name claymodel  # to install virtual env properly
-    jupyter kernelspec list --json                       # see if kernel is installed
-    jupyter lab &
+    uv run jupyter lab
 
 ## Training and Development
 
@@ -341,17 +338,17 @@ The neural network model can be trained via
 To check out the different options available, and look at the hyperparameter
 configurations, run:
 
-    python trainer.py --help
+    uv run python trainer.py --help
 
 To quickly test the model on one batch in the validation set:
 
-    python trainer.py fit --model ClayMAEModule --data ClayDataModule --config configs/config.yaml --trainer.fast_dev_run=True
+    uv run python trainer.py fit --model ClayMAEModule --data ClayDataModule --config configs/config.yaml --trainer.fast_dev_run=True
 
 To train the model:
 
-    python trainer.py fit --model ClayMAEModule --data ClayDataModule --config configs/config.yaml
+    uv run python trainer.py fit --model ClayMAEModule --data ClayDataModule --config configs/config.yaml
 
-More options can be found using `python trainer.py fit --help`, or at the
+More options can be found using `uv run python trainer.py fit --help`, or at the
 [LightningCLI docs](https://lightning.ai/docs/pytorch/2.1.0/cli/lightning_cli.html).
 
 ## Next Steps

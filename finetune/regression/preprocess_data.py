@@ -24,14 +24,12 @@ MONTHS = [
 
 
 def list_unique_ids(src: Path) -> list[str]:
-    ids = list(set(dat.name.split("_")[0] for dat in src.glob("*.tif")))
+    ids = list({dat.name.split("_")[0] for dat in src.glob("*.tif")})
     print(f"Found {len(ids)} unique tile ids")
     return ids
 
 
-def process_data_for_id(
-    id: str, feature_path: Path, cubes_path: Path, overwrite: bool
-) -> None:
+def process_data_for_id(id: str, feature_path: Path, cubes_path: Path, overwrite: bool) -> None:
     if not overwrite and (cubes_path / f"biomasters_cube_{id}.npz").exists():
         print(f"Found existing file for {id}, skipping.")
         return
@@ -42,9 +40,7 @@ def process_data_for_id(
             feature_name = f"{id}_{platform}_{month}.tif"
             if not Path(feature_path / feature_name).exists():
                 continue
-            file_data = (
-                imread(feature_path / feature_name).swapaxes(1, 2).swapaxes(0, 1)
-            )
+            file_data = imread(feature_path / feature_name).swapaxes(1, 2).swapaxes(0, 1)
             ND1 = 0
             ND2 = -9999
             if platform == "S1":
@@ -83,9 +79,7 @@ def process_data_for_id(
     help="Folder with features (training or test)",
     type=click.Path(path_type=Path),
 )
-@click.option(
-    "--cubes", help="Folder to write the datacubes", type=click.Path(path_type=Path)
-)
+@click.option("--cubes", help="Folder to write the datacubes", type=click.Path(path_type=Path))
 @click.option(
     "--processes",
     default=1,
@@ -103,7 +97,13 @@ def process_data_for_id(
     is_flag=True,
     help="Overwrite existing cubes",
 )
-def process(features, cubes, processes, sample, overwrite):
+def process(
+    features: Path,
+    cubes: Path,
+    processes: int,
+    sample: float,
+    overwrite: bool,
+) -> None:
     """
     Combine tiff files into npz datacubes.
 
@@ -120,11 +120,14 @@ def process(features, cubes, processes, sample, overwrite):
     print(f"Subsampled {len(ids)} tiles")
 
     if processes > 1:
-        features = [features] * len(ids)
-        cubes = [cubes] * len(ids)
-        overwrite = [overwrite] * len(ids)
+        feature_paths = [features] * len(ids)
+        cube_paths = [cubes] * len(ids)
+        overwrite_flags = [overwrite] * len(ids)
         with Pool(processes) as pl:
-            pl.starmap(process_data_for_id, zip(ids, features, cubes, overwrite))
+            pl.starmap(
+                process_data_for_id,
+                list(zip(ids, feature_paths, cube_paths, overwrite_flags, strict=False)),
+            )
     else:
         for id in ids:
             process_data_for_id(id, features, cubes, overwrite)

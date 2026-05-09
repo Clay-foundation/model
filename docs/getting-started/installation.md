@@ -1,11 +1,11 @@
 # Installation
 
-## Pip Installation (Recommended)
+## uv Installation (Recommended)
 
-The easiest way to install Clay Foundation Model is via pip:
+The easiest way to install Clay Foundation Model is via `uv`:
 
 ```bash
-pip install git+https://github.com/Clay-foundation/model.git
+uv pip install git+https://github.com/Clay-foundation/model.git
 ```
 
 This will install the `claymodel` package and all its dependencies. You can then import and use it in your Python code:
@@ -35,6 +35,12 @@ with torch.no_grad():
     embeddings = encoded[:, 0, :]  # [1, 1024]
 ```
 
+If you want the `clay` CLI, install the `cli` extra:
+
+```bash
+uv pip install "claymodel[cli]"
+```
+
 ### Using Pretrained Weights
 
 Download the Clay v1.5 weights from [Hugging Face](https://huggingface.co/made-with-clay/Clay/resolve/main/v1.5/clay-v1.5.ckpt):
@@ -60,20 +66,14 @@ Start by cloning this [repo-url](https://github.com/Clay-foundation/model)
     git clone https://github.com/Clay-foundation/model
     cd model
 
-Then we recommend [using mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html)
-to install the dependencies. A virtual environment will also be created with Python and
-[JupyterLab](https://github.com/jupyterlab/jupyterlab) installed.
+Then install the dependencies with `uv`:
 
-    mamba env create --file environment.yml
+    uv pip install -e ".[dev]"
 
 ```{note}
-The command above has been tested on Linux devices with CUDA GPUs.
+The command above creates a local virtual environment and installs the project extras.
 ```
-
-Activate the virtual environment first.
-
-    mamba activate claymodel
 
 Finally, double-check that the libraries have been installed.
 
-    mamba list
+    uv run clay info

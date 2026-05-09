@@ -1,4 +1,6 @@
-"""Test that package exports work correctly (A1 verification)."""
+"""Test that package exports work correctly."""
+
+import pytest
 
 import claymodel
 from claymodel import (
@@ -44,11 +46,8 @@ def test_all_exports_listed():
 
 
 def test_import_unknown_raises_attribute_error():
-    try:
-        _ = claymodel.nonexistent_thing_xyz
-        assert False, "Should have raised AttributeError"
-    except AttributeError:
-        pass
+    with pytest.raises(AttributeError):
+        _ = claymodel.nonexistent_thing_xyz  # ty: ignore[unresolved-attribute]
 
 
 def test_inference_package_exports():

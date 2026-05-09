@@ -30,9 +30,7 @@ def DeterministicInference(seed: int = 42) -> Generator[None, None, None]:
     # Save current state
     old_seed_py = random.getstate()
     old_seed_torch = torch.random.get_rng_state()
-    old_cuda_states = (
-        torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None
-    )
+    old_cuda_states = torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None
     old_deterministic = torch.are_deterministic_algorithms_enabled()
     old_cudnn_benchmark = torch.backends.cudnn.benchmark
     old_cublas = os.environ.get("CUBLAS_WORKSPACE_CONFIG")

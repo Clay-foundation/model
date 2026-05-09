@@ -15,8 +15,6 @@ indicate more complex or unusual inputs.
 Reference: https://devlogs.lgnd.ai/posts/2026-03-01-self-aware-embeddings/
 """
 
-from __future__ import annotations
-
 from importlib.resources import files
 from pathlib import Path
 
@@ -34,12 +32,12 @@ class ELLEProbe:
         intercept: Scalar bias term.
     """
 
-    def __init__(self, coef: torch.Tensor, intercept: float):
+    def __init__(self, coef: torch.Tensor, intercept: float) -> None:
         self.coef = coef
         self.intercept = intercept
 
     @classmethod
-    def from_file(cls, path: str | Path) -> ELLEProbe:
+    def from_file(cls, path: str | Path) -> "ELLEProbe":
         """Load a pre-trained ELLE probe from a .pt file.
 
         Args:
@@ -52,7 +50,7 @@ class ELLEProbe:
         return cls(coef=data["coef"], intercept=float(data["intercept"]))
 
     @classmethod
-    def default(cls) -> ELLEProbe:
+    def default(cls) -> "ELLEProbe":
         """Load the bundled pre-trained ELLE probe.
 
         Raises:
@@ -80,7 +78,7 @@ class ELLEProbe:
         coef = self.coef.to(cls_embeddings.device)
         return cls_embeddings @ coef + self.intercept
 
-    def save(self, path: str | Path):
+    def save(self, path: str | Path) -> None:
         """Save probe weights to a .pt file."""
         torch.save(
             {"coef": self.coef.cpu(), "intercept": self.intercept},

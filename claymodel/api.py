@@ -1,13 +1,6 @@
-"""
-High-level API for Clay Foundation Model.
+"""High-level Clay model API."""
 
-Provides convenience functions for loading metadata, models, normalizing
-inputs, and computing embeddings.
-"""
-
-from __future__ import annotations
-
-__all__ = ["load_metadata", "normalize", "load_model", "EmbeddingResult", "embed"]
+__all__ = ["EmbeddingResult", "embed", "load_metadata", "load_model", "normalize"]
 
 import warnings
 from dataclasses import dataclass, field
@@ -25,22 +18,7 @@ from claymodel.module import ClayMAEModule
 def load_metadata(
     path: str | Path | None = None,
 ) -> dict[str, PlatformMetadata]:
-    """Load sensor metadata from a YAML file.
-
-    Args:
-        path: Path to a metadata YAML file. If None, loads the bundled
-            metadata with common public sensors (Sentinel-2, Sentinel-1,
-            NAIP, Landsat, MODIS, etc.).
-
-    Returns a validated dict mapping sensor names to PlatformMetadata.
-
-    Example:
-        >>> from claymodel import load_metadata
-        >>> metadata = load_metadata()  # bundled defaults
-        >>> metadata = load_metadata("my_sensors.yaml")  # custom sensors
-        >>> metadata["sentinel-2-l2a"].gsd
-        10
-    """
+    """Load sensor metadata from YAML."""
     if path is None:
         path = str(files("claymodel").joinpath("configs/metadata.yaml"))
     return load_metadata_yaml(path)
@@ -51,41 +29,16 @@ def normalize(
     sensor: str,
     metadata: dict[str, PlatformMetadata] | None = None,
 ) -> torch.Tensor:
-    """Normalize raw pixel values using sensor-specific z-score statistics.
-
-    Applies the same normalization used during Clay v1.5 training:
-    per-band z-score using mean/std from metadata.yaml.
-
-    For Sentinel-1 SAR data, pixels should already be in dB scale
-    (10 * log10(linear_power)). The datamodule does this conversion
-    automatically, but when using this function directly you must
-    convert SAR data to dB first.
-
-    Args:
-        pixels: [B, C, H, W] tensor of raw pixel values.
-        sensor: Sensor name matching a key in metadata.yaml
-            (e.g., "sentinel-2-l2a", "sentinel-1-rtc", "naip").
-        metadata: Optional pre-loaded metadata Box. If None, loads
-            the bundled metadata.
-
-    Returns:
-        [B, C, H, W] normalized tensor.
-    """
+    """Normalize pixel values with sensor-specific statistics."""
     if metadata is None:
         metadata = load_metadata()
 
     if sensor not in metadata:
-        raise ValueError(
-            f"Unknown sensor {sensor!r}. Available: {list(metadata.keys())}"
-        )
+        raise ValueError(f"Unknown sensor {sensor!r}. Available: {list(metadata.keys())}")
 
     sensor_meta = metadata[sensor]
-    mean = torch.tensor(list(sensor_meta.bands.mean.values()), dtype=pixels.dtype).view(
-        1, -1, 1, 1
-    )
-    std = torch.tensor(list(sensor_meta.bands.std.values()), dtype=pixels.dtype).view(
-        1, -1, 1, 1
-    )
+    mean = torch.tensor(list(sensor_meta.bands.mean.values()), dtype=pixels.dtype).view(1, -1, 1, 1)
+    std = torch.tensor(list(sensor_meta.bands.std.values()), dtype=pixels.dtype).view(1, -1, 1, 1)
 
     mean = mean.to(pixels.device)
     std = std.to(pixels.device)
@@ -144,7 +97,6 @@ def load_model(
             metadata_path=resolved_path,
         )
 
-    # Ensure inference-ready settings
     model.model.encoder.mask_ratio = 0.0
     model.model.encoder.shuffle = False
     model.eval()
@@ -153,14 +105,7 @@ def load_model(
 
 @dataclass
 class EmbeddingResult:
-    """Container for Clay model embeddings with export capabilities.
-
-    Attributes:
-        embeddings: [N, D] tensor of embeddings (D=1024 for large model).
-        sensor: Sensor name used for the input.
-        gsd: Ground sampling distance.
-        metadata: Additional metadata dict (coordinates, timestamps, etc.).
-    """
+    """Clay embeddings plus export metadata."""
 
     embeddings: torch.Tensor
     sensor: str = ""
@@ -196,7 +141,6 @@ class EmbeddingResult:
                 "sensor": self.sensor,
                 "gsd": self.gsd,
             }
-            # Add coordinates if available
             if "latlon" in self.metadata and self.metadata["latlon"] is not None:
                 lat = self.metadata["latlon"][i][0].item()
                 lon = self.metadata["latlon"][i][1].item()
@@ -207,7 +151,7 @@ class EmbeddingResult:
 
         df = pd.DataFrame(records)
         gdf = gpd.GeoDataFrame(df, geometry="geometry")
-        gdf.to_parquet(path)
+        gdf.to_parquet(Path(path))
         return gdf
 
 
@@ -222,91 +166,47 @@ def embed(  # noqa: PLR0913
     quality: bool = False,
     metadata: dict[str, PlatformMetadata] | None = None,
 ) -> EmbeddingResult:
-    """One-line embedding API for Clay Foundation Model.
-
-    Accepts raw pixel data (as a tensor, numpy array, or GeoTIFF path),
-    normalizes it using sensor-specific statistics, runs the encoder,
-    and returns embeddings. For Sentinel-1 SAR, pass raw linear power
-    values — the function converts to dB internally before normalization.
-
-    Args:
-        input_data: One of:
-            - torch.Tensor of shape [B, C, H, W] (raw pixel values)
-            - numpy.ndarray of shape [B, C, H, W] or [C, H, W]
-            - str/Path to a GeoTIFF file (requires rasterio from [cli] extras)
-        sensor: Sensor name matching metadata (e.g., "sentinel-2-l2a").
-        model: Pre-loaded ClayMAEModule. If None, loads from ckpt_path.
-        ckpt_path: Path to checkpoint (used if model is None).
-        device: Device for computation.
-        time: Optional [B, 4] tensor of (week_sin, week_cos, hour_sin, hour_cos).
-            Defaults to zeros (unknown time).
-        latlon: Optional [B, 4] tensor of (lat_sin, lat_cos, lon_sin, lon_cos).
-            Defaults to zeros (unknown location).
-        quality: If True, compute ELLE quality score (requires trained probe).
-        metadata: Pre-loaded metadata Box. If None, loads bundled defaults.
-            Use load_metadata("my_sensors.yaml") to load custom sensors.
-
-    Returns:
-        EmbeddingResult with .embeddings tensor of shape [N, D] and
-        .to_geoparquet() method. D=1024 for the large model.
-
-    Example:
-        >>> from claymodel import embed, load_metadata
-        >>> result = embed(pixels, sensor="sentinel-2-l2a", ckpt_path="v1.5.ckpt")
-        >>> metadata = load_metadata("my_sensors.yaml")
-        >>> result = embed(pixels, sensor="my-sensor", model=model, metadata=metadata)
-    """
+    """Embed pixels or a GeoTIFF with a Clay model."""
     if metadata is None:
         metadata = load_metadata()
 
-    # Handle GeoTIFF input
     if isinstance(input_data, (str, Path)):
         input_data = str(input_data)
         try:
             import rasterio
         except ImportError as e:
             raise ImportError(
-                "GeoTIFF reading requires rasterio. "
-                "Install with: pip install claymodel[cli]"
+                "GeoTIFF reading requires rasterio. Install with: pip install claymodel[cli]"
             ) from e
 
         with rasterio.open(input_data) as src:
-            pixels = src.read().astype(np.float32)  # [C, H, W]
-            pixels = torch.from_numpy(pixels).unsqueeze(0)  # [1, C, H, W]
+            pixels = src.read().astype(np.float32)
+            pixels = torch.from_numpy(pixels).unsqueeze(0)
     elif isinstance(input_data, np.ndarray):
-        pixels = torch.from_numpy(input_data.astype(np.float32))
+        pixels = torch.from_numpy(np.asarray(input_data, dtype=np.float32))
         if pixels.ndim == 3:
-            pixels = pixels.unsqueeze(0)  # [C, H, W] -> [1, C, H, W]
+            pixels = pixels.unsqueeze(0)
     elif isinstance(input_data, torch.Tensor):
         pixels = input_data.float()
         if pixels.ndim == 3:
             pixels = pixels.unsqueeze(0)
     else:
         raise TypeError(
-            f"input_data must be a Tensor, ndarray, or file path, "
-            f"got {type(input_data)}"
+            f"input_data must be a Tensor, ndarray, or file path, got {type(input_data)}"
         )
 
     if sensor not in metadata:
-        raise ValueError(
-            f"Unknown sensor {sensor!r}. Available: {list(metadata.keys())}"
-        )
+        raise ValueError(f"Unknown sensor {sensor!r}. Available: {list(metadata.keys())}")
 
     sensor_meta = metadata[sensor]
     pixels = pixels.to(device)
 
-    # Sentinel-1 SAR: convert linear power to dB scale.
-    # If your SAR data is already in dB, skip this by normalizing manually:
-    #   normalized = normalize(db_pixels, "sentinel-1-rtc")
-    # and passing the result directly as a datacube to model.encoder().
     if sensor == "sentinel-1-rtc":
         pixels = pixels.clamp(min=1e-10)
         pixels = 10 * torch.log10(pixels)
 
-    # Normalize
     pixels = normalize(pixels, sensor, metadata=metadata)
 
-    # Build datacube
     B = pixels.shape[0]
     waves = torch.tensor(list(sensor_meta.bands.wavelength.values()), device=device)
     gsd = torch.tensor(sensor_meta.gsd, dtype=torch.float32, device=device)
@@ -324,16 +224,14 @@ def embed(  # noqa: PLR0913
         "waves": waves,
     }
 
-    # Load or use provided model
     if model is None:
         if ckpt_path is None:
             raise ValueError("Either model or ckpt_path must be provided")
         model = load_model(ckpt_path=ckpt_path, device=device)
 
-    # Run encoder
     with torch.no_grad():
         encoded, *_ = model.encoder(datacube)
-        cls_embeddings = encoded[:, 0, :]  # [B, D]
+        cls_embeddings = encoded[:, 0, :]
 
     result = EmbeddingResult(
         embeddings=cls_embeddings,
@@ -342,7 +240,6 @@ def embed(  # noqa: PLR0913
         metadata={"latlon": latlon, "time": time},
     )
 
-    # Optional ELLE quality scoring
     if quality:
         try:
             probe = ELLEProbe.default()

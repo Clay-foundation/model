@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 import lightning as L
 import torch
 from torch.utils.data import DataLoader
@@ -33,10 +35,17 @@ class EuroSAT(TGEuroSAT):
         download (bool): If true, downloads the dataset.
     """
 
-    def __init__(self, root, split, bands, transforms, download):
+    def __init__(
+        self,
+        root: str,
+        split: str,
+        bands: list[str],
+        transforms: Any,
+        download: bool,
+    ) -> None:
         super().__init__(root, split, bands, transforms, download)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """
         Override the __getitem__ method to apply custom transformations.
 
@@ -50,17 +59,24 @@ class EuroSAT(TGEuroSAT):
         image, label = self._load_image(index)
 
         image = torch.index_select(image, dim=0, index=self.band_indices).float()
-        sample = {
+        if self.transforms is not None:
+            sample = {
+                "pixels": image,
+                "label": label,
+                "time": torch.zeros(4),
+                "latlon": torch.zeros(4),
+            }
+            return cast(
+                "dict[str, torch.Tensor]",
+                self.transforms(sample),  # ty: ignore[missing-argument]
+            )
+
+        return {
             "pixels": image,
             "label": label,
-            "time": torch.zeros(4),  # Placeholder for time information
-            "latlon": torch.zeros(4),  # Placeholder for lat/lon information
+            "time": torch.zeros(4),
+            "latlon": torch.zeros(4),
         }
-
-        if self.transforms is not None:
-            sample = self.transforms(sample)
-
-        return sample
 
 
 class EuroSATDataModule(L.LightningDataModule):
@@ -74,7 +90,13 @@ class EuroSATDataModule(L.LightningDataModule):
         statistics.
     """
 
-    def __init__(self, batch_size, num_workers, metadata_path, data_dir: str = "data"):
+    def __init__(
+        self,
+        batch_size: int,
+        num_workers: int,
+        metadata_path: str,
+        data_dir: str = "data",
+    ) -> None:
         super().__init__()
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -93,7 +115,7 @@ class EuroSATDataModule(L.LightningDataModule):
         )
         self.val_tfm = v2.Compose([v2.Normalize(mean, std)])
 
-    def setup(self, stage=None):
+    def setup(self, stage: str | None = None) -> None:
         """
         Setup the datasets for training and validation.
 
@@ -117,7 +139,7 @@ class EuroSATDataModule(L.LightningDataModule):
                 download=True,
             )
 
-    def train_dataloader(self):
+    def train_dataloader(self) -> DataLoader:
         """
         Returns the DataLoader for the training dataset.
 
@@ -133,7 +155,7 @@ class EuroSATDataModule(L.LightningDataModule):
             prefetch_factor=2,
         )
 
-    def val_dataloader(self):
+    def val_dataloader(self) -> DataLoader:
         """
         Returns the DataLoader for the validation dataset.
 

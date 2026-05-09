@@ -17,6 +17,7 @@ and Benchmarks Track, 2023, https://openreview.net/forum?id=hrWsIC4Cmz
 """
 
 from pathlib import Path
+from typing import Any
 
 import lightning as L
 import numpy as np
@@ -40,7 +41,12 @@ class BioMastersDataset(Dataset):
         label_dir (str): Directory containing the labels.
     """
 
-    def __init__(self, chip_dir, label_dir, metadata):
+    def __init__(
+        self,
+        chip_dir: str | Path,
+        label_dir: str | Path,
+        metadata: Any,
+    ) -> None:
         self.chip_dir = Path(chip_dir)
         self.label_dir = Path(label_dir)
         self.metadata = metadata
@@ -59,7 +65,7 @@ class BioMastersDataset(Dataset):
         self.chips = [chip_path.name for chip_path in self.chip_dir.glob("*.npz")]
         print(f"Found {len(self.chips)} chips to process for {chip_dir}")
 
-    def create_transforms(self, mean, std):
+    def create_transforms(self, mean: list[float], std: list[float]) -> v2.Compose:
         """
         Create normalization transforms.
 
@@ -76,10 +82,10 @@ class BioMastersDataset(Dataset):
             ],
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.chips)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:  # ty: ignore[invalid-method-override]
         """
         Get a sample from the dataset.
 
@@ -96,13 +102,12 @@ class BioMastersDataset(Dataset):
         label = imread(label_name).astype("float32")
         label = np.expand_dims(label, 0)
 
-        sample = {
+        return {
             "pixels": self.transform(torch.from_numpy(chip)),
             "label": torch.from_numpy(label),
-            "time": torch.zeros(4),  # Placeholder for time information
-            "latlon": torch.zeros(4),  # Placeholder for latlon information
+            "time": torch.zeros(4),
+            "latlon": torch.zeros(4),
         }
-        return sample
 
 
 class BioMastersDataModule(L.LightningDataModule):
@@ -122,14 +127,14 @@ class BioMastersDataModule(L.LightningDataModule):
 
     def __init__(  # noqa: PLR0913
         self,
-        train_chip_dir,
-        train_label_dir,
-        val_chip_dir,
-        val_label_dir,
-        metadata_path,
-        batch_size,
-        num_workers,
-    ):
+        train_chip_dir: str | Path,
+        train_label_dir: str | Path,
+        val_chip_dir: str | Path,
+        val_label_dir: str | Path,
+        metadata_path: str,
+        batch_size: int,
+        num_workers: int,
+    ) -> None:
         super().__init__()
         self.train_chip_dir = train_chip_dir
         self.train_label_dir = train_label_dir
@@ -139,7 +144,7 @@ class BioMastersDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-    def setup(self, stage=None):
+    def setup(self, stage: str | None = None) -> None:
         """
         Setup datasets for training and validation.
 
@@ -158,7 +163,7 @@ class BioMastersDataModule(L.LightningDataModule):
                 self.metadata,
             )
 
-    def train_dataloader(self):
+    def train_dataloader(self) -> DataLoader:
         """
         Create DataLoader for training data.
 
@@ -172,7 +177,7 @@ class BioMastersDataModule(L.LightningDataModule):
             num_workers=self.num_workers,
         )
 
-    def val_dataloader(self):
+    def val_dataloader(self) -> DataLoader:
         """
         Create DataLoader for validation data.
 

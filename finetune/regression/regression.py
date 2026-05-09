@@ -13,27 +13,24 @@ References:
 from lightning.pytorch.cli import LightningCLI
 
 from finetune.regression.biomasters_datamodule import (
-    BioMastersDataModule,  # noqa: F401
+    BioMastersDataModule,
 )
 from finetune.regression.biomasters_model import (
-    BioMastersClassifier,  # noqa: F401
+    BioMastersClassifier,
 )
 
 
-# %%
-def cli_main():
+def cli_main() -> LightningCLI:
     """
     Command-line inteface to run Regression with BioMastersDataModule.
     """
-    cli = LightningCLI(
+    return LightningCLI(
         BioMastersClassifier,
         BioMastersDataModule,
         save_config_kwargs={"overwrite": True},
     )
-    return cli
 
 
-# %%
 if __name__ == "__main__":
     cli_main()
 

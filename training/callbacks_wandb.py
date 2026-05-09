@@ -5,7 +5,10 @@ References:
 - https://lightning.ai/docs/pytorch/2.1.0/common/trainer.html#callbacks
 """
 
+from typing import Any, cast
+
 import lightning as L
+import lightning.pytorch.loggers as pl_loggers
 import matplotlib.pyplot as plt
 import torch
 from einops import rearrange
@@ -13,31 +16,30 @@ from einops import rearrange
 try:
     import wandb
 except ImportError:
-    wandb = None
+    wandb = None  # ty: ignore[invalid-assignment]
 
 
-def get_wandb_logger(trainer: L.Trainer) -> L.pytorch.loggers.WandbLogger:
+def get_wandb_logger(trainer: L.Trainer) -> pl_loggers.WandbLogger:
     """Safely get Weights & Biases logger from Trainer."""
-    if trainer.fast_dev_run:
-        raise Exception(
+    if getattr(trainer, "fast_dev_run", False):
+        raise RuntimeError(
             "Cannot use wandb callbacks since pytorch lightning disables "
             "loggers in `fast_dev_run=true` mode."
         )
 
     for logger in trainer.loggers:
-        if isinstance(logger, L.pytorch.loggers.WandbLogger):
+        if isinstance(logger, pl_loggers.WandbLogger):
             return logger
 
-    raise Exception(
-        "You are using wandb related callback, "
-        "but WandbLogger was not found for some reason..."
+    raise RuntimeError(
+        "You are using wandb related callback, but WandbLogger was not found for some reason..."
     )
 
 
 class LogIntermediatePredictions(L.Callback):
     """Visualize the model results at the end of every epoch."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Instantiates with wandb-logger.
         """
@@ -55,12 +57,20 @@ class LogIntermediatePredictions(L.Callback):
         how model evolves over time.
         """
         with torch.no_grad():
+            if wandb is None:
+                raise RuntimeError("wandb is required for LogIntermediatePredictions.")
+
             # Get WandB logger
             self.logger = get_wandb_logger(trainer=trainer)
 
             # get the val dataloader
-            val_dl = iter(trainer.val_dataloaders)
-            for i in range(6):
+            val_loaders = trainer.val_dataloaders
+            if val_loaders is None:
+                return
+            val_dl = iter(val_loaders)
+            datamodule = getattr(trainer, "datamodule")  # noqa: B009
+            clay_module = cast("Any", pl_module)
+            for _i in range(6):
                 batch = next(val_dl)
                 platform = batch["platform"][0]
 
@@ -70,12 +80,8 @@ class LogIntermediatePredictions(L.Callback):
                     if isinstance(v, torch.Tensor)
                 }
 
-                waves = torch.tensor(
-                    list(
-                        trainer.datamodule.metadata[platform].bands.wavelength.values()
-                    )
-                )
-                gsd = torch.tensor(trainer.datamodule.metadata[platform].gsd)
+                waves = torch.tensor(list(datamodule.metadata[platform].bands.wavelength.values()))
+                gsd = torch.tensor(datamodule.metadata[platform].gsd)
 
                 # ENCODER
                 (
@@ -83,7 +89,7 @@ class LogIntermediatePredictions(L.Callback):
                     unmasked_indices,
                     masked_indices,
                     masked_matrix,
-                ) = pl_module.model.encoder(
+                ) = clay_module.model.encoder(
                     {
                         "pixels": batch["pixels"],
                         "time": batch["time"],
@@ -94,7 +100,7 @@ class LogIntermediatePredictions(L.Callback):
                 )
 
                 # DECODER
-                pixels, waves = pl_module.model.decoder(
+                pixels, waves = clay_module.model.decoder(
                     encoded_unmasked_patches,
                     unmasked_indices,
                     masked_indices,
@@ -107,10 +113,10 @@ class LogIntermediatePredictions(L.Callback):
                 pixels = rearrange(
                     pixels,
                     "b (h w) (c p1 p2) -> b c (h p1) (w p2)",
-                    p1=pl_module.model.patch_size,
-                    p2=pl_module.model.patch_size,
-                    h=trainer.datamodule.size // pl_module.model.patch_size,
-                    w=trainer.datamodule.size // pl_module.model.patch_size,
+                    p1=clay_module.model.patch_size,
+                    p2=clay_module.model.patch_size,
+                    h=datamodule.size // clay_module.model.patch_size,
+                    w=datamodule.size // clay_module.model.patch_size,
                 )
 
                 assert pixels.shape == batch["pixels"].shape

@@ -18,20 +18,20 @@ git clone https://github.com/Clay-foundation/model.git
 cd model
 
 # Install in development mode with all extras
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 ```
 
 ### Verify Installation
 
 ```bash
 # Run the test suite
-pytest tests/ -v
+uv run pytest tests/ -v
 
 # Check linting
-ruff check claymodel/ tests/
+uv run ruff check claymodel/ tests/
 
 # Check formatting
-ruff format --check claymodel/ tests/
+uv run ruff format --check claymodel/ tests/
 ```
 
 ## Project Structure
@@ -40,7 +40,7 @@ ruff format --check claymodel/ tests/
 claymodel/
     __init__.py          # Package exports (lazy imports)
     api.py               # High-level API: embed(), load_model(), normalize()
-    cli.py               # CLI commands: clay embed, clay info, clay benchmark
+    cli.py               # `clay` commands: embed, info, benchmark
     model.py             # Core model: Encoder, Decoder, ClayMAE, factory functions
     module.py            # Lightning module: ClayMAEModule
     utils.py             # Utilities: position embeddings, weight loading
@@ -78,16 +78,16 @@ We use [ruff](https://docs.astral.sh/ruff/) for linting and formatting.
 
 ```bash
 # Check for lint errors
-ruff check claymodel/ tests/
+uv run ruff check claymodel/ tests/
 
 # Auto-fix fixable errors
-ruff check claymodel/ tests/ --fix
+uv run ruff check claymodel/ tests/ --fix
 
 # Check formatting
-ruff format --check claymodel/ tests/
+uv run ruff format --check claymodel/ tests/
 
 # Auto-format
-ruff format claymodel/ tests/
+uv run ruff format claymodel/ tests/
 ```
 
 Configuration is in `ruff.toml`. Key rules:

@@ -163,7 +163,7 @@ def test_full_mae_forward_decode_reconstruct(tiny_real_teacher_module):
     }
 
     with torch.no_grad():
-        encoded, decoded, mask, unmasked_idx, masked_idx = model(datacube)
+        encoded, decoded, mask, _unmasked_idx, _masked_idx = model(datacube)
 
     assert torch.isfinite(encoded).all()
     assert torch.isfinite(decoded).all()

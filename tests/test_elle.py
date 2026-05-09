@@ -2,6 +2,7 @@
 
 import tempfile
 
+import pytest
 import torch
 
 from claymodel.inference.elle import ELLEProbe
@@ -35,11 +36,8 @@ def test_elle_probe_save_load():
 
 def test_elle_probe_default_not_found():
     """Default probe should raise FileNotFoundError when weights aren't bundled."""
-    try:
+    with pytest.raises(FileNotFoundError):
         ELLEProbe.default()
-        assert False, "Should have raised FileNotFoundError"
-    except FileNotFoundError:
-        pass  # Expected
 
 
 def test_elle_probe_device_handling():

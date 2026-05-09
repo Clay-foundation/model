@@ -1,4 +1,4 @@
-"""Test CLI commands (A5 verification)."""
+"""Test `clay` CLI commands."""
 
 from click.testing import CliRunner
 
@@ -38,9 +38,7 @@ def test_info_unknown_sensor():
 
 def test_embed_missing_file():
     runner = CliRunner()
-    result = runner.invoke(
-        cli, ["embed", "nonexistent.tif", "--sensor", "s2", "--ckpt", "x.ckpt"]
-    )
+    result = runner.invoke(cli, ["embed", "nonexistent.tif", "--sensor", "s2", "--ckpt", "x.ckpt"])
     # click should catch the missing file before our code runs
     assert result.exit_code != 0
 

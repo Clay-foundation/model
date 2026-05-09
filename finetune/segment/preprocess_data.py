@@ -39,7 +39,7 @@ free to experiment with other chip sizes as well.
 
    Example:
    python preprocess_data.py data/cvpr/files data/cvpr/ny 224
-"""  # noqa E501
+"""  # noqa: E501
 
 import os
 import sys
@@ -49,7 +49,7 @@ import numpy as np
 import rasterio as rio
 
 
-def read_and_chip(file_path, chip_size, output_dir):
+def read_and_chip(file_path: str | Path, chip_size: int, output_dir: str | Path) -> None:
     """
     Reads a GeoTIFF file, creates chips of specified size, and saves them as
     numpy arrays.
@@ -82,7 +82,11 @@ def read_and_chip(file_path, chip_size, output_dir):
                 chip_number += 1
 
 
-def process_files(file_paths, output_dir, chip_size):
+def process_files(
+    file_paths: list[Path],
+    output_dir: str | Path,
+    chip_size: int,
+) -> None:
     """
     Processes a list of files, creating chips and saving them.
 
@@ -96,7 +100,7 @@ def process_files(file_paths, output_dir, chip_size):
         read_and_chip(file_path, chip_size, output_dir)
 
 
-def main():
+def main() -> None:
     """
     Main function to process files and create chips.
     Expects three command line arguments:

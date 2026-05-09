@@ -24,6 +24,4 @@ class PlatformMetadata(BaseModel):
 def load_metadata_yaml(path: str | Path) -> dict[str, PlatformMetadata]:
     """Load and validate metadata from a YAML file."""
     raw = yaml.safe_load(Path(path).read_text())
-    return {
-        name: PlatformMetadata.model_validate(config) for name, config in raw.items()
-    }
+    return {name: PlatformMetadata.model_validate(config) for name, config in raw.items()}

@@ -25,17 +25,21 @@ class ChesapeakeSegmentor(L.LightningModule):
         lr (float): Learning rate.
     """
 
-    def __init__(  # # noqa: PLR0913
+    def __init__(
         self,
-        num_classes,
-        ckpt_path,
-        lr,
-        wd,
-        b1,
-        b2,
-    ):
+        num_classes: int,
+        ckpt_path: str | None,
+        lr: float,
+        wd: float,
+        b1: float,
+        b2: float,
+    ) -> None:
         super().__init__()
         self.save_hyperparameters()  # Save hyperparameters for checkpointing
+        self.lr = lr
+        self.wd = wd
+        self.b1 = b1
+        self.b2 = b2
         self.model = Segmentor(
             num_classes=num_classes,
             ckpt_path=ckpt_path,
@@ -52,7 +56,7 @@ class ChesapeakeSegmentor(L.LightningModule):
             average="weighted",
         )
 
-    def forward(self, datacube):
+    def forward(self, datacube: dict[str, torch.Tensor]) -> torch.Tensor:
         """
         Forward pass through the segmentation model.
 
@@ -77,7 +81,7 @@ class ChesapeakeSegmentor(L.LightningModule):
             },
         )
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> dict[str, object]:  # ty: ignore[invalid-method-override]
         """
         Configure the optimizer and learning rate scheduler.
 
@@ -86,20 +90,16 @@ class ChesapeakeSegmentor(L.LightningModule):
             configuration.
         """
         optimizer = optim.AdamW(
-            [
-                param
-                for name, param in self.model.named_parameters()
-                if param.requires_grad
-            ],
-            lr=self.hparams.lr,
-            weight_decay=self.hparams.wd,
-            betas=(self.hparams.b1, self.hparams.b2),
+            [param for name, param in self.model.named_parameters() if param.requires_grad],
+            lr=self.lr,
+            weight_decay=self.wd,
+            betas=(self.b1, self.b2),
         )
         scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
             optimizer,
             T_0=100,
             T_mult=1,
-            eta_min=self.hparams.lr * 100,
+            eta_min=self.lr * 100,
             last_epoch=-1,
         )
         return {
@@ -110,7 +110,12 @@ class ChesapeakeSegmentor(L.LightningModule):
             },
         }
 
-    def shared_step(self, batch, batch_idx, phase):
+    def shared_step(
+        self,
+        batch: dict[str, torch.Tensor],
+        batch_idx: int,
+        phase: str,
+    ) -> torch.Tensor:
         """
         Shared step for training and validation.
 
@@ -165,7 +170,7 @@ class ChesapeakeSegmentor(L.LightningModule):
         )
         return loss
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> torch.Tensor:
         """
         Training step for the model.
 
@@ -178,7 +183,7 @@ class ChesapeakeSegmentor(L.LightningModule):
         """
         return self.shared_step(batch, batch_idx, "train")
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> torch.Tensor:
         """
         Validation step for the model.
 

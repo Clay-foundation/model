@@ -1,6 +1,7 @@
 """Shared test fixtures for Clay model tests."""
 
 from importlib.resources import files
+from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,9 +13,7 @@ from claymodel.module import ClayMAEModule
 
 
 def pytest_addoption(parser):
-    parser.addoption(
-        "--slow", action="store_true", default=False, help="Run slow tests"
-    )
+    parser.addoption("--slow", action="store_true", default=False, help="Run slow tests")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -105,11 +104,11 @@ def tiny_training_module():
 
     class MockTeacher(nn.Module):
         def forward(self, x):
-            return torch.randn(x.shape[0], teacher_dim)
+            return torch.randn(x.shape[0], cast(int, teacher_dim))  # noqa: TC006
 
     module.model.teacher = MockTeacher()
-    module.model.teacher_resize = nn.Identity()
-    module.log = MagicMock()
+    module.model.teacher_resize = nn.Identity()  # ty: ignore[invalid-assignment]
+    module.log = MagicMock()  # ty: ignore[invalid-assignment]
     return module
 
 
@@ -131,7 +130,7 @@ def tiny_real_teacher_module():
         teacher="samvit_base_patch16.sa1b",
     )
     module.model.teacher_resize = v2.Resize(size=(512, 512))
-    module.log = MagicMock()
+    module.log = MagicMock()  # ty: ignore[invalid-assignment]
     return module
 
 

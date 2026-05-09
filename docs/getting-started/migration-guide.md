@@ -6,7 +6,7 @@ This guide helps you migrate from the old development setup to the new pip-insta
 
 Clay Foundation Model is now available as a proper Python package called `claymodel`. This means:
 
-- ✅ **Easy installation**: `pip install git+https://github.com/Clay-foundation/model.git`
+- ✅ **Easy installation**: `uv pip install git+https://github.com/Clay-foundation/model.git`
 - ✅ **Clean imports**: `from claymodel.module import ClayMAEModule`
 - ✅ **Better distribution**: No need to clone the entire repository for inference
 
@@ -27,7 +27,7 @@ from claymodel import ClayMAEModule, load_metadata
 # Or the explicit submodule path:
 from claymodel.module import ClayMAEModule
 from claymodel.model import Encoder
-# Training imports (requires pip install claymodel[train]):
+# Training imports (requires `uv pip install "claymodel[train]"`):
 from training.datamodule import ClayDataModule
 ```
 
@@ -39,7 +39,7 @@ If you just want to use pretrained Clay models for generating embeddings:
 
 ```bash
 # Install the package
-pip install git+https://github.com/Clay-foundation/model.git
+uv pip install git+https://github.com/Clay-foundation/model.git
 
 # Download weights
 wget https://huggingface.co/made-with-clay/Clay/resolve/main/v1.5/clay-v1.5.ckpt
@@ -55,7 +55,7 @@ git clone https://github.com/Clay-foundation/model.git
 cd model
 
 # Install in development mode
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 ```
 
 ## Code Migration Examples
@@ -102,7 +102,7 @@ Training workflows require the full development environment:
 from src.datamodule import ClayDataModule
 from src.module import ClayMAEModule
 
-# After (development install, requires pip install claymodel[train])
+# After (development install, requires `uv pip install "claymodel[train]"`)
 from training.datamodule import ClayDataModule
 from claymodel.module import ClayMAEModule
 ```
@@ -124,9 +124,9 @@ For the simplest embedding workflow, use the new API: `from claymodel import emb
 
 If you see `ModuleNotFoundError: No module named 'claymodel'`:
 
-1. Ensure you've installed the package: `pip install git+https://github.com/Clay-foundation/model.git`
+1. Ensure you've installed the package: `uv pip install git+https://github.com/Clay-foundation/model.git`
 2. Restart your Python kernel/session
-3. Check installation: `pip list | grep claymodel`
+3. Check installation: `uv pip show claymodel`
 
 ### Old Notebooks
 
@@ -143,7 +143,7 @@ For development work, you still need the full repository:
 ```bash
 git clone https://github.com/Clay-foundation/model.git
 cd model
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 ```
 
 ## Benefits of Migration

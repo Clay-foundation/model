@@ -5,7 +5,7 @@ Get started with Clay Foundation Model in 5 minutes!
 ## 1. Install
 
 ```bash
-pip install git+https://github.com/Clay-foundation/model.git
+uv pip install git+https://github.com/Clay-foundation/model.git
 ```
 
 ## 2. Download Weights

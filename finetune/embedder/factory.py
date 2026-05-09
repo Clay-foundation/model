@@ -33,6 +33,7 @@ python -m finetune.embedder.factory \
 import argparse
 import warnings
 from pathlib import Path
+from typing import Any
 
 import torch
 from einops import repeat
@@ -50,14 +51,14 @@ class EmbeddingEncoder(Encoder):
 
     def __init__(  # noqa: PLR0913
         self,
-        img_size,
-        patch_size,
-        dim,
-        depth,
-        heads,
-        dim_head,
-        mlp_ratio,
-    ):
+        img_size: int,
+        patch_size: int,
+        dim: int,
+        depth: int,
+        heads: int,
+        dim_head: int,
+        mlp_ratio: float,
+    ) -> None:
         super().__init__(
             mask_ratio=0.0,
             shuffle=False,
@@ -74,9 +75,15 @@ class EmbeddingEncoder(Encoder):
         self.grid_size = img_size // patch_size
         self.num_patches = self.grid_size**2
 
-    def add_encodings(self, patches, time, latlon, gsd):
+    def add_encodings(
+        self,
+        patches: torch.Tensor,
+        time: torch.Tensor,
+        latlon: torch.Tensor,
+        gsd: torch.Tensor,
+    ) -> torch.Tensor:
         """Add position encoding to the patches"""
-        B, L, D = patches.shape
+        B, L, _ = patches.shape
 
         grid_size = self.grid_size
 
@@ -95,15 +102,11 @@ class EmbeddingEncoder(Encoder):
 
         pos_encoding = repeat(pos_encoding, "L D -> B L D", B=B)  # [B L (D - 8)]
         time_latlon = repeat(time_latlon, "B D -> B L D", L=L)  # [B L 8]
-        pos_metadata_encoding = torch.cat(
-            (pos_encoding, time_latlon), dim=-1
-        )  # [B L D]
+        pos_metadata_encoding = torch.cat((pos_encoding, time_latlon), dim=-1)  # [B L D]
 
-        patches = patches + pos_metadata_encoding  # [B L D] + [B L D] -> [B L D]
-        return patches  # [B L D]
+        return patches + pos_metadata_encoding  # [B L D] + [B L D] -> [B L D]
 
-    # def forward(self, cube, time, latlon, waves, gsd):
-    def forward(self, datacube):
+    def forward(self, datacube: dict[str, torch.Tensor]) -> torch.Tensor:  # ty: ignore[invalid-method-override]
         cube, time, latlon, gsd, waves = (
             datacube["pixels"],  # [B C H W]
             datacube["time"],  # [B 2]
@@ -111,7 +114,7 @@ class EmbeddingEncoder(Encoder):
             datacube["gsd"],  # 1
             datacube["waves"],  # [N]
         )  # [B C H W]
-        B, C, H, W = cube.shape
+        B = cube.shape[0]
 
         patches, _ = self.to_patch_embed(
             cube, waves
@@ -133,36 +136,35 @@ class EmbeddingEncoder(Encoder):
         patches = self.transformer(patches)  # [B (1 + L) D]
 
         # get the cls token
-        embeddings = patches[:, 0, :]  # [B D]
-
-        return embeddings
+        return patches[:, 0, :]  # [B D]
 
 
 class Embedder(nn.Module):
-    def __init__(self, img_size=256, ckpt_path=None, device="cpu"):
+    def __init__(
+        self,
+        img_size: int = 256,
+        ckpt_path: str | None = None,
+        device: str = "cpu",
+    ) -> None:
         super().__init__()
-        self.clay_encoder = (
-            EmbeddingEncoder(  # Default parameters for the Clay base model
-                img_size=img_size,
-                patch_size=8,
-                dim=1024,
-                depth=24,
-                heads=16,
-                dim_head=64,
-                mlp_ratio=4.0,
-            ).to(device)
-        )
+        self.clay_encoder = EmbeddingEncoder(  # Default parameters for the Clay base model
+            img_size=img_size,
+            patch_size=8,
+            dim=1024,
+            depth=24,
+            heads=16,
+            dim_head=64,
+            mlp_ratio=4.0,
+        ).to(device)
         self.img_size = img_size
         self.device = torch.device(device)
         if ckpt_path:
-            load_encoder_weights(self.clay_encoder, ckpt_path, device=self.device)
+            load_encoder_weights(self.clay_encoder, ckpt_path, device=str(self.device))
 
-    def forward(self, datacube):
-        embeddings = self.clay_encoder(datacube)
+    def forward(self, datacube: dict[str, torch.Tensor]) -> torch.Tensor:
+        return self.clay_encoder(datacube)
 
-        return embeddings
-
-    def fake_datacube(self):
+    def fake_datacube(self) -> dict[str, torch.Tensor]:
         "Generate a fake datacube for model export."
         dummy_datacube = {
             "pixels": torch.randn(2, 3, self.img_size, self.img_size),
@@ -171,17 +173,16 @@ class Embedder(nn.Module):
             "waves": torch.randn(3),
             "gsd": torch.randn(1),
         }
-        dummy_datacube = {k: v.to(self.device) for k, v in dummy_datacube.items()}
-        return dummy_datacube
+        return {k: v.to(self.device) for k, v in dummy_datacube.items()}
 
-    def export_to_onnx(self, name):
+    def export_to_onnx(self, name: str) -> Any:
         "Save the model to ONNX format."
 
         datacube = self.fake_datacube()
-        export_options = torch.onnx.ExportOptions(dynamic_shapes=True)
+        export_options = torch.onnx.ExportOptions(dynamic_shapes=True)  # ty: ignore[unresolved-attribute]
 
         # Export the model to ONNX format
-        onnx_program = torch.onnx.dynamo_export(
+        onnx_program = torch.onnx.dynamo_export(  # ty: ignore[unresolved-attribute]
             self.eval(), datacube, export_options=export_options
         )
 
@@ -191,7 +192,7 @@ class Embedder(nn.Module):
 
         return onnx_program
 
-    def export_to_torchep(self, name):
+    def export_to_torchep(self, name: str) -> Any:
         "Save the model to pytorch ExportedProgram format."
 
         datacube = self.fake_datacube()
@@ -219,9 +220,7 @@ class Embedder(nn.Module):
 
         # Save the exported model
         torch.export.save(ep, f"checkpoints/compiled/{name}")
-        print(
-            f"Model exported to pytorch ExportedProgram format: checkpoints/compiled/{name}"  # noqa: E501
-        )
+        print(f"Model exported to pytorch ExportedProgram format: checkpoints/compiled/{name}")
 
         return ep
 

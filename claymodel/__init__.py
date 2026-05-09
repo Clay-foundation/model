@@ -1,15 +1,4 @@
-"""
-Clay Foundation Model - An open source AI model and interface for Earth observation.
-
-This package provides tools for working with satellite imagery and Earth
-observation data using foundation models built on Vision Transformers.
-
-Example usage:
-    from claymodel import ClayMAEModule, load_metadata
-
-    metadata = load_metadata()
-    model = ClayMAEModule(model_size="large")
-"""
+"""Clay model package exports."""
 
 from importlib.metadata import version
 
@@ -23,13 +12,13 @@ __version__: str = version("claymodel")
 
 __all__ = [
     "ClayMAEModule",
+    "PlatformMetadata",
     "clay_mae_base",
     "clay_mae_large",
     "clay_mae_small",
     "clay_mae_tiny",
-    "PlatformMetadata",
+    "embed",
     "load_metadata",
     "load_model",
-    "embed",
     "normalize",
 ]

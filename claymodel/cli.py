@@ -1,14 +1,4 @@
-"""
-Clay Foundation Model CLI.
-
-Usage:
-    clay embed image.tif --sensor sentinel-2-l2a --ckpt clay-v1.5.ckpt
-    clay info
-    clay info --sensor sentinel-1-rtc
-    clay benchmark
-
-Requires the [cli] extras: pip install claymodel[cli]
-"""
+"""Clay model CLI."""
 
 import time as time_mod
 
@@ -30,9 +20,7 @@ def cli() -> None:
 @click.argument("input_path", type=click.Path(exists=True))
 @click.option("--sensor", required=True, help="Sensor name (e.g., sentinel-2-l2a)")
 @click.option("--ckpt", required=True, help="Path to Clay checkpoint file")
-@click.option(
-    "--output", "-o", default=None, help="Output path (.parquet or .geoparquet)"
-)
+@click.option("--output", "-o", default=None, help="Output path (.parquet or .geoparquet)")
 @click.option("--device", default="cpu", help="Device (cpu, cuda, etc.)")
 @click.option(
     "--metadata",
@@ -48,23 +36,12 @@ def embed(
     device: str,
     metadata: str | None,
 ) -> None:
-    """Generate embeddings from a GeoTIFF file.
-
-    Reads the input file, normalizes using sensor-specific statistics,
-    runs the Clay encoder, and outputs embeddings.
-
-    Example:
-        clay embed image.tif --sensor sentinel-2-l2a --ckpt clay-v1.5.ckpt
-        clay embed image.tif --sensor my-sensor --ckpt model.ckpt \\
-            --metadata my_sensors.yaml
-    """
+    """Generate embeddings from a GeoTIFF."""
     click.echo(f"Embedding {input_path} (sensor={sensor}, device={device})")
 
     meta = load_metadata(metadata) if metadata else None
     start = time_mod.perf_counter()
-    result = embed_fn(
-        input_path, sensor=sensor, ckpt_path=ckpt, device=device, metadata=meta
-    )
+    result = embed_fn(input_path, sensor=sensor, ckpt_path=ckpt, device=device, metadata=meta)
     elapsed = time_mod.perf_counter() - start
 
     click.echo(f"Embeddings shape: {result.shape} ({elapsed:.2f}s)")
@@ -77,15 +54,7 @@ def embed(
 @cli.command()
 @click.option("--sensor", default=None, help="Show details for a specific sensor")
 def info(sensor: str | None) -> None:
-    """Show model and sensor information.
-
-    Without --sensor, lists all supported sensors.
-    With --sensor, shows band details, wavelengths, and normalization stats.
-
-    Example:
-        clay info
-        clay info --sensor sentinel-2-l2a
-    """
+    """Show model and sensor information."""
     metadata = load_metadata()
 
     if sensor:
@@ -124,22 +93,13 @@ def info(sensor: str | None) -> None:
 @click.option("--device", default="cpu", help="Device (cpu, cuda)")
 @click.option("--size", default=64, type=int, help="Chip size for benchmark")
 def benchmark(device: str, size: int) -> None:
-    """Run a smoke test and print timing.
-
-    Creates a tiny model with random weights, runs a forward pass,
-    and reports timing and PASS/FAIL status. No checkpoint needed.
-
-    Example:
-        clay benchmark
-        clay benchmark --device cuda --size 256
-    """
+    """Run a smoke test and print timing."""
     click.echo(f"Running benchmark (device={device}, chip_size={size})")
 
     metadata = load_metadata()
     sensor = "sentinel-2-l2a"
     n_bands = len(metadata[sensor].band_order)
 
-    # Create tiny encoder (random weights, no checkpoint)
     encoder = Encoder(
         mask_ratio=0.0,
         patch_size=8,
@@ -152,9 +112,7 @@ def benchmark(device: str, size: int) -> None:
     ).to(device)
     encoder.eval()
 
-    waves = torch.tensor(
-        list(metadata[sensor].bands.wavelength.values()), device=device
-    )
+    waves = torch.tensor(list(metadata[sensor].bands.wavelength.values()), device=device)
 
     datacube = {
         "pixels": torch.randn(1, n_bands, size, size, device=device),
@@ -164,11 +122,9 @@ def benchmark(device: str, size: int) -> None:
         "waves": waves,
     }
 
-    # Warmup
     with torch.no_grad():
         encoder(datacube)
 
-    # Benchmark
     n_runs = 10
     start = time_mod.perf_counter()
     with torch.no_grad():
@@ -186,7 +142,6 @@ def benchmark(device: str, size: int) -> None:
     click.echo(f"  Avg time: {avg_ms:.1f}ms ({n_runs} runs)")
     click.echo(f"  Device: {device}")
 
-    # Sanity checks
     passed = True
     if cls_embedding.shape != (1, 192):
         click.echo(f"  FAIL: Expected shape [1, 192], got {list(cls_embedding.shape)}")

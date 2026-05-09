@@ -13,27 +13,24 @@ References:
 from lightning.pytorch.cli import LightningCLI
 
 from finetune.segment.chesapeake_datamodule import (
-    ChesapeakeDataModule,  # noqa: F401
+    ChesapeakeDataModule,
 )
 from finetune.segment.chesapeake_model import (
-    ChesapeakeSegmentor,  # noqa: F401
+    ChesapeakeSegmentor,
 )
 
 
-# %%
-def cli_main():
+def cli_main() -> LightningCLI:
     """
     Command-line inteface to run Segmentation Model with ChesapeakeDataModule.
     """
-    cli = LightningCLI(
+    return LightningCLI(
         ChesapeakeSegmentor,
         ChesapeakeDataModule,
         save_config_kwargs={"overwrite": True},
     )
-    return cli
 
 
-# %%
 if __name__ == "__main__":
     cli_main()
 

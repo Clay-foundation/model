@@ -6,10 +6,10 @@ https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/simple_vit.py
 """
 
 __all__ = [
+    "load_encoder_weights",
     "posemb_sincos_1d",
     "posemb_sincos_2d",
     "posemb_sincos_2d_with_gsd",
-    "load_encoder_weights",
 ]
 
 import re
@@ -40,13 +40,15 @@ def posemb_sincos_2d_with_gsd(
     h: int,
     w: int,
     dim: int,
-    gsd: torch.Tensor = torch.tensor(1.0),
+    gsd: torch.Tensor | None = None,
     temperature: int = 10000,
     dtype: torch.dtype = torch.float32,
 ) -> torch.Tensor:
     y, x = torch.meshgrid(torch.arange(h), torch.arange(w), indexing="ij")
     assert (dim % 4) == 0, "feature dimension must be multiple of 4 for sincos emb"
 
+    if gsd is None:
+        gsd = torch.tensor(1.0)
     gsd = gsd.to(x.device)
     omega = torch.arange(dim // 4) / (dim // 4 - 1)
     omega = 1.0 / (temperature ** (2 * omega / dim)) * (gsd / 1.0)  # Adjusted for g
@@ -119,9 +121,7 @@ def posemb_sincos_1d(
     temperature: int = 10000,
     dtype: torch.dtype = torch.float32,
 ) -> torch.Tensor:
-    assert dim % 2 == 0, (
-        "Feature dimension must be a multiple of 2 for sincos embedding"
-    )
+    assert dim % 2 == 0, "Feature dimension must be a multiple of 2 for sincos embedding"
     waves = torch.arange(waves) if isinstance(waves, int) else waves
 
     omega = torch.arange(dim // 2, device=waves.device) / (dim // 2 - 1)

@@ -2,6 +2,7 @@
 
 import random
 from importlib.resources import files
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -16,7 +17,7 @@ def _bundled_metadata_path():
     return str(files("claymodel").joinpath("configs/metadata.yaml"))
 
 
-def _make_module(**overrides):
+def _make_module(**overrides: object):
     defaults = {
         "model_size": "tiny",
         "mask_ratio": 0.75,
@@ -25,17 +26,17 @@ def _make_module(**overrides):
         "teacher": "samvit_base_patch16.sa1b",
     }
     defaults.update(overrides)
-    module = ClayMAEModule(**defaults)
+    module = ClayMAEModule(**cast(Any, defaults))  # noqa: TC006
 
     # Mock the teacher to avoid input size constraints
     teacher_dim = module.model.teacher.num_features
 
     class MockTeacher(nn.Module):
         def forward(self, x):
-            return torch.randn(x.shape[0], teacher_dim)
+            return torch.randn(x.shape[0], cast(int, teacher_dim))  # noqa: TC006
 
     module.model.teacher = MockTeacher()
-    module.model.teacher_resize = nn.Identity()
+    module.model.teacher_resize = nn.Identity()  # ty: ignore[invalid-assignment]
     return module
 
 
@@ -181,9 +182,7 @@ def test_sentinel1_rgb_construction():
 
 def test_matryoshka_training_step():
     """Training step works with matryoshka=True."""
-    module = _make_module(
-        matryoshka=True, dolls=[16, 32, 64, 128], doll_weights=[1, 1, 1, 1]
-    )
+    module = _make_module(matryoshka=True, dolls=[16, 32, 64, 128], doll_weights=[1, 1, 1, 1])
     module.log = MagicMock()
 
     batch = _make_batch()
