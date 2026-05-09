@@ -3,7 +3,7 @@ __all__ = ["ClayMAEModule"]
 import random
 from collections.abc import Mapping
 from importlib.resources import files
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import lightning as L
 import torch
@@ -44,7 +44,6 @@ class ClayMAEModule(L.LightningModule):
         wd: float = 0.05,
         b1: float = 0.9,
         b2: float = 0.95,
-        embeddings_level: Literal["mean", "patch", "group"] = "mean",
     ) -> None:
         super().__init__()
         if metadata_path is None:

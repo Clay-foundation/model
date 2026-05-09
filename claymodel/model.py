@@ -193,11 +193,11 @@ class Encoder(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         cube, time, latlon, gsd, waves = (
             datacube["pixels"],  # [B C H W]
-            datacube["time"],  # [B 2]
-            datacube["latlon"],  # [B 2]
-            datacube["gsd"],  # 1
-            datacube["waves"],  # [N]
-        )  # [B C H W]
+            datacube["time"],  # [B 4]
+            datacube["latlon"],  # [B 4]
+            datacube["gsd"],  # scalar tensor
+            datacube["waves"],  # [C]
+        )
 
         B = cube.shape[0]
 

@@ -125,7 +125,7 @@ def embed(  # noqa: PLR0913
     latlon: torch.Tensor | None = None,
     metadata: dict[str, PlatformMetadata] | None = None,
 ) -> EmbeddingResult:
-    """Embed pixels or a GeoTIFF with a Clay model."""
+    """Embed pixels with a Clay model."""
     if metadata is None:
         metadata = load_metadata()
 
