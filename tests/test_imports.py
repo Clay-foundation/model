@@ -6,10 +6,6 @@ import claymodel
 from claymodel import (
     Encoder,
     __version__,
-    clay_mae_base,
-    clay_mae_large,
-    clay_mae_small,
-    clay_mae_tiny,
     load_metadata,
 )
 from claymodel.inference import DeterministicInference, PatchAnalyzer
@@ -32,6 +28,9 @@ def test_import_clay_data_module():
 
 
 def test_import_factory_functions():
+    """Factory functions are accessible from claymodel.model, not top-level."""
+    from claymodel.model import clay_mae_base, clay_mae_large, clay_mae_small, clay_mae_tiny
+
     assert callable(clay_mae_tiny)
     assert callable(clay_mae_small)
     assert callable(clay_mae_base)
