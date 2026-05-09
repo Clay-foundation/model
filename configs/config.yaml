@@ -27,7 +27,6 @@ model:
   wd: 0.05
   b1: 0.9
   b2: 0.95
-  embeddings_level: mean
 trainer:
   accelerator: gpu
   strategy: ddp
