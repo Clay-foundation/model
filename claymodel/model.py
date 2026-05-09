@@ -6,11 +6,9 @@ __all__ = [
     "clay_mae_large",
     "clay_mae_small",
     "clay_mae_tiny",
-    "configure_training_defaults",
 ]
 
 import math
-import os
 from typing import TYPE_CHECKING, Any, cast
 
 import timm
@@ -29,17 +27,6 @@ if TYPE_CHECKING:
     from claymodel.metadata import PlatformMetadata
 
 Datacube = dict[str, torch.Tensor]
-
-
-def configure_training_defaults() -> None:
-    """Set global defaults for training performance.
-
-    Called by the training entrypoint (trainer.py / LightningCLI).
-    Not called during inference — inference users should not have their
-    global torch settings modified by importing claymodel.
-    """
-    torch.set_float32_matmul_precision("medium")
-    os.environ["TORCH_CUDNN_V8_API_DISABLED"] = "1"
 
 
 class Encoder(nn.Module):

@@ -15,10 +15,10 @@ from claymodel.model import (
     clay_mae_large,
     clay_mae_small,
     clay_mae_tiny,
-    configure_training_defaults,
 )
 from claymodel.module import ClayMAEModule
 from tests.conftest import make_datacube, make_metadata, make_tiny_encoder
+from training import configure_training_defaults
 
 
 def test_encoder_output_shape():

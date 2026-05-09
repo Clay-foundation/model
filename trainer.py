@@ -2,8 +2,8 @@
 
 from lightning.pytorch.cli import LightningCLI
 
-from claymodel.model import configure_training_defaults
 from claymodel.module import ClayMAEModule
+from training import configure_training_defaults
 from training.datamodule import ClayDataModule
 
 configure_training_defaults()
