@@ -9,84 +9,11 @@ Paper URL: https://arxiv.org/abs/2105.15203
 
 import torch
 import torch.nn.functional as F
-from einops import rearrange, repeat
+from einops import rearrange
 from torch import nn
 
 from claymodel.model import Encoder
 from claymodel.utils import load_encoder_weights
-
-
-class SegmentEncoder(Encoder):
-    """
-    Encoder class for segmentation tasks, incorporating a feature pyramid
-    network (FPN).
-
-    Attributes:
-        feature_maps (list): Indices of layers to be used for generating
-        feature maps.
-        ckpt_path (str): Path to the clay checkpoint file.
-    """
-
-    def __init__(  # noqa: PLR0913
-        self,
-        mask_ratio: float,
-        patch_size: int,
-        shuffle: bool,
-        dim: int,
-        depth: int,
-        heads: int,
-        dim_head: int,
-        mlp_ratio: float,
-        ckpt_path: str | None = None,
-    ) -> None:
-        super().__init__(
-            mask_ratio,
-            patch_size,
-            shuffle,
-            dim,
-            depth,
-            heads,
-            dim_head,
-            mlp_ratio,
-        )
-
-        # Set device
-        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        # Load model from checkpoint if provided
-        if ckpt_path:
-            load_encoder_weights(self, ckpt_path, device=str(self.device))
-
-    def forward(self, datacube: dict[str, torch.Tensor]) -> torch.Tensor:  # ty: ignore[invalid-method-override]
-        """
-        Forward pass of the SegmentEncoder.
-
-        Args:
-            datacube (dict): A dictionary containing the input datacube and
-                meta information like time, latlon, gsd & wavelenths.
-
-        Returns:
-            list: A list of feature maps extracted from the datacube.
-        """
-        cube, time, latlon, gsd, waves = (
-            datacube["pixels"],  # [B C H W]
-            datacube["time"],  # [B 2]
-            datacube["latlon"],  # [B 2]
-            datacube["gsd"],  # 1
-            datacube["waves"],  # [N]
-        )
-
-        B = cube.shape[0]
-
-        # Patchify and create embeddings per patch
-        patches, _ = self.to_patch_embed(cube, waves)  # [B L D]
-        patches = self.add_encodings(patches, time, latlon, gsd)  # [B L D]
-
-        # Add class tokens
-        cls_tokens = repeat(self.cls_token, "1 1 D -> B 1 D", B=B)  # [B 1 D]
-        patches = torch.cat((cls_tokens, patches), dim=1)  # [B (1 + L) D]
-
-        patches = self.transformer(patches)
-        return patches[:, 1:, :]  # [B L D]
 
 
 class Segmentor(nn.Module):
@@ -102,8 +29,8 @@ class Segmentor(nn.Module):
 
     def __init__(self, num_classes: int, ckpt_path: str | None) -> None:
         super().__init__()
-        # Default values are for the clay mae base model.
-        self.encoder = SegmentEncoder(
+        # Default values are for the clay mae large model.
+        self.encoder = Encoder(
             mask_ratio=0.0,
             patch_size=8,
             shuffle=False,
@@ -112,8 +39,12 @@ class Segmentor(nn.Module):
             heads=16,
             dim_head=64,
             mlp_ratio=4.0,
-            ckpt_path=ckpt_path,
         )
+
+        # Set device and load pretrained weights
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        if ckpt_path:
+            load_encoder_weights(self.encoder, ckpt_path, device=str(device))
 
         # Freeze the encoder parameters
         for param in self.encoder.parameters():
@@ -147,8 +78,9 @@ class Segmentor(nn.Module):
         cube = datacube["pixels"]  # [B C H_in W_in]
         _, _, H_in, W_in = cube.shape
 
-        # Get embeddings from the encoder
-        patches = self.encoder(datacube)  # [B, L, D]
+        # Get embeddings from the encoder (strip CLS token)
+        encoded, *_ = self.encoder(datacube)
+        patches = encoded[:, 1:, :]  # [B, L, D]
 
         # Reshape embeddings to [B, D, H', W']
         H_patches = H_in // self.encoder.patch_size
