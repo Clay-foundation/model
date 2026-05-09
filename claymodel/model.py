@@ -1,5 +1,6 @@
 __all__ = [
     "ClayMAE",
+    "Datacube",
     "Decoder",
     "Encoder",
     "clay_mae_base",
@@ -9,7 +10,7 @@ __all__ = [
 ]
 
 import math
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 import timm
 import torch
@@ -26,7 +27,22 @@ from claymodel.utils import posemb_sincos_2d_with_gsd
 if TYPE_CHECKING:
     from claymodel.metadata import PlatformMetadata
 
-Datacube = dict[str, torch.Tensor]
+
+class Datacube(TypedDict):
+    """Input format for Clay encoder/decoder.
+
+    pixels:  [B, C, H, W] normalized pixel values. H and W must be divisible by patch_size (8).
+    time:    [B, 4] encoded temporal information.
+    latlon:  [B, 4] encoded spatial coordinates.
+    gsd:     scalar tensor, ground sample distance in meters.
+    waves:   [C] per-band wavelengths in micrometers.
+    """
+
+    pixels: torch.Tensor
+    time: torch.Tensor
+    latlon: torch.Tensor
+    gsd: torch.Tensor
+    waves: torch.Tensor
 
 
 class Encoder(nn.Module):

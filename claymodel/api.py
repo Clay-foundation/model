@@ -144,6 +144,19 @@ def embed(  # noqa: PLR0913
         raise ValueError(f"Unknown sensor {sensor!r}. Available: {list(metadata.keys())}")
 
     sensor_meta = metadata[sensor]
+    expected_bands = len(sensor_meta.band_order)
+    actual_bands = pixels.shape[1]
+    if actual_bands != expected_bands:
+        raise ValueError(
+            f"Expected {expected_bands} bands for {sensor!r}, got {actual_bands}. "
+            f"Band order: {sensor_meta.band_order}"
+        )
+
+    _, _, H, W = pixels.shape
+    patch_size = 8
+    if H % patch_size != 0 or W % patch_size != 0:
+        raise ValueError(f"Spatial dims must be divisible by {patch_size}, got ({H}, {W})")
+
     pixels = pixels.to(device)
 
     if sensor == "sentinel-1-rtc":
