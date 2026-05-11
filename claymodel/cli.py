@@ -1,12 +1,24 @@
 """Clay model CLI."""
 
-import time as time_mod
+import importlib.util
 
 import click
-import torch
 
-from claymodel.api import load_metadata
-from claymodel.model import Encoder
+from claymodel.api import load_metadata, load_model
+
+
+def _check_inference_deps() -> None:
+    """Check that inference optional dependencies are installed."""
+    missing = [
+        pkg
+        for pkg in ("rustac", "lazycogs", "geopandas", "shapely")
+        if importlib.util.find_spec(pkg) is None
+    ]
+    if missing:
+        raise click.ClickException(
+            f"Missing inference dependencies: {', '.join(missing)}\n"
+            "Install them with: pip install claymodel[inference]"
+        )
 
 
 @click.group()
@@ -54,74 +66,102 @@ def info(sensor: str | None) -> None:
 
 
 @cli.command()
-@click.option("--device", default="cpu", help="Device (cpu, cuda)")
-@click.option("--size", default=64, type=int, help="Chip size for benchmark")
-def benchmark(device: str, size: int) -> None:
-    """Run a smoke test and print timing."""
-    click.echo(f"Running benchmark (device={device}, chip_size={size})")
+@click.argument("scene_id")
+@click.option("--ckpt", required=True, help="Path to Clay checkpoint file")
+@click.option(
+    "--size",
+    default="large",
+    type=click.Choice(["tiny", "small", "base", "large"]),
+    help="Model size (default: large)",
+)
+@click.option("--device", default="cpu", help="Device for inference (cpu, cuda)")
+@click.option("--chip-size", default=256, type=int, help="Chip size in pixels (default: 256)")
+@click.option("--batch-size", default=16, type=int, help="Chips per batch (default: 16)")
+@click.option("--resolution", default=10.0, type=float, help="Target resolution in meters")
+@click.option("--output", default=None, help="Output GeoParquet path")
+def embed(
+    scene_id: str,
+    ckpt: str,
+    size: str,
+    device: str,
+    chip_size: int,
+    batch_size: int,
+    resolution: float,
+    output: str | None,
+) -> None:
+    """Generate Clay embeddings for a Sentinel-2 scene.
 
-    metadata = load_metadata()
-    sensor = "sentinel-2-l2a"
-    n_bands = len(metadata[sensor].band_order)
+    SCENE_ID is a Sentinel-2 scene identifier from Earth Search STAC
+    (e.g. S2A_MSIL2A_20240101T100321_N0510_R122_T33UUP_20240101T120401).
 
-    encoder = Encoder(
-        mask_ratio=0.0,
-        patch_size=8,
-        shuffle=False,
-        dim=192,
-        depth=2,
-        heads=4,
-        dim_head=48,
-        mlp_ratio=2,
-    ).to(device)
-    encoder.eval()
+    Searches Earth Search, loads COG bands via lazycogs, chips into patches,
+    runs the Clay encoder, and saves embeddings as GeoParquet.
 
-    waves = torch.tensor(list(metadata[sensor].bands.wavelength.values()), device=device)
+    Requires: pip install claymodel[inference]
+    """
+    _check_inference_deps()
 
-    datacube = {
-        "pixels": torch.randn(1, n_bands, size, size, device=device),
-        "time": torch.zeros(1, 4, device=device),
-        "latlon": torch.zeros(1, 4, device=device),
-        "gsd": torch.tensor(10.0, device=device),
-        "waves": waves,
-    }
+    from claymodel.inference.pipeline import (
+        generate_embeddings,
+        load_scene,
+        save_embeddings_geoparquet,
+        search_scene,
+    )
 
-    with torch.no_grad():
-        encoder(datacube)
+    click.echo(f"Scene: {scene_id}")
+    click.echo(f"Model: {size} (checkpoint: {ckpt})")
+    click.echo(f"Device: {device}")
+    click.echo(f"Chip size: {chip_size}px at {resolution}m resolution")
+    click.echo()
 
-    n_runs = 10
-    start = time_mod.perf_counter()
-    with torch.no_grad():
-        for _ in range(n_runs):
-            encoded, *_ = encoder(datacube)
-    elapsed = time_mod.perf_counter() - start
+    click.echo("Searching Earth Search STAC...")
+    try:
+        search_result = search_scene(scene_id)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
-    avg_ms = (elapsed / n_runs) * 1000
-    cls_embedding = encoded[:, 0, :]
+    click.echo(f"  Found scene: {search_result.scene_id}")
+    click.echo(f"  Date: {search_result.datetime}")
+    click.echo(f"  EPSG: {search_result.epsg}")
+    if search_result.cloud_cover is not None:
+        click.echo(f"  Cloud cover: {search_result.cloud_cover:.1f}%")
+    click.echo()
 
-    click.echo("\nResults:")
+    click.echo("Loading scene bands via lazycogs...")
+    pixels = load_scene(search_result, resolution=resolution)
+
+    _C, H, W = pixels.shape
+    n_chips = (H // chip_size) * (W // chip_size)
+    click.echo(f"  Image size: {_C} bands x {H} x {W} pixels")
+    click.echo(f"  Chips: {n_chips} ({H // chip_size} rows x {W // chip_size} cols)")
+    click.echo()
+
+    click.echo("Loading Clay encoder...")
+    encoder = load_model(size=size, ckpt_path=ckpt, device=device)
     click.echo(f"  Encoder dim: {encoder.dim}")
-    click.echo(f"  Input: [{1}, {n_bands}, {size}, {size}]")
-    click.echo(f"  Output CLS: {list(cls_embedding.shape)}")
-    click.echo(f"  Avg time: {avg_ms:.1f}ms ({n_runs} runs)")
-    click.echo(f"  Device: {device}")
+    click.echo()
 
-    passed = True
-    if cls_embedding.shape != (1, 192):
-        click.echo(f"  FAIL: Expected shape [1, 192], got {list(cls_embedding.shape)}")
-        passed = False
-    if torch.isnan(cls_embedding).any():
-        click.echo("  FAIL: NaN in output")
-        passed = False
-    if torch.isinf(cls_embedding).any():
-        click.echo("  FAIL: Inf in output")
-        passed = False
+    click.echo("Generating embeddings...")
+    chips = generate_embeddings(
+        pixels=pixels,
+        encoder=encoder,
+        search_result=search_result,
+        chip_size=chip_size,
+        batch_size=batch_size,
+        device=device,
+        resolution=resolution,
+    )
+    click.echo(f"  Generated {len(chips)} embeddings of dim {chips[0].embedding.shape[0]}")
+    click.echo()
 
-    if passed:
-        click.echo("\n  PASS")
-    else:
-        click.echo("\n  FAIL")
-        raise SystemExit(1)
+    click.echo("Saving to GeoParquet...")
+    output_path = save_embeddings_geoparquet(
+        chips,
+        output or f"{scene_id}_embeddings.parquet",
+    )
+    click.echo(f"  Saved to: {output_path}")
+    click.echo()
+    click.echo("Done.")
 
 
 if __name__ == "__main__":

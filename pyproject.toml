@@ -20,12 +20,11 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license-files = ["LICENSE"]
 dependencies = [
     "click>=8.1",
@@ -52,8 +51,14 @@ finetune = [
     "tifffile",
     "rasterio",
 ]
+inference = [
+    "geopandas>=0.14",
+    "lazycogs",
+    "rustac",
+    "shapely>=2.0",
+]
 all = [
-    "claymodel[train,finetune]",
+    "claymodel[train,finetune,inference]",
 ]
 
 [project.scripts]
@@ -73,7 +78,7 @@ module-root = ""
 module-name = "claymodel"
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 100
 force-exclude = true
 
@@ -144,6 +149,8 @@ known-first-party = ["claymodel", "training", "finetune"]
 "claymodel/api.py" = ["PLR0912", "PLR0915", "PLR2004"]
 "claymodel/module.py" = ["PLR2004"]
 "claymodel/inference/masking.py" = ["PLR2004"]
+"claymodel/inference/pipeline.py" = ["PLC0415", "PLR0913", "PLR2004"]
+"claymodel/cli.py" = ["PLC0415", "PLR0913"]
 "tests/*.py" = [
     "ANN001",
     "ANN003",

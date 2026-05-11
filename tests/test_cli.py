@@ -36,19 +36,20 @@ def test_info_unknown_sensor():
     assert "Unknown sensor" in result.output
 
 
-def test_embed_missing_file():
+def test_embed_help():
     runner = CliRunner()
-    result = runner.invoke(cli, ["embed", "nonexistent.tif", "--sensor", "s2", "--ckpt", "x.ckpt"])
-    # click should catch the missing file before our code runs
-    assert result.exit_code != 0
-
-
-def test_benchmark_command():
-    runner = CliRunner()
-    result = runner.invoke(cli, ["benchmark", "--size", "32"])
+    result = runner.invoke(cli, ["embed", "--help"])
     assert result.exit_code == 0
-    assert "PASS" in result.output
-    assert "Avg time" in result.output
+    assert "SCENE_ID" in result.output
+    assert "--ckpt" in result.output
+    assert "--chip-size" in result.output
+
+
+def test_embed_missing_ckpt():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["embed", "some-scene-id"])
+    assert result.exit_code != 0
+    assert "ckpt" in result.output.lower() or "required" in result.output.lower()
 
 
 def test_info_sar_sensor_no_rgb():
