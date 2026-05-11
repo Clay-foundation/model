@@ -1,24 +1,14 @@
 """Clay model CLI."""
 
-import importlib.util
-
 import click
 
 from claymodel.api import load_metadata, load_model
-
-
-def _check_inference_deps() -> None:
-    """Check that inference optional dependencies are installed."""
-    missing = [
-        pkg
-        for pkg in ("rustac", "lazycogs", "geopandas", "shapely")
-        if importlib.util.find_spec(pkg) is None
-    ]
-    if missing:
-        raise click.ClickException(
-            f"Missing inference dependencies: {', '.join(missing)}\n"
-            "Install them with: pip install claymodel[inference]"
-        )
+from claymodel.inference.pipeline import (
+    generate_embeddings,
+    load_scene,
+    save_embeddings_geoparquet,
+    search_scene,
+)
 
 
 @click.group()
@@ -97,17 +87,7 @@ def embed(
     Searches Earth Search, loads COG bands via lazycogs, chips into patches,
     runs the Clay encoder, and saves embeddings as GeoParquet.
 
-    Requires: pip install claymodel[inference]
     """
-    _check_inference_deps()
-
-    from claymodel.inference.pipeline import (
-        generate_embeddings,
-        load_scene,
-        save_embeddings_geoparquet,
-        search_scene,
-    )
-
     click.echo(f"Scene: {scene_id}")
     click.echo(f"Model: {size} (checkpoint: {ckpt})")
     click.echo(f"Device: {device}")

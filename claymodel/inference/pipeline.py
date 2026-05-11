@@ -3,8 +3,6 @@
 Provides functions to search Earth Search STAC, load Sentinel-2 COGs via
 lazycogs, chip into model-ready patches, and generate embeddings with
 spatial metadata. Usable both programmatically and via the CLI.
-
-Requires optional dependencies: ``pip install claymodel[inference]``
 """
 
 __all__ = [
@@ -25,8 +23,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
+import geopandas as gpd
+import lazycogs
 import numpy as np
+import rustac
 import torch
+from shapely.geometry import box
 
 from claymodel.api import load_metadata, load_model, normalize
 from claymodel.metadata import PlatformMetadata
@@ -130,8 +132,6 @@ async def _search_scene_async(
     Returns:
         Number of items found.
     """
-    import rustac
-
     return await rustac.search_to(
         str(parquet_path),
         EARTH_SEARCH_URL,
@@ -158,14 +158,6 @@ def search_scene(
         ValueError: If the scene is not found.
         ImportError: If rustac is not installed.
     """
-    try:
-        import rustac  # noqa: F401
-    except ImportError as exc:
-        raise ImportError(
-            "rustac is required for the inference pipeline. "
-            "Install it with: pip install claymodel[inference]"
-        ) from exc
-
     if output_dir is None:
         output_dir = Path(tempfile.mkdtemp(prefix="clay_"))
     else:
@@ -191,8 +183,6 @@ def search_scene(
         )
 
     # Read back the parquet to extract metadata
-    import geopandas as gpd
-
     gdf = gpd.read_parquet(parquet_path)
     row = gdf.iloc[0]
 
@@ -238,14 +228,6 @@ def load_scene(
     Raises:
         ImportError: If lazycogs is not installed.
     """
-    try:
-        import lazycogs
-    except ImportError as exc:
-        raise ImportError(
-            "lazycogs is required for the inference pipeline. "
-            "Install it with: pip install claymodel[inference]"
-        ) from exc
-
     parquet_str = str(search_result.parquet_path)
     store = lazycogs.store_for(parquet_str, skip_signature=True)
 
@@ -469,9 +451,6 @@ def save_embeddings_geoparquet(
     Raises:
         ImportError: If geopandas is not installed.
     """
-    import geopandas as gpd
-    from shapely.geometry import box
-
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 

@@ -29,9 +29,14 @@ license-files = ["LICENSE"]
 dependencies = [
     "click>=8.1",
     "einops~=0.7.0",
+    "geopandas>=0.14",
+    "lazycogs",
     "lightning>=2.0.0",
     "pydantic>=2.0",
+    "pyarrow",
     "pyyaml",
+    "rustac",
+    "shapely>=2.0",
     "timm>=0.6.0",
     "torch>=2.4.0",
     "torchvision>=0.19.0",
@@ -51,14 +56,8 @@ finetune = [
     "tifffile",
     "rasterio",
 ]
-inference = [
-    "geopandas>=0.14",
-    "lazycogs",
-    "rustac",
-    "shapely>=2.0",
-]
 all = [
-    "claymodel[train,finetune,inference]",
+    "claymodel[train,finetune]",
 ]
 
 [project.scripts]
@@ -149,8 +148,8 @@ known-first-party = ["claymodel", "training", "finetune"]
 "claymodel/api.py" = ["PLR0912", "PLR0915", "PLR2004"]
 "claymodel/module.py" = ["PLR2004"]
 "claymodel/inference/masking.py" = ["PLR2004"]
-"claymodel/inference/pipeline.py" = ["PLC0415", "PLR0913", "PLR2004"]
-"claymodel/cli.py" = ["PLC0415", "PLR0913"]
+"claymodel/inference/pipeline.py" = ["PLR0913", "PLR2004"]
+"claymodel/cli.py" = ["PLR0913"]
 "tests/*.py" = [
     "ANN001",
     "ANN003",
