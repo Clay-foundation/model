@@ -1,41 +1,176 @@
+[build-system]
+requires = ["uv_build>=0.9.3,<1"]
+build-backend = "uv_build"
+
 [project]
 name = "claymodel"
 version = "1.5.0"
 description = "An open source AI model and interface for Earth observation from the Clay Foundation"
 readme = "README.md"
-license = {text = "Apache-2.0"}
-authors = [
-    {name = "Clay Foundation", email = "hello@madewithclay.org"}
+license = "Apache-2.0"
+authors = [{ name = "Clay Foundation", email = "hello@madewithclay.org" }]
+keywords = [
+    "earth-observation",
+    "satellite-imagery",
+    "machine-learning",
+    "foundation-model",
+    "geospatial",
 ]
-keywords = ["earth-observation", "satellite-imagery", "machine-learning", "foundation-model", "geospatial"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
+license-files = ["LICENSE"]
 dependencies = [
+    "click>=8.1",
+    "einops~=0.7.0",
+    "geopandas>=0.14",
+    "lazycogs",
+    "lightning>=2.0.0",
+    "pydantic>=2.0",
+    "pyarrow",
+    "pyyaml",
+    "rustac",
+    "shapely>=2.0",
+    "timm>=0.6.0",
     "torch>=2.4.0",
     "torchvision>=0.19.0",
-    "einops~=0.7.0",
-    "geopandas",
-    "jsonargparse[signatures]>=4.27.7",
-    "lightning>=2.0.0",
-    "matplotlib",
-    "python-box",
-    "scikit-image",
-    "scikit-learn",
-    "timm>=0.6.0",
-    "vit-pytorch",
-    "wandb"
 ]
 
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+[project.optional-dependencies]
+train = [
+    "jsonargparse[signatures]>=4.27.7",
+    "matplotlib",
+    "scikit-learn",
+    "wandb",
+]
+finetune = [
+    "torchgeo",
+    "torchmetrics",
+    "segmentation_models_pytorch",
+    "tifffile",
+    "rasterio",
+]
+all = [
+    "claymodel[train,finetune]",
+]
 
-[tool.setuptools.packages.find]
-include = ["claymodel*"]
+[project.scripts]
+clay = "claymodel.cli:cli"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.3",
+    "pytest>=8.4.2",
+    "pytest-cov>=7",
+    "ruff>=0.15.11",
+    "ty>=0.0.1a23",
+]
+
+[tool.uv.build-backend]
+module-root = ""
+module-name = "claymodel"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+force-exclude = true
+
+[tool.ruff.lint]
+extend-select = [
+    "ANN",
+    "B",
+    "C4",
+    "E",
+    "EXE",
+    "F",
+    "FA",
+    "FLY",
+    "FURB",
+    "G",
+    "I",
+    "ISC",
+    "LOG",
+    "NPY",
+    "PERF",
+    "PGH",
+    "PIE",
+    "PL",
+    "PT",
+    "PYI",
+    "RET",
+    "RSE",
+    "RUF",
+    "SIM",
+    "SLOT",
+    "TCH",
+    "TRY",
+    "UP",
+    "W",
+]
+ignore = [
+    "ANN401",
+    "COM812",
+    "COM819",
+    "D206",
+    "D300",
+    "E111",
+    "E114",
+    "E117",
+    "PT012",
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+    "RET505",
+    "RET506",
+    "RUF005",
+    "SIM108",
+    "TRY003",
+    "W191",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["claymodel", "training", "finetune"]
+
+[tool.ruff.lint.per-file-ignores]
+"docs/clay_over_aoi.ipynb" = ["E501"]
+"finetune/embedder/how-to-embed.ipynb" = ["E501", "PLR2004"]
+"finetune/segment/chesapeake_inference.ipynb" = ["PLR0913"]
+"finetune/regression/biomasters_inference.ipynb" = ["PLR0913"]
+"scripts/worldcover/worldcover_vrt.py" = ["E501"]
+"claymodel/__init__.py" = ["PLR0911"]
+"claymodel/api.py" = ["PLR0912", "PLR0915", "PLR2004"]
+"claymodel/module.py" = ["PLR2004"]
+"claymodel/inference/masking.py" = ["PLR2004"]
+"claymodel/inference/pipeline.py" = ["PLR0913", "PLR2004"]
+"claymodel/cli.py" = ["PLR0913"]
+"tests/*.py" = [
+    "ANN001",
+    "ANN003",
+    "ANN201",
+    "ANN202",
+    "PLC0415",
+    "PLR2004",
+    "RUF029",
+    "SIM117",
+    "SIM300",
+]
+
+[tool.ruff.lint.pylint]
+max-args = 6
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: tests that use the real teacher model (~100MB download, cached). Run with --slow",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]

@@ -1,3 +1,15 @@
+"""
+Matryoshka Representation Learning (MRL).
+
+MRL projects the CLS token into multiple nested subspaces (dolls) and computes
+a weighted cosine similarity loss against the teacher target at each scale.
+See: https://arxiv.org/abs/2205.13147
+
+Enable via `matryoshka=True` on ClayMAE / ClayMAEModule. When disabled (default),
+a direct nn.Linear projection is used instead.
+"""
+
+import torch
 from torch import nn
 
 
@@ -6,26 +18,30 @@ class MRL(nn.Module):
     Matryoshka Representation Learning from the paper: https://arxiv.org/abs/2205.13147
     """
 
-    def __init__(self, features, dolls: list = [16, 32, 64, 128, 256, 768]) -> None:
+    dolls: list[int]
+
+    def __init__(self, features: int, dolls: list[int] | None = None) -> None:
         super().__init__()
+        dolls = [16, 32, 64, 128, 256, 768] if dolls is None else dolls
         self.dolls = dolls
         self.layers = nn.ModuleDict()
         for doll in dolls:
             self.layers[f"mrl_{doll}"] = nn.Linear(doll, features)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
         "x: (batch, features)"
-        logits = [self.layers[f"mrl_{doll}"](x[:, :doll]) for doll in self.dolls]
-        return logits
+        return [self.layers[f"mrl_{doll}"](x[:, :doll]) for doll in self.dolls]
 
 
 class MRLLoss(nn.Module):
-    def __init__(self, weights) -> None:
+    weights: list[float]
+
+    def __init__(self, weights: list[float]) -> None:
         super().__init__()
         self.weights = weights
         self.criterion = nn.CosineSimilarity(dim=1, eps=1e-6)
 
-    def forward(self, representations, targets):
+    def forward(self, representations: list[torch.Tensor], targets: torch.Tensor) -> torch.Tensor:
         """
         representations: [(batch, features), ...]
         targets: (batch, features)

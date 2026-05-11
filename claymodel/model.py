@@ -1,34 +1,66 @@
-import math
-import os
-import random
+__all__ = [
+    "ClayMAE",
+    "Datacube",
+    "Decoder",
+    "Encoder",
+    "clay_mae_base",
+    "clay_mae_large",
+    "clay_mae_small",
+    "clay_mae_tiny",
+]
 
-import timm
+import math
+from typing import TYPE_CHECKING, Any, TypedDict
+
 import torch
 import torch.nn.functional as F
 from einops import rearrange, reduce, repeat
 from torch import nn
-from torchvision.transforms import v2
 
-from claymodel.backbone import Transformer
-from claymodel.factory import DynamicEmbedding
+from claymodel.embedding import DynamicEmbedding
+from claymodel.layers import Transformer
 from claymodel.utils import posemb_sincos_2d_with_gsd
 
-torch.set_float32_matmul_precision("medium")
-os.environ["TORCH_CUDNN_V8_API_DISABLED"] = "1"
+if TYPE_CHECKING:
+    from claymodel.metadata import PlatformMetadata
+
+
+class Datacube(TypedDict):
+    """Input format for Clay encoder/decoder.
+
+    pixels:  [B, C, H, W] normalized pixel values. H and W must be divisible by patch_size (8).
+    time:    [B, 4] encoded temporal information.
+    latlon:  [B, 4] encoded spatial coordinates.
+    gsd:     scalar tensor, ground sample distance in meters.
+    waves:   [C] per-band wavelengths in micrometers.
+    """
+
+    pixels: torch.Tensor
+    time: torch.Tensor
+    latlon: torch.Tensor
+    gsd: torch.Tensor
+    waves: torch.Tensor
 
 
 class Encoder(nn.Module):
+    mask_ratio: float
+    patch_size: int
+    shuffle: bool
+    dim: int
+    num_patches: int
+    cls_token: nn.Parameter
+
     def __init__(  # noqa: PLR0913
         self,
-        mask_ratio,
-        patch_size,
-        shuffle,
-        dim,
-        depth,
-        heads,
-        dim_head,
-        mlp_ratio,
-    ):
+        mask_ratio: float,
+        patch_size: int,
+        shuffle: bool,
+        dim: int,
+        depth: int,
+        heads: int,
+        dim_head: int,
+        mlp_ratio: float,
+    ) -> None:
         super().__init__()
         self.mask_ratio = mask_ratio
         self.patch_size = patch_size
@@ -53,14 +85,22 @@ class Encoder(nn.Module):
             fused_attn=True,
         )
 
-    def to_patch_embed(self, cube, waves):
+    def to_patch_embed(
+        self, cube: torch.Tensor, waves: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Split the input cube into patches & create embeddings per patch"""
         patches, waves_encoded = self.patch_embedding(cube, waves)  # [B L D]
         return patches, waves_encoded  # ([B L D], [N D])
 
-    def add_encodings(self, patches, time, latlon, gsd):
+    def add_encodings(
+        self,
+        patches: torch.Tensor,
+        time: torch.Tensor,
+        latlon: torch.Tensor,
+        gsd: torch.Tensor,
+    ) -> torch.Tensor:
         """Add position encoding to the patches"""
-        B, L, D = patches.shape
+        B, L, _D = patches.shape
 
         grid_size = int(math.sqrt(L))
         self.num_patches = grid_size**2
@@ -80,14 +120,13 @@ class Encoder(nn.Module):
 
         pos_encoding = repeat(pos_encoding, "L D -> B L D", B=B)  # [B L (D - 8)]
         time_latlon = repeat(time_latlon, "B D -> B L D", L=L)  # [B L 8]
-        pos_metadata_encoding = torch.cat(
-            (pos_encoding, time_latlon), dim=-1
-        )  # [B L D]
+        pos_metadata_encoding = torch.cat((pos_encoding, time_latlon), dim=-1)  # [B L D]
 
-        patches = patches + pos_metadata_encoding  # [B L D] + [B L D] -> [B L D]
-        return patches  # [B L D]
+        return patches + pos_metadata_encoding  # [B L D] + [B L D] -> [B L D]
 
-    def mask_out(self, patches):
+    def mask_out(
+        self, patches: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Mask out patches randomly by shuffling the patches & masking out the
         first N patches
@@ -111,17 +150,12 @@ class Encoder(nn.Module):
             A tensor of shape (B, L) containing the mask matrix, 1 indicates a masked
             patch & 0 indicates an unmasked patch.
         """
-        B, L, D = patches.shape
-        # assert (
-        #     L == self.num_patches
-        # ), f"Expected {self.num_patches} patches, got {L} patches."
+        B, L, _D = patches.shape
 
         if self.shuffle:  # Shuffle the patches
             noise = torch.randn((B, L), device=patches.device)  # [B L]
         else:  # Don't shuffle, useful for interpolation & inspection of embeddings
-            noise = rearrange(
-                torch.arange(B * L, device=patches.device), "(B L) -> B L", B=B, L=L
-            )
+            noise = rearrange(torch.arange(B * L, device=patches.device), "(B L) -> B L", B=B, L=L)
 
         random_indices = torch.argsort(noise, dim=-1)  # [B L]
         reverse_indices = torch.argsort(random_indices, dim=-1)  # [B L]
@@ -143,12 +177,8 @@ class Encoder(nn.Module):
         )  # [B L] -> [B L] - reorder the patches
 
         # mask out the patches
-        batch_indices = rearrange(
-            torch.arange(B, device=patches.device), "B -> B 1"
-        )  # [B 1]
-        unmasked_patches = patches[
-            batch_indices, unmasked_indices, :
-        ]  # [B L:(1 - mask_ratio) D]
+        batch_indices = rearrange(torch.arange(B, device=patches.device), "B -> B 1")  # [B 1]
+        unmasked_patches = patches[batch_indices, unmasked_indices, :]  # [B L:(1 - mask_ratio) D]
         _ = patches[batch_indices, masked_indices, :]  # [B L:mask_ratio D]
 
         return (
@@ -158,21 +188,22 @@ class Encoder(nn.Module):
             masked_matrix,
         )  # [B L:(1 - mask_ratio) D], [(1-mask_ratio)], [mask_ratio], [B L]
 
-    def forward(self, datacube):
+    def forward(
+        self, datacube: Datacube
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         cube, time, latlon, gsd, waves = (
             datacube["pixels"],  # [B C H W]
-            datacube["time"],  # [B 2]
-            datacube["latlon"],  # [B 2]
-            datacube["gsd"],  # 1
-            datacube["waves"],  # [N]
-        )  # [B C H W]
+            datacube["time"],  # [B 4]
+            datacube["latlon"],  # [B 4]
+            datacube["gsd"],  # scalar tensor
+            datacube["waves"],  # [C]
+        )
 
-        B, C, H, W = cube.shape
+        B = cube.shape[0]
 
-        patches, waves_encoded = self.to_patch_embed(
+        patches, _waves_encoded = self.to_patch_embed(
             cube, waves
         )  # [B L D] - patchify & create embeddings per patch
-        # TODO: Add time & latlon as encoding to patches
         patches = self.add_encodings(
             patches,
             time,
@@ -192,9 +223,7 @@ class Encoder(nn.Module):
 
         # Add class tokens
         cls_tokens = repeat(self.cls_token, "1 1 D -> B 1 D", B=B)  # [B 1 D]
-        unmasked_patches = torch.cat(
-            (cls_tokens, unmasked_patches), dim=1
-        )  # [B (1 + L) D]
+        unmasked_patches = torch.cat((cls_tokens, unmasked_patches), dim=1)  # [B (1 + L) D]
 
         # pass the unmasked patches through the transformer
         encoded_unmasked_patches = self.transformer(
@@ -210,26 +239,30 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
+    mask_ratio: float
+    patch_size: int
+    encoder_dim: int
+    dim: int
+    num_patches: int
+
     def __init__(  # noqa: PLR0913
         self,
-        mask_ratio,
-        patch_size,
-        encoder_dim,
-        dim,
-        depth,
-        heads,
-        dim_head,
-        mlp_ratio,
-    ):
+        mask_ratio: float,
+        patch_size: int,
+        encoder_dim: int,
+        dim: int,
+        depth: int,
+        heads: int,
+        dim_head: int,
+        mlp_ratio: float,
+    ) -> None:
         super().__init__()
         self.mask_ratio = mask_ratio
         self.patch_size = patch_size
         self.encoder_dim = encoder_dim
         self.dim = dim
 
-        self.enc_to_dec = (
-            nn.Linear(encoder_dim, dim) if encoder_dim != dim else nn.Identity()
-        )
+        self.enc_to_dec = nn.Linear(encoder_dim, dim) if encoder_dim != dim else nn.Identity()
         self.mask_patch = nn.Parameter(torch.randn(dim))
         self.transformer = Transformer(
             dim=dim,
@@ -249,14 +282,14 @@ class Decoder(nn.Module):
 
     def reconstruct_and_add_encoding(  # noqa: PLR0913
         self,
-        unmasked_patches,
-        unmasked_indices,
-        masked_indices,
-        masked_matrix,
-        time,
-        latlon,
-        gsd,
-    ):
+        unmasked_patches: torch.Tensor,
+        unmasked_indices: torch.Tensor,
+        masked_indices: torch.Tensor,
+        masked_matrix: torch.Tensor,
+        time: torch.Tensor,
+        latlon: torch.Tensor,
+        gsd: torch.Tensor,
+    ) -> torch.Tensor:
         B, L = masked_matrix.shape
         grid_size = int(math.sqrt(L))
         self.num_patches = grid_size**2
@@ -266,21 +299,15 @@ class Decoder(nn.Module):
         )  # [B 1 D], [B L:(1 - mask_ratio) D]
 
         pos_encoding = (
-            posemb_sincos_2d_with_gsd(
-                h=grid_size, w=grid_size, dim=(self.dim - 8), gsd=gsd
-            )
+            posemb_sincos_2d_with_gsd(h=grid_size, w=grid_size, dim=(self.dim - 8), gsd=gsd)
             .to(unmasked_patches.device)
             .detach()
         )  # [L D]
-        time_latlon = (
-            torch.hstack((time, latlon)).to(unmasked_patches.device).detach()
-        )  # [B 8]
+        time_latlon = torch.hstack((time, latlon)).to(unmasked_patches.device).detach()  # [B 8]
 
         pos_encoding = repeat(pos_encoding, "L D -> B L D", B=B)  # [B L (D - 8)]
         time_latlon = repeat(time_latlon, "B D -> B L D", L=L)  # [B L 8]
-        pos_metadata_encoding = torch.cat(
-            (pos_encoding, time_latlon), dim=-1
-        )  # [B L D]
+        pos_metadata_encoding = torch.cat((pos_encoding, time_latlon), dim=-1)  # [B L D]
 
         batch_indices = rearrange(
             torch.arange(B, device=unmasked_patches.device), "B -> B 1"
@@ -306,31 +333,23 @@ class Decoder(nn.Module):
         decoder_patches[batch_indices, unmasked_indices, :] = (
             unmasked_patches  # [B L:(1 - mask_ratio) D])
         )
-        decoder_patches[batch_indices, masked_indices, :] = (
-            masked_patches  # [B L:mask_ratio D])
-        )
+        decoder_patches[batch_indices, masked_indices, :] = masked_patches  # [B L:mask_ratio D])
 
-        decoder_patches = torch.cat(
-            (cls_tokens, decoder_patches), dim=1
-        )  # [B (1 + L) D]
-
-        return decoder_patches  # [B (1 + L) D]
+        return torch.cat((cls_tokens, decoder_patches), dim=1)  # [B (1 + L) D]
 
     def forward(  # noqa: PLR0913
         self,
-        encoded_unmasked_patches,
-        unmasked_indices,
-        masked_indices,
-        masked_matrix,
-        time,
-        latlon,
-        gsd,
-        waves,
-    ):
+        encoded_unmasked_patches: torch.Tensor,
+        unmasked_indices: torch.Tensor,
+        masked_indices: torch.Tensor,
+        masked_matrix: torch.Tensor,
+        time: torch.Tensor,
+        latlon: torch.Tensor,
+        gsd: torch.Tensor,
+        waves: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         # Change the embedding dimension from encoder to decoder
-        encoded_unmasked_patches = self.enc_to_dec(
-            encoded_unmasked_patches
-        )  # [B (1 + L) D]
+        encoded_unmasked_patches = self.enc_to_dec(encoded_unmasked_patches)  # [B (1 + L) D]
 
         # Reconstruct the patches to feed into the decoder transformer
         decoder_patches = self.reconstruct_and_add_encoding(
@@ -346,53 +365,54 @@ class Decoder(nn.Module):
         # Pass the decoder patches through the transformer
         decoded_patches = self.transformer(decoder_patches)  # [B (1 + L) D]
 
-        pixels, waves = self.embed_to_pixels(
-            decoded_patches, waves
-        )  # [B (1 + L) (C P P)]
+        pixels, waves = self.embed_to_pixels(decoded_patches, waves)  # [B (1 + L) (C P P)]
         # Remove the class token
         pixels = pixels[:, 1:, :]
         return pixels, waves  # [B L (C P P)], [B N]
 
 
 class ClayMAE(nn.Module):
+    """Clay Masked Autoencoder: encoder + decoder.
+
+    Does not include the teacher model or representation loss components,
+    which live in ClayMAEModule (the training wrapper).
+    """
+
+    mask_ratio: float
+    patch_size: int
+    norm_pix_loss: bool
+    shuffle: bool
+    metadata: dict[str, "PlatformMetadata"]
+    encoder: Encoder
+    decoder: Decoder
+
     def __init__(  # noqa: PLR0913
         self,
-        mask_ratio,
-        patch_size,
-        norm_pix_loss,
-        shuffle,
-        metadata,
-        teacher,
-        dolls,
-        doll_weights,
+        mask_ratio: float,
+        patch_size: int,
+        norm_pix_loss: bool,
+        shuffle: bool,
+        metadata: dict[str, "PlatformMetadata"],
         # ENCODER
-        dim,
-        depth,
-        heads,
-        dim_head,
-        mlp_ratio,
+        dim: int,
+        depth: int,
+        heads: int,
+        dim_head: int,
+        mlp_ratio: float,
         # DECODER
-        decoder_dim,
-        decoder_depth,
-        decoder_heads,
-        decoder_dim_head,
-        decoder_mlp_ratio,
-        **kwargs,
-    ):
+        decoder_dim: int,
+        decoder_depth: int,
+        decoder_heads: int,
+        decoder_dim_head: int,
+        decoder_mlp_ratio: float,
+        **kwargs: object,
+    ) -> None:
         super().__init__()
         self.mask_ratio = mask_ratio
         self.patch_size = patch_size
         self.norm_pix_loss = norm_pix_loss
         self.shuffle = shuffle
         self.metadata = metadata
-        self.teacher = timm.create_model(teacher, pretrained=True, num_classes=0)
-        self.teacher_chip_size = 518
-        self.teacher_resize = v2.Resize(
-            size=(self.teacher_chip_size, self.teacher_chip_size)
-        )
-        # self.mrl = MRL(features=self.teacher.num_features, dolls=dolls)
-        # self.mrl_loss = MRLLoss(weights=doll_weights)
-        self.proj = nn.Linear(dim, self.teacher.num_features)
 
         self.encoder = Encoder(
             mask_ratio=mask_ratio,
@@ -416,14 +436,9 @@ class ClayMAE(nn.Module):
             mlp_ratio=decoder_mlp_ratio,
         )
 
-        self.freeze_teacher()
-
-    def freeze_teacher(self):
-        for param in self.teacher.parameters():
-            param.requires_grad = False
-        self.teacher.eval()
-
-    def per_pixel_loss(self, cube, pixels, masked_matrix):
+    def per_pixel_loss(
+        self, cube: torch.Tensor, pixels: torch.Tensor, masked_matrix: torch.Tensor
+    ) -> torch.Tensor:
         """
         cube: [B C H W]
         pixels: [B L (C P P)]
@@ -444,112 +459,49 @@ class ClayMAE(nn.Module):
         loss = F.l1_loss(patches, pixels, reduction="none")  # loss per pixel
         loss = reduce(loss, "B L D -> B L", reduction="mean")  # loss per patch
 
-        loss = (
-            loss * masked_matrix
-        ).sum() / masked_matrix.sum()  # loss on masked patches only
+        return (loss * masked_matrix).sum() / masked_matrix.sum()  # loss on masked patches only
 
-        return loss
+    def forward(
+        self,
+        datacube: dict[str, torch.Tensor],
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Run encode-decode forward pass. No loss computation.
 
-    def forward(self, datacube):
+        Args:
+            datacube: dict with keys pixels [B C H W], time [B 4],
+                latlon [B 4], gsd (scalar Tensor), waves [C].
+
+        Returns:
+            encoded_patches: [B, 1+L', D] encoded unmasked patches with CLS token
+            decoded_pixels: [B, L, C*P*P] reconstructed pixel patches
+            masked_matrix: [B, L] mask (1=masked, 0=unmasked)
+            unmasked_indices: indices of unmasked patches
+            masked_indices: indices of masked patches
         """
-        datacube: dict containing the following keys:
-            - pixels: [B C H W]
-            - time: [B 4] # week hour
-            - latlon: [B 4] # lat lon
-            - platform: [B 1]
-            - date: [B 1]
-        """
-        platform = datacube["platform"][0]
-        waves = torch.tensor(list(self.metadata[platform].bands.wavelength.values()))
-        gsd = torch.tensor(self.metadata[platform].gsd)
+        encoded_patches, unmasked_indices, masked_indices, masked_matrix = self.encoder(datacube)
 
-        # Drop channels randomly
-        _pixels = datacube["pixels"].clone()
-        batch_size, channels, _, _ = _pixels.size()
-
-        # Define probabilities for dropping channels
-        prob_drop_all = 0.10  # 10% probability to drop all channels
-        prob_drop_half = 0.20  # 20% probability to drop half the channels
-
-        for i in range(batch_size):
-            if torch.any(
-                datacube["latlon"][i] != 0
-            ):  # Check if latlon is not all zeros
-                rand_val = random.random()
-                if rand_val < prob_drop_all:
-                    _pixels[i, :, :, :] = 0  # Drop all channels
-                elif rand_val < prob_drop_all + prob_drop_half:
-                    channel_indices = torch.randperm(channels)[
-                        : channels // 2
-                    ]  # Get 50% of channel indices
-                    _pixels[i, channel_indices, :, :] = 0  # Drop 50% of channels
-
-        # ENCODER
-        (
-            encoded_unmasked_patches,  # [B (1 + L):(1 - mask_ratio) D]
-            unmasked_indices,  # [(1-mask_ratio)]
-            masked_indices,  # [mask_ratio]
-            masked_matrix,  # [B L]
-        ) = self.encoder(
-            {
-                "pixels": _pixels,
-                "time": datacube["time"],
-                "latlon": datacube["latlon"],
-                "gsd": gsd,
-                "waves": waves,
-            }
-        )
-
-        # DECODER
-        pixels, waves = self.decoder(
-            encoded_unmasked_patches,
+        decoded_pixels, _waves = self.decoder(
+            encoded_patches,
             unmasked_indices,
             masked_indices,
             masked_matrix,
             datacube["time"],
             datacube["latlon"],
-            gsd,
-            waves,
-        )  # [B L (C P P)]
-
-        # MAE
-        reconstruction_loss = self.per_pixel_loss(
-            datacube["pixels"], pixels, masked_matrix
+            datacube["gsd"],
+            datacube["waves"],
         )
-        # MODIS has a 10x reconstruction loss compared to all the other sensors,
-        # so we need to scale it down to improve the learning capability.
-        if platform == "modis":
-            reconstruction_loss /= 10
 
-        # # MRL
-        # representations = self.mrl(encoded_unmasked_patches[:, 0, :])  # [(B D') ...]
-
-        # PROJ
-        representations = self.proj(encoded_unmasked_patches[:, 0, :])  # [B D']
-
-        with torch.no_grad():
-            if platform == "sentinel-1-rtc":
-                r = datacube["pixels"][:, 0, :, :]
-                g = datacube["pixels"][:, 1, :, :]
-                b = (r + g) / 2
-                rgb = torch.stack((r, g, b), dim=1)
-            else:
-                # Read RGB bands from the sensor to feed the teacher model
-                indices = self.metadata[platform].rgb_indices
-                rgb = datacube["pixels"][:, indices, :, :]
-            rgb = self.teacher_resize(rgb)
-            target = self.teacher(rgb)
-            # target = self.teacher(rgb)
-
-        # representation_loss = self.mrl_loss(representations, target)
-        representation_loss = 1.0 - F.cosine_similarity(representations, target).mean()
-
-        loss = 0.9 * reconstruction_loss + 0.1 * representation_loss
-        return (loss, reconstruction_loss, representation_loss)
+        return (
+            encoded_patches,
+            decoded_pixels,
+            masked_matrix,
+            unmasked_indices,
+            masked_indices,
+        )
 
 
-def clay_mae_tiny(**kwargs):
-    args = {
+def clay_mae_tiny(**kwargs: Any) -> ClayMAE:
+    args: dict[str, Any] = {
         # ENCODER
         "dim": 192,
         "depth": 6,
@@ -567,8 +519,8 @@ def clay_mae_tiny(**kwargs):
     return ClayMAE(**args)
 
 
-def clay_mae_small(**kwargs):
-    args = {
+def clay_mae_small(**kwargs: Any) -> ClayMAE:
+    args: dict[str, Any] = {
         # ENCODER
         "dim": 384,
         "depth": 6,
@@ -586,8 +538,8 @@ def clay_mae_small(**kwargs):
     return ClayMAE(**args)
 
 
-def clay_mae_base(**kwargs):
-    args = {
+def clay_mae_base(**kwargs: Any) -> ClayMAE:
+    args: dict[str, Any] = {
         # ENCODER
         "dim": 768,
         "depth": 12,
@@ -605,8 +557,8 @@ def clay_mae_base(**kwargs):
     return ClayMAE(**args)
 
 
-def clay_mae_large(**kwargs):
-    args = {
+def clay_mae_large(**kwargs: Any) -> ClayMAE:
+    args: dict[str, Any] = {
         # ENCODER
         "dim": 1024,
         "depth": 24,

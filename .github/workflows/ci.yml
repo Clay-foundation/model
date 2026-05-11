@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main, refactor]
+  pull_request:
+    branches: [main, refactor]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: uv sync --locked --all-extras --group dev
+      - run: uv run ruff check . --exclude "*.ipynb"
+      - run: uv run ruff format --check . --exclude "*.ipynb"
+      - run: uv run ty check claymodel tests --exclude "*.ipynb"
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --locked --all-extras --group dev
+      - run: uv run pytest tests/ -v --cov=claymodel --cov-report=term-missing --cov-fail-under=90

@@ -6,8 +6,8 @@ This guide helps you migrate from the old development setup to the new pip-insta
 
 Clay Foundation Model is now available as a proper Python package called `claymodel`. This means:
 
-- ✅ **Easy installation**: `pip install git+https://github.com/Clay-foundation/model.git`
-- ✅ **Clean imports**: `from claymodel.module import ClayMAEModule`
+- ✅ **Easy installation**: `uv pip install git+https://github.com/Clay-foundation/model.git`
+- ✅ **Clean imports**: `from claymodel import load_model, embed`
 - ✅ **Better distribution**: No need to clone the entire repository for inference
 
 ## Import Changes
@@ -17,15 +17,17 @@ Clay Foundation Model is now available as a proper Python package called `claymo
 # Old development imports
 from src.datamodule import ClayDataModule
 from src.module import ClayMAEModule
-from src.model import ClayMAEEncoder
+from src.model import Encoder
 ```
 
 ### After (New)
 ```python
-# New package imports
-from claymodel.datamodule import ClayDataModule
+# Inference imports
+from claymodel import load_model, embed, Encoder
+
+# Training imports (requires full repo + dev install):
 from claymodel.module import ClayMAEModule
-from claymodel.model import ClayMAEEncoder
+from training.datamodule import ClayDataModule
 ```
 
 ## Installation Methods
@@ -36,7 +38,7 @@ If you just want to use pretrained Clay models for generating embeddings:
 
 ```bash
 # Install the package
-pip install git+https://github.com/Clay-foundation/model.git
+uv pip install git+https://github.com/Clay-foundation/model.git
 
 # Download weights
 wget https://huggingface.co/made-with-clay/Clay/resolve/main/v1.5/clay-v1.5.ckpt
@@ -51,40 +53,25 @@ If you need to train models or contribute to development:
 git clone https://github.com/Clay-foundation/model.git
 cd model
 
-# Create environment
-mamba env create --file environment.yml
-mamba activate claymodel
-
 # Install in development mode
-pip install -e .
+uv pip install -e ".[dev]"
 ```
 
 ## Code Migration Examples
-
-### Loading Pretrained Models
-
-```python
-# Before
-import sys
-sys.path.append('path/to/model/src')
-from module import ClayMAEModule
-
-# After
-from claymodel.module import ClayMAEModule
-```
 
 ### Generating Embeddings
 
 ```python
 # Before
 from src.module import ClayMAEModule
-
-# After
-from claymodel.module import ClayMAEModule
-
-# Usage is the same
 model = ClayMAEModule.load_from_checkpoint("clay-v1.5.ckpt")
-embeddings = model.encoder(chips, timestamps, wavelengths)
+model.eval()
+model.model.encoder.mask_ratio = 0.0
+
+# After — no teacher download, fast startup
+from claymodel import embed, load_model
+encoder = load_model("large", ckpt_path="clay-v1.5.ckpt")
+result = embed(pixels, sensor="sentinel-2-l2a", model=encoder)
 ```
 
 ### Training Workflows
@@ -96,19 +83,21 @@ Training workflows require the full development environment:
 from src.datamodule import ClayDataModule
 from src.module import ClayMAEModule
 
-# After (development install)
-from claymodel.datamodule import ClayDataModule
+# After (development install, requires `uv pip install "claymodel[train]"`)
+from training.datamodule import ClayDataModule
 from claymodel.module import ClayMAEModule
 ```
 
 ## Jupyter Notebooks
 
-All tutorial notebooks have been updated to use the new imports:
+Tutorial notebooks are being updated to use the new package imports. Status:
 
-- ✅ `docs/tutorials/embeddings.ipynb`
-- ✅ `docs/tutorials/reconstruction.ipynb`
-- ✅ `docs/tutorials/wall-to-wall.ipynb`
-- ✅ `docs/tutorials/inference.ipynb`
+- ✅ `docs/tutorials/wall-to-wall.ipynb` — updated, uses public STAC data
+- ⚠️ `docs/tutorials/embeddings.ipynb` — imports fixed, requires local training data
+- ⚠️ `docs/tutorials/reconstruction.ipynb` — imports fixed, requires local training data
+- ⚠️ `docs/tutorials/inference.ipynb` — import fixed, uses Clay v1 (update to v1.5 planned)
+
+For the simplest embedding workflow, use the new API: `from claymodel import embed`
 
 ## Troubleshooting
 
@@ -116,9 +105,9 @@ All tutorial notebooks have been updated to use the new imports:
 
 If you see `ModuleNotFoundError: No module named 'claymodel'`:
 
-1. Ensure you've installed the package: `pip install git+https://github.com/Clay-foundation/model.git`
+1. Ensure you've installed the package: `uv pip install git+https://github.com/Clay-foundation/model.git`
 2. Restart your Python kernel/session
-3. Check installation: `pip list | grep claymodel`
+3. Check installation: `uv pip show claymodel`
 
 ### Old Notebooks
 
@@ -135,9 +124,7 @@ For development work, you still need the full repository:
 ```bash
 git clone https://github.com/Clay-foundation/model.git
 cd model
-mamba env create --file environment.yml
-mamba activate claymodel
-pip install -e .
+uv pip install -e ".[dev]"
 ```
 
 ## Benefits of Migration

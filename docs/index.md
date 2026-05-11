@@ -47,7 +47,9 @@ The Clay model can be used in three main ways:
   License: [Apache-2.0](https://github.com/Clay-foundation/model/blob/main/LICENSE).
 - The Clay **documentation** [lives on this site](https://clay-foundation.github.io/model/index.html).
   License: [CC-BY](http://creativecommons.org/licenses/by/4.0/).
-- We release the **embeddings** of the used training data on [Source Cooperative](https://source.coop/clay/clay-model-v0-embeddings).
+- We release **embeddings** on [Source Cooperative](https://source.coop/clay/):
+  [v1.5 Sentinel-2 embeddings](https://source.coop/clay/lgnd-clay-v1-5-sentinel-2-l2a) |
+  [v0 embeddings](https://source.coop/clay/clay-model-v0-embeddings).
   License: [ODC-BY](https://opendatacommons.org/licenses/by/).
 
 CLAY model v0 to v1.5 was a fiscal sponsored project of the 501c3 non-profit [Radiant Earth](https://www.radiant.earth).

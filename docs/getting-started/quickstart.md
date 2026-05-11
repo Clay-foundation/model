@@ -5,7 +5,7 @@ Get started with Clay Foundation Model in 5 minutes!
 ## 1. Install
 
 ```bash
-pip install git+https://github.com/Clay-foundation/model.git
+uv pip install git+https://github.com/Clay-foundation/model.git
 ```
 
 ## 2. Download Weights
@@ -17,35 +17,17 @@ wget https://huggingface.co/made-with-clay/Clay/resolve/main/v1.5/clay-v1.5.ckpt
 ## 3. Generate Embeddings
 
 ```python
-import yaml
 import torch
-from claymodel.module import ClayMAEModule
+from claymodel import embed, load_model
 
-# Load model
-model = ClayMAEModule.load_from_checkpoint("clay-v1.5.ckpt")
-model.eval()
+# Load encoder (no teacher download, fast startup)
+encoder = load_model("large", ckpt_path="clay-v1.5.ckpt")
 
-# Load sensor metadata
-with open("configs/metadata.yaml", "r") as f:
-    metadata = yaml.safe_load(f)
+# Generate embeddings from Sentinel-2 data
+pixels = torch.randn(1, 10, 256, 256)  # [batch, bands, height, width]
+result = embed(pixels, sensor="sentinel-2-l2a", model=encoder)
 
-# Prepare Sentinel-2 data
-sensor = "sentinel-2-l2a"
-chips = torch.randn(1, 10, 256, 256)  # [batch, bands, height, width]
-
-# Get wavelengths from metadata (convert μm to nm)
-wavelengths = []
-for band in metadata[sensor]["band_order"]:
-    wavelengths.append(metadata[sensor]["bands"]["wavelength"][band] * 1000)
-wavelengths = torch.tensor([wavelengths], dtype=torch.float32)
-
-timestamps = torch.zeros(1, 4)  # [week, hour, lat, lon] - can be zeros
-
-# Generate embeddings
-with torch.no_grad():
-    embeddings = model.encoder(chips, timestamps, wavelengths)
-
-print(f"Embeddings shape: {embeddings.shape}")  # [1, 1024]
+print(f"Embeddings shape: {result.shape}")  # [1, 1024]
 ```
 
 ## 4. Next Steps

@@ -1,24 +1,26 @@
 # Installation
 
-## Pip Installation (Recommended)
+## uv Installation (Recommended)
 
-The easiest way to install Clay Foundation Model is via pip:
+The easiest way to install Clay Foundation Model is via `uv`:
 
 ```bash
-pip install git+https://github.com/Clay-foundation/model.git
+uv pip install git+https://github.com/Clay-foundation/model.git
 ```
 
 This will install the `claymodel` package and all its dependencies. You can then import and use it in your Python code:
 
 ```python
-from claymodel.datamodule import ClayDataModule
-from claymodel.module import ClayMAEModule
+import torch
+from claymodel import embed, load_model
 
-# Load pretrained model
-model = ClayMAEModule.load_from_checkpoint("path/to/clay-v1.5.ckpt")
+# Load encoder (no teacher download, fast startup)
+encoder = load_model("large", ckpt_path="path/to/clay-v1.5.ckpt")
 
-# Generate embeddings
-embeddings = model.encoder(chips)
+# Generate embeddings from Sentinel-2 data
+pixels = torch.randn(1, 10, 256, 256)  # [batch, bands, height, width]
+result = embed(pixels, sensor="sentinel-2-l2a", model=encoder)
+print(f"Embeddings shape: {result.shape}")  # [1, 1024]
 ```
 
 ### Using Pretrained Weights
@@ -46,20 +48,14 @@ Start by cloning this [repo-url](https://github.com/Clay-foundation/model)
     git clone https://github.com/Clay-foundation/model
     cd model
 
-Then we recommend [using mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html)
-to install the dependencies. A virtual environment will also be created with Python and
-[JupyterLab](https://github.com/jupyterlab/jupyterlab) installed.
+Then install the dependencies with `uv`:
 
-    mamba env create --file environment.yml
+    uv pip install -e ".[dev]"
 
 ```{note}
-The command above has been tested on Linux devices with CUDA GPUs.
+The command above creates a local virtual environment and installs the project extras.
 ```
-
-Activate the virtual environment first.
-
-    mamba activate claymodel
 
 Finally, double-check that the libraries have been installed.
 
-    mamba list
+    uv run clay info

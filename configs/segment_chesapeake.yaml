@@ -5,7 +5,7 @@ data:
   train_label_dir: data/cvpr/ny/train/labels/
   val_chip_dir: data/cvpr/ny/val/chips/
   val_label_dir: data/cvpr/ny/val/labels/
-  metadata_path: configs/metadata.yaml
+  metadata_path: claymodel/configs/metadata.yaml
   batch_size: 16
   num_workers: 8
   platform: naip
