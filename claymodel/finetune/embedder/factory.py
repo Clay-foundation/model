@@ -31,7 +31,6 @@ python -m finetune.embedder.factory \
 """
 
 import argparse
-import re
 import warnings
 from pathlib import Path
 
@@ -40,7 +39,7 @@ from einops import repeat
 from torch import nn
 from torch.export import Dim
 
-from claymodel.model import Encoder
+from claymodel.model import Encoder, load_encoder_weights
 from claymodel.utils import posemb_sincos_2d_with_gsd
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -159,20 +158,7 @@ class Embedder(nn.Module):
 
     def load_clay_weights(self, ckpt_path):
         "Load the weights from the Clay model encoder."
-        ckpt = torch.load(ckpt_path, map_location=self.device)
-        state_dict = ckpt.get("state_dict")
-        state_dict = {
-            re.sub(r"^model\.encoder\.", "", name): param
-            for name, param in state_dict.items()
-            if name.startswith("model.encoder")
-        }
-
-        with torch.no_grad():
-            for name, param in self.clay_encoder.named_parameters():
-                if name in state_dict and param.size() == state_dict[name].size():
-                    param.data.copy_(state_dict[name])  # Copy the weights
-                else:
-                    print(f"No matching parameter for {name} with size {param.size()}")
+        load_encoder_weights(self.clay_encoder, ckpt_path, map_location=self.device)
 
         for param in self.clay_encoder.parameters():
             param.requires_grad = False

@@ -1,6 +1,7 @@
 import math
 import os
 import random
+import re
 
 import timm
 import torch
@@ -15,6 +16,34 @@ from claymodel.utils import posemb_sincos_2d_with_gsd
 
 torch.set_float32_matmul_precision("medium")
 os.environ["TORCH_CUDNN_V8_API_DISABLED"] = "1"
+
+
+def load_encoder_weights(encoder, ckpt_path, map_location="cpu"):
+    """Copy the Clay MAE encoder weights (`model.encoder.*`) from a checkpoint.
+
+    Raises ValueError when any encoder parameter is missing from the checkpoint or
+    has another shape, instead of leaving it randomly initialised.
+    """
+    state_dict = torch.load(ckpt_path, map_location=map_location)["state_dict"]
+    state_dict = {
+        re.sub(r"^model\.encoder\.", "", name): param
+        for name, param in state_dict.items()
+        if name.startswith("model.encoder.")
+    }
+    params = dict(encoder.named_parameters())
+    bad = [
+        name
+        for name, param in params.items()
+        if name not in state_dict or state_dict[name].shape != param.shape
+    ]
+    if bad:
+        raise ValueError(
+            f"{ckpt_path}: {len(bad)} of {len(params)} encoder parameters missing "
+            f"or with another shape, e.g. {bad[:3]}; is it a Clay MAE checkpoint?"
+        )
+    with torch.no_grad():
+        for name, param in params.items():
+            param.copy_(state_dict[name])
 
 
 class Encoder(nn.Module):

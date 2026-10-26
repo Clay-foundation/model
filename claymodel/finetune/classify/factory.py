@@ -1,9 +1,7 @@
-import re
-
 import torch
 from torch import nn
 
-from claymodel.model import Encoder
+from claymodel.model import Encoder, load_encoder_weights
 
 
 class Classifier(nn.Module):
@@ -77,23 +75,7 @@ class Classifier(nn.Module):
         Args:
             ckpt_path (str): Clay MAE pretrained model checkpoint path.
         """
-        # Load the checkpoint file
-        ckpt = torch.load(ckpt_path, map_location=self.device)
-        state_dict = ckpt.get("state_dict")
-
-        # Remove model.encoder prefix for the clay encoder
-        state_dict = {
-            re.sub(r"^model\.encoder\.", "", name): param
-            for name, param in state_dict.items()
-            if name.startswith("model.encoder")
-        }
-
-        # Copy the weights from the state dict to the encoder
-        for name, param in self.clay_encoder.named_parameters():
-            if name in state_dict and param.size() == state_dict[name].size():
-                param.data.copy_(state_dict[name])  # Copy the weights
-            else:
-                print(f"No matching parameter for {name} with size {param.size()}")
+        load_encoder_weights(self.clay_encoder, ckpt_path, map_location=self.device)
 
         # Freeze clay encoder
         for param in self.clay_encoder.parameters():
